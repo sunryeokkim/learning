@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 12 – More Algorithm Patterns</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 12 Modules</p></div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Course</div>
+      <a href="index.html"><span class="num">🏠</span> Home</a>
+      <div class="sidebar-section">Modules</div>
+      <a href="module1.html"><span class="num">1</span> Python Fundamentals</a>
+      <a href="module2.html"><span class="num">2</span> Core Data Structures</a>
+      <a href="module3.html"><span class="num">3</span> Control Flow & Functions</a>
+      <a href="module4.html"><span class="num">4</span> Searching & Sorting</a>
+      <a href="module5.html"><span class="num">5</span> Algorithm Patterns</a>
+      <a href="module6.html"><span class="num">6</span> Graph Algorithms</a>
+      <a href="module7.html"><span class="num">7</span> Dynamic Programming</a>
+      <a href="module8.html"><span class="num">8</span> Trees</a>
+      <a href="module9.html"><span class="num">9</span> Standard Library</a>
+      <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+      <a href="module11.html"><span class="num">11</span> Expressions & Formulas</a>
+      <a href="module12.html" class="active"><span class="num">12</span> More Patterns</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="module-header">
+      <div class="module-number">Module 12</div>
+      <h1>More Algorithm Patterns</h1>
+      <p class="subtitle">Monotonic stack, greedy algorithms, divide &amp; conquer, Trie, Fenwick tree, Bellman-Ford, Floyd-Warshall, and Quick Select — the patterns that separate good from great solutions.</p>
+    </div>
+
+    <!-- ===== MONOTONIC STACK ===== -->
+    <h2>Monotonic Stack</h2>
+    <p>A monotonic stack is a regular stack that is maintained in sorted order (either always increasing or always decreasing). When a new element violates the order, we pop until the order is restored. This lets us answer "what is the next greater/smaller element?" for every element in O(n) total.</p>
+    <p><strong>Recognition signals:</strong> "Next greater/smaller element", "daily temperatures", "largest rectangle in histogram", "trapping rain water", "stock span problem". The tell: you need to look forward or backward to find the nearest element satisfying a comparison — a brute-force nested loop would be O(n²), and the monotonic stack collapses that to O(n).</p>
+    <p><strong>Key insight — elements waiting for their answer:</strong> The stack holds indices of elements whose "next greater" (or "next smaller") has not yet been found. When a new element arrives, it resolves the answer for every element it is greater than (pop them, record their NGE). This amortizes to O(n) — each element is pushed exactly once and popped exactly once over the entire pass, regardless of how many pops happen at any individual step.</p>
+    <p><strong>Invariant:</strong> For a "next greater element" problem the stack is monotonically <em>decreasing</em> by value (the top of the stack is always the smallest waiting element). For "next smaller" problems, flip to a monotonically increasing stack.</p>
+    <p><strong>Pitfall:</strong> Store indices in the stack, not values. You need the index to write to <code>result[]</code>, and you can always look up the value as <code>nums[stack[-1]]</code>. Storing values loses position information and breaks distance calculations (e.g., "daily temperatures" needs <code>i - j</code>).</p>
+
+    <div class="visual-box">
+      <div class="label">Monotonic decreasing stack — "Next Greater Element" trace</div>
+nums = [2, 1, 5, 6, 2, 3]
+
+Process 2: stack=[2]
+Process 1: stack=[2,1]     (1 < 2, keep order)
+Process 5: pop 1 (1<5) → next_greater[1]=5; pop 2 (2<5) → next_greater[2]=5
+           stack=[5]
+Process 6: pop 5 (5<6) → next_greater[5]=6
+           stack=[6]
+Process 2: stack=[6,2]     (2 < 6, keep order)
+Process 3: pop 2 (2<3) → next_greater[2]=3
+           stack=[6,3]
+
+Remaining in stack → no next greater element:
+next_greater: {1:5, 2:5, 5:6, 2:3, others: -1}
+    </div>
+
+    <div class="fig">
+      <div class="arr-wrap">
+        <div class="step-label">Monotonic decreasing stack trace — nums=[2,1,5,6,2,3] — next greater element per index</div>
+
+        <div class="arr-step">
+          <div class="step-label" style="color:var(--muted)">i=0 (val=2): push; i=1 (val=1): 1&lt;2, keep order → push → stack=[2,1]</div>
+          <div class="arr-row">
+            <span style="font-size:0.7rem;color:var(--muted);min-width:56px;align-self:center">stack →</span>
+            <div class="c"><div class="cv win">2</div><div class="ci">idx 0</div></div>
+            <div class="c"><div class="cv win">1</div><div class="ci">idx 1</div></div>
+          </div>
+        </div>
+
+        <div class="arr-step">
+          <div class="step-label" style="color:var(--muted)">i=2 (val=5): 5&gt;1 → pop idx 1 (NGE=5); 5&gt;2 → pop idx 0 (NGE=5); push 5</div>
+          <div class="arr-row">
+            <span style="font-size:0.7rem;color:var(--red);min-width:56px;align-self:center">popped →</span>
+            <div class="c"><div class="cv drop">2</div><div class="ci">NGE=5</div></div>
+            <div class="c"><div class="cv drop">1</div><div class="ci">NGE=5</div></div>
+            <div style="width:16px"></div>
+            <span style="font-size:0.7rem;color:var(--muted);min-width:56px;align-self:center">stack →</span>
+            <div class="c"><div class="cv mid">5</div><div class="ci">idx 2</div></div>
+          </div>
+        </div>
+
+        <div class="arr-step">
+          <div class="step-label" style="color:var(--muted)">i=3 (val=6): 6&gt;5 → pop idx 2 (NGE=6); push 6</div>
+          <div class="arr-row">
+            <span style="font-size:0.7rem;color:var(--red);min-width:56px;align-self:center">popped →</span>
+            <div class="c"><div class="cv drop">5</div><div class="ci">NGE=6</div></div>
+            <div style="width:16px"></div>
+            <span style="font-size:0.7rem;color:var(--muted);min-width:56px;align-self:center">stack →</span>
+            <div class="c"><div class="cv mid">6</div><div class="ci">idx 3</div></div>
+          </div>
+        </div>
+
+        <div class="arr-step">
+          <div class="step-label" style="color:var(--muted)">i=4 (val=2): push; i=5 (val=3): pop idx 4 (NGE=3), push 3 — final result array:</div>
+          <div class="arr-row">
+            <span style="font-size:0.7rem;color:var(--muted);min-width:56px;align-self:center">result →</span>
+            <div class="c"><div class="cv ans">5</div><div class="ci">idx 0</div></div>
+            <div class="c"><div class="cv ans">5</div><div class="ci">idx 1</div></div>
+            <div class="c"><div class="cv ans">6</div><div class="ci">idx 2</div></div>
+            <div class="c"><div class="cv dim">-1</div><div class="ci">idx 3</div></div>
+            <div class="c"><div class="cv ans">3</div><div class="ci">idx 4</div></div>
+            <div class="c"><div class="cv dim">-1</div><div class="ci">idx 5</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="fig-caption">The stack stays decreasing: every incoming element pops everything smaller before it. Each popped element found its NGE. Indices left at the end never found a larger element — result stays −1.</div>
+    </div>
+
+    <pre><code class="language-python"># ── Next Greater Element ───
+def next_greater_element(nums):
+    n = len(nums)
+    result = [-1] * n          # default: no next greater element found
+    stack = []                 # stack of INDICES (not values) waiting for their NGE
+    # Invariant: stack is monotonically decreasing by value (stack[-1] is smallest)
+
+    for i in range(n):
+        # Pop everything that the current element is "greater than"
+        # — current nums[i] IS the next greater element for all popped indices
+        while stack and nums[stack[-1]] < nums[i]:
+            idx = stack.pop()
+            result[idx] = nums[i]   # found NGE for this waiting index
+        stack.append(i)             # push current index — waiting for ITS NGE
+    # Remaining stack: no element to the right was ever larger → result stays -1
+    # O(n) amortized: every index is pushed once and popped at most once
+    return result
+
+# ── Daily Temperatures ───
+# For each day, how many days until a warmer temperature?
+# Same NGE pattern, but we need the *distance* (i - j), not the value.
+# That's why we store indices — values alone wouldn't let us compute i - j.
+def daily_temperatures(temperatures):
+    n = len(temperatures)
+    result = [0] * n           # 0 = no warmer day found (convention for this problem)
+    stack = []                 # indices of days waiting for a warmer day
+    # Invariant: stack is monotonically decreasing by temperature
+
+    for i, temp in enumerate(temperatures):
+        while stack and temperatures[stack[-1]] < temp:
+            j = stack.pop()
+            result[j] = i - j  # number of days between j and the warmer day i
+        stack.append(i)
+    return result
+
+# ── Largest Rectangle in Histogram ───
+# Greedy choice: for each bar, it is the *limiting* (shortest) bar in some rectangle.
+# We want to know how far left and right that rectangle extends.
+# Use a monotonic INCREASING stack — pop when we find a shorter bar to the right.
+def largest_rectangle(heights):
+    stack = []    # stores (start_index, height), heights are non-decreasing
+    max_area = 0
+    # Sentinel 0 at end: forces all remaining bars to pop and be evaluated.
+    # Without it, bars left in the stack at the end would be missed.
+    heights = heights + [0]
+
+    for i, h in enumerate(heights):
+        start = i
+        # Pop every bar taller than h: the current h is their right boundary.
+        # The popped bar's rectangle extends from its start up to (not including) i.
+        while stack and stack[-1][1] > h:
+            idx, bar_h = stack.pop()
+            width = i - idx            # right boundary is i (exclusive)
+            max_area = max(max_area, bar_h * width)
+            start = idx  # key trick: current bar h can extend leftward to idx
+                         # because bar_h was >= h all the way from idx to here
+        stack.append((start, h))
+
+    return max_area
+
+# ── Trapping Rain Water (monotonic stack approach) ───
+# Think in horizontal "layers": when we find a right wall (h), we pop the bottom
+# of a potential bucket, then look at the left wall (new top of stack).
+# Water fills between left and right walls up to min(left_h, right_h) - bottom_h.
+def trap_stack(height):
+    stack = []   # indices of bars forming potential left walls / bottoms
+    # Invariant: stack is monotonically decreasing (each bar could be a left wall)
+    water = 0
+    for i, h in enumerate(height):
+        while stack and height[stack[-1]] < h:
+            bottom = stack.pop()       # this is the low point between two walls
+            if not stack: break        # no left wall → no water to trap
+            left = stack[-1]           # left boundary index
+            width = i - left - 1      # horizontal span between the two walls
+            bounded_height = min(h, height[left]) - height[bottom]  # water level
+            water += width * bounded_height
+        stack.append(i)
+    return water</code></pre>
+
+    <!-- ===== GREEDY ===== -->
+    <h2>Greedy Algorithms</h2>
+    <p>A greedy algorithm makes the locally optimal choice at each step with the hope of finding a global optimum. It works when: (1) optimal substructure exists, AND (2) a greedy choice is always safe (taking the local best never rules out the global best).</p>
+
+    <h3>Interval Scheduling</h3>
+    <p><strong>Recognition signals:</strong> "Maximum number of non-overlapping intervals", "minimum intervals to remove", "meeting rooms", "merge intervals". The tell: you have a set of ranges and need to select or arrange them optimally.</p>
+    <p><strong>Why sort by end time, not start time:</strong> This is the classic "exchange argument" proof. Suppose the greedy picks interval A (earliest end) but an optimal solution picks interval B instead (which ends later). Swap B for A: since A ends no later than B, every interval that was compatible with B is also compatible with A, so the swap cannot reduce the count of selected intervals. Therefore the greedy choice is always safe — it leaves the maximum remaining room for future intervals.</p>
+    <p><strong>The <code>last_end</code> variable:</strong> It represents the "committed" frontier — the earliest time point after which the next interval must start. Any interval whose start is before <code>last_end</code> overlaps with an already-selected interval and must be removed (or skipped). After each kept interval, <code>last_end</code> advances to the new committed end.</p>
+    <p><strong>Mental model:</strong> Imagine scheduling meetings in a single conference room. You always book the meeting that finishes earliest, freeing the room as soon as possible for the next one. A meeting that starts before the room is free must be cancelled.</p>
+
+    <div class="fig">
+      <div class="visual-box">
+        <div class="label">Greedy interval selection — sort by END time, always take earliest-ending non-overlapping interval</div>
+Sorted by end: [1,3], [2,4], [3,5], [0,6], [4,6], [5,7], [6,8]
+
+Time:  0    1    2    3    4    5    6    7    8
+            ●────────●                           [1,3] ✓ KEEP  last_end = 3
+                 ●────────●                      [2,4] ✗ skip  (start 2 &lt; last_end 3)
+                      ●────────●                 [3,5] ✓ KEEP  last_end = 5
+       ●─────────────────────────●               [0,6] ✗ skip  (start 0 &lt; 5)
+                           ●────●                [4,6] ✗ skip  (start 4 &lt; 5)
+                                ●────────●       [5,7] ✓ KEEP  last_end = 7
+                                     ●────────●  [6,8] ✗ skip  (start 6 &lt; 7)
+
+3 kept, 4 must be removed  →  return 4
+      </div>
+      <div class="fig-caption">Sorting by end time is the greedy key: the interval ending earliest leaves the most room for future intervals. Any other choice can only block more. This is a classic "exchange argument" proof — swapping the greedy choice for any other cannot improve the result.</div>
+    </div>
+
+    <pre><code class="language-python"># ── Activity Selection: Maximum Non-Overlapping Intervals ───
+# Greedy choice: always pick the interval that ends earliest.
+# Exchange argument: any interval ending later can be swapped for this one
+# without losing — the earlier end never blocks intervals the later end wouldn't.
+def erase_overlap_intervals(intervals):
+    if not intervals: return 0
+    intervals.sort(key=lambda x: x[1])   # sort by END time (not start!)
+                                          # sorting by start does NOT work —
+                                          # a long interval starting early would
+                                          # block many short ones unnecessarily
+    count = 0
+    last_end = intervals[0][1]  # last_end = our committed frontier; we keep
+                                 # the first interval unconditionally
+    for start, end in intervals[1:]:
+        if start >= last_end:      # non-overlapping: safe to take this interval
+            last_end = end         # advance the committed frontier
+        else:
+            count += 1             # overlaps — must remove this one
+                                   # (we keep whichever ends earlier; since we
+                                   # sorted by end, the kept one is last_end)
+    return count
+
+# ── Meeting Rooms II: Minimum Rooms Needed ───
+# At any point in time, the number of ongoing meetings = rooms needed.
+# Min-heap tracks end times of active meetings — the smallest end time
+# is the room that frees up first.
+def min_meeting_rooms(intervals):
+    import heapq
+    intervals.sort()    # sort by START time so meetings arrive chronologically
+    heap = []           # min-heap of end times of active meetings
+    for start, end in intervals:
+        if heap and heap[0] <= start:
+            # The earliest-ending meeting finished before this one starts:
+            # reuse that room instead of allocating a new one
+            heapq.heapreplace(heap, end)
+        else:
+            # No free room available — open a new one
+            heapq.heappush(heap, end)
+    return len(heap)    # heap size = number of rooms simultaneously in use
+
+# ── Merge Intervals ───
+# Sort by start; then a new interval either extends the last merged interval
+# (if it overlaps) or becomes a new separate interval.
+def merge_intervals(intervals):
+    intervals.sort()   # sort by start; Python sorts tuples/lists lexicographically
+    merged = [intervals[0]]
+    for start, end in intervals[1:]:
+        if start <= merged[-1][1]:          # overlaps with the last merged interval
+            merged[-1][1] = max(merged[-1][1], end)  # extend (end could be inside)
+        else:
+            merged.append([start, end])    # no overlap — new separate interval
+    return merged</code></pre>
+
+    <h3>Jump Game</h3>
+    <p><strong>Recognition signals:</strong> "Can you reach the last index?", "minimum number of jumps to reach end", "jump game". The tell: each position has a reach value and you want to know reachability or optimal jump count.</p>
+    <p><strong>The "greedy horizon" concept:</strong> <code>max_reach</code> is the farthest index reachable from any position we have visited so far. As we scan left-to-right, every position at or before <code>max_reach</code> can potentially extend the horizon further. We never need to backtrack because we always expand greedily: if position <code>i</code> is reachable, we take the best it has to offer.</p>
+    <p><strong>Why <code>i &gt; max_reach</code> catches unreachable positions:</strong> If we scan to index <code>i</code> and our horizon has not reached it (<code>max_reach &lt; i</code>), then no sequence of jumps from positions 0..i-1 can land on <code>i</code>. Since we process positions in order and never move the horizon backward, this check is exact — not a heuristic.</p>
+    <p><strong>Jump Game II mental model:</strong> Think in "levels" like BFS. <code>current_end</code> is the boundary of the current BFS level (all positions reachable in exactly <code>jumps</code> jumps). <code>farthest</code> is the boundary of the next level. When we exhaust the current level, we pay one jump to move to the next level. This is always optimal because we use the widest possible window at each jump count.</p>
+    <p><strong>Pitfall:</strong> In Jump Game II, iterate only to <code>len(nums) - 1</code>, not <code>len(nums)</code>. If you process the last index, you'd incorrectly increment <code>jumps</code> when <code>i == current_end</code> even though you're already done.</p>
+    <pre><code class="language-python"># ── Jump Game I: Can you reach the last index? ───
+# Greedy horizon: max_reach = farthest index reachable from ANY position so far.
+# As long as we haven't passed max_reach, we can keep extending it.
+def can_jump(nums):
+    max_reach = 0              # the greedy horizon starts at index 0
+    for i, jump in enumerate(nums):
+        if i > max_reach:
+            return False       # the horizon never reached index i →
+                               # no sequence of jumps can land here
+        max_reach = max(max_reach, i + jump)  # extend horizon if this is better
+        # Early exit possible: if max_reach >= len(nums)-1, we can return True
+    return True
+
+# ── Jump Game II: Minimum jumps to reach last index ───
+# Greedy by "BFS level": current_end marks where the current jump can reach.
+# farthest marks where the NEXT jump can reach from anywhere in [0, current_end].
+# When we exhaust the current level (i == current_end), we commit to one jump.
+def jump(nums):
+    jumps = 0
+    current_end = 0    # boundary of the current jump level
+    farthest = 0       # best we can reach from any position in current level
+
+    for i in range(len(nums) - 1):   # stop before last index: no jump needed from there
+        farthest = max(farthest, i + nums[i])  # greedily extend the next-level horizon
+        if i == current_end:           # we've used up all positions in this level
+            jumps += 1                 # commit to one jump
+            current_end = farthest     # move to the next BFS level
+    return jumps</code></pre>
+
+    <h3>Task Scheduler</h3>
+    <pre><code class="language-python"># Given tasks (letters) and cooldown n between same tasks,
+# find minimum time to finish all tasks.
+# Key insight: the most-frequent task dictates the frame structure.
+# Picture (max_count - 1) "frames" of width (n+1), each anchored by one instance
+# of the most-frequent task. The last frame only needs max_count_tasks slots.
+# If other tasks fill the gaps, no idle time is needed → result = len(tasks).
+def least_interval(tasks, n):
+    from collections import Counter
+    counts = Counter(tasks)
+    max_count = max(counts.values())    # highest frequency among all task types
+    # Count how many task types share the max frequency (they anchor the last frame)
+    max_count_tasks = sum(1 for c in counts.values() if c == max_count)
+    # Formula derivation:
+    #   (max_count - 1) frames × (n+1) slots each, plus the final anchor group
+    # Take max with len(tasks): if tasks are dense enough, no idle slots needed
+    return max(len(tasks), (max_count - 1) * (n + 1) + max_count_tasks)</code></pre>
+
+    <!-- ===== DIVIDE AND CONQUER ===== -->
+    <h2>Divide &amp; Conquer</h2>
+    <p>Split the problem into independent subproblems, solve recursively, combine results. Key difference from DP: subproblems do <em>not</em> overlap. In DP, the same subproblem is solved multiple times and its result is cached. In divide &amp; conquer, each recursive call operates on a disjoint portion of the input, so memoization would offer no benefit.</p>
+    <p><strong>Recognition signals:</strong> "Sort an array", "count inversions", "k-th largest element", "closest pair of points", "find median of medians". The tell: the problem naturally splits into two halves that can be solved independently, then their results merged.</p>
+    <p><strong>How merge sort enables inversion counting:</strong> A naive count would be O(n²) — check every pair. The insight: during the merge step, both halves are already sorted. When <code>right[j]</code> is chosen before <code>left[i]</code> (because <code>right[j] &lt; left[i]</code>), every remaining element in the left half (<code>left[i..end]</code>) is also greater than <code>right[j]</code> — and all of them originally came before <code>right[j]</code>. So a single comparison counts <code>len(left) - i</code> inversions at once. The "already sorted" property of each half is what makes batch counting exact and efficient.</p>
+    <p><strong>Quick Select complexity:</strong> Average O(n) because each partition roughly halves the search space, giving a geometric series: n + n/2 + n/4 + ... = 2n. Worst case O(n²) happens when the pivot is always the minimum or maximum (sorted input with a bad pivot strategy). Random pivot selection makes this astronomically unlikely in practice. For guaranteed O(n) worst case, the "median of medians" algorithm can be used, but with a much larger constant.</p>
+
+    <h3>Merge Sort + Count Inversions</h3>
+    <pre><code class="language-python"># Merge sort — O(n log n), stable sort
+# Divide: split in half. Conquer: sort each half recursively.
+# Combine: merge two sorted halves in O(n). Subproblems are disjoint — no overlap.
+def merge_sort(arr):
+    if len(arr) <= 1:
+        return arr
+    mid = len(arr) // 2
+    left  = merge_sort(arr[:mid])   # independent: touches only first half
+    right = merge_sort(arr[mid:])   # independent: touches only second half
+    return merge(left, right)       # O(n) combine step
+
+def merge(left, right):
+    # Standard two-pointer merge of sorted arrays — O(n)
+    result = []
+    i = j = 0
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:
+            result.append(left[i]); i += 1
+        else:
+            result.append(right[j]); j += 1
+    result.extend(left[i:])    # append any remaining left elements
+    result.extend(right[j:])   # append any remaining right elements
+    return result
+
+# Count inversions — how many pairs (i,j) with i<j and arr[i]>arr[j]?
+# Piggybacks on merge sort: during the merge step, both halves are sorted.
+# When right[j] is merged before left[i], ALL of left[i..end] are > right[j]
+# and all have smaller original indices → that's (len(left) - i) inversions at once.
+# This is only possible because the left half is already sorted.
+def count_inversions(arr):
+    if len(arr) <= 1:
+        return arr, 0
+    mid = len(arr) // 2
+    left,  left_inv  = count_inversions(arr[:mid])
+    right, right_inv = count_inversions(arr[mid:])
+
+    merged = []
+    inversions = left_inv + right_inv  # accumulate inversions from each half
+    i = j = 0
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:
+            merged.append(left[i]); i += 1
+        else:
+            merged.append(right[j]); j += 1
+            # right[j] < left[i], and left is sorted, so left[i..end] are all
+            # greater than right[j]. Each is an inversion with right[j].
+            inversions += len(left) - i
+    merged.extend(left[i:]); merged.extend(right[j:])
+    return merged, inversions</code></pre>
+
+    <h3>Quick Select — k-th Largest in O(n) Average</h3>
+    <pre><code class="language-python">import random
+
+# Quick Select — finds the k-th largest in O(n) average, O(n²) worst case.
+# Key idea: after partitioning, the pivot lands at its final sorted position.
+# If pivot_idx == k-1, we're done. Otherwise recurse on ONE side only (not both).
+# This is what makes it O(n) average rather than O(n log n) like full quicksort.
+def quick_select(nums, k):
+    # k is 1-indexed: k=1 means the largest element
+    def partition(left, right, pivot_idx):
+        pivot = nums[pivot_idx]
+        nums[pivot_idx], nums[right] = nums[right], nums[pivot_idx]  # move pivot out of the way
+        store = left  # store points to where the next "large" element goes
+        for i in range(left, right):
+            if nums[i] > pivot:           # for k-th LARGEST: large elements go left
+                nums[store], nums[i] = nums[i], nums[store]
+                store += 1
+        nums[store], nums[right] = nums[right], nums[store]  # place pivot in its final position
+        return store   # pivot's final index in the sorted order (descending)
+
+    left, right = 0, len(nums) - 1
+    while left <= right:
+        pivot_idx = random.randint(left, right)   # random pivot prevents O(n²) worst case
+        pivot_idx = partition(left, right, pivot_idx)
+        if pivot_idx == k - 1:
+            return nums[pivot_idx]     # pivot landed exactly at the k-th position
+        elif pivot_idx < k - 1:
+            left = pivot_idx + 1       # k-th is to the right of pivot
+        else:
+            right = pivot_idx - 1      # k-th is to the left of pivot
+    # Each iteration discards at least the pivot, converging on the answer.
+    # Average recurrence: T(n) = T(n/2) + O(n) → O(n) by geometric series.</code></pre>
+
+    <!-- ===== TRIE ===== -->
+    <h2>Trie (Prefix Tree)</h2>
+    <p>A Trie stores strings character by character in a tree. Each path from root to a marked node represents a word. O(L) lookup/insert where L = word length. Ideal for prefix searches, autocomplete, and word existence checks.</p>
+    <p><strong>Recognition signals:</strong> "Autocomplete", "longest common prefix", "word search on a grid", "starts_with queries", "implement a dictionary with prefix lookup". The tell: you need to query by prefix, not just by exact match.</p>
+    <p><strong>Trie vs. set:</strong> A Python <code>set</code> gives O(L) average for exact membership tests (via hashing), but O(n·L) for "find all words with prefix X" — you'd have to scan every word. A Trie answers "does prefix X exist?" in O(L) and can enumerate all words under a prefix efficiently. Use a Trie when prefix operations matter; use a set when you only need exact lookup.</p>
+    <p><strong>O(L) per operation:</strong> Every insert, search, and starts_with walks exactly L nodes — one per character. The tree never grows wider than the alphabet size (26 for lowercase letters), so each node lookup is O(1). Total space is O(total characters across all words), which is bounded by O(n·L) in the worst case (no shared prefixes).</p>
+    <p><strong>Dict-based compact Trie:</strong> Instead of a <code>TrieNode</code> class, you can use nested dicts (<code>node.setdefault(c, {})</code>) with a special <code>'#'</code> key as the end-of-word marker. This is faster to write in contests and behaves identically. The class-based version is clearer for production code or when you need to attach extra data (counts, weights) to nodes.</p>
+    <p><strong>Word search on grids:</strong> A Trie beats checking each word independently via DFS, because the Trie prunes entire branches early — if no word in the dictionary starts with the current path prefix, stop exploring. This turns O(words × 4^L) into a single DFS guided by the Trie.</p>
+
+    <div class="visual-box">
+      <div class="label">Trie storing: "apple", "app", "apply", "apt"</div>
+root
+└── a
+    └── p
+        ├── p [*word: "app"]
+        │   └── l
+        │       ├── e [*word: "apple"]
+        │       └── y [*word: "apply"]
+        └── t [*word: "apt"]
+
+[*word] marks end of a complete word
+    </div>
+
+    <div class="fig">
+      <div class="visual-box">
+        <div class="label">Trie — step-by-step insertion of "app", "apple", "apt"</div>
+After insert("app"):       After insert("apple"):      After insert("apt"):
+
+root                       root                        root
+└── a                      └── a                       └── a
+    └── p                      └── p                       └── p
+        └── p [★end]               └── p [★end]                ├── p [★end]
+                                       └── l                   │   └── l
+                                           └── e [★end]         │       └── e [★end]
+                                                                └── t [★end]
+
+"app":   3 new nodes (a, p, p). Mark last p as end.
+"apple": 'a','p','p' already exist → follow them. 'l' and 'e' are new nodes. Mark e as end.
+         (is_end on the middle 'p' stays True — "app" is still a valid word)
+"apt":   'a','p' exist → follow. 'p' has children → branch. New 't' node. Mark t as end.
+      </div>
+      <div class="fig-caption">Shared prefixes reuse existing nodes — "app" and "apple" share the "a→p→p" path. "apt" branches at the second 'p' by adding a 't' sibling. is_end marks word boundaries without destroying the path for longer words built on top.</div>
+    </div>
+
+    <pre><code class="language-python">class TrieNode:
+    def __init__(self):
+        self.children = {}    # char → TrieNode; dict is flexible (any alphabet)
+        self.is_end = False   # True when a complete word ends at this node
+                              # is_end does NOT stop longer words — "app" and "apple"
+                              # share nodes; the 'p' node has is_end=True, but the
+                              # path continues to 'l', 'e' for "apple"
+
+class Trie:
+    def __init__(self):
+        self.root = TrieNode()   # root has no character; it's the empty-string prefix
+
+    def insert(self, word):
+        node = self.root
+        for c in word:
+            if c not in node.children:
+                node.children[c] = TrieNode()   # create node only when missing
+            node = node.children[c]             # walk down one level per character
+        node.is_end = True   # mark the terminal node — O(L) total
+
+    def search(self, word):
+        # Must traverse all L characters AND land on an is_end node.
+        # Just reaching the node is not enough — "ap" is a prefix of "app" but
+        # not a word unless we inserted "ap" explicitly.
+        node = self.root
+        for c in word:
+            if c not in node.children:
+                return False          # prefix doesn't exist → word can't exist
+            node = node.children[c]
+        return node.is_end            # True only if this exact word was inserted
+
+    def starts_with(self, prefix):
+        # Same traversal as search, but we DON'T check is_end —
+        # we only care that the prefix path exists, not whether it ends a word.
+        node = self.root
+        for c in prefix:
+            if c not in node.children:
+                return False
+            node = node.children[c]
+        return True   # prefix path exists; words may continue past this node
+
+    def delete(self, word):
+        # Recursive delete: unmark is_end, then prune childless nodes bottom-up.
+        # We only delete a node if it has no children (other words pass through it)
+        # and it's not itself the end of another word.
+        def _delete(node, word, depth):
+            if not node: return False
+            if depth == len(word):
+                node.is_end = False              # unmark: word no longer exists
+                return len(node.children) == 0  # True → this node can be pruned
+            c = word[depth]
+            if c in node.children and _delete(node.children[c], word, depth+1):
+                del node.children[c]             # prune child (it's now unused)
+                # Can we prune THIS node too? Only if it's not a word end itself
+                # and has no other children remaining.
+                return not node.is_end and len(node.children) == 0
+            return False
+        _delete(self.root, word, 0)
+
+# ── Compact Trie using dict-of-dict (no class) ───
+# Faster to write in a contest. setdefault(c, {}) returns existing child or
+# creates an empty dict for c — same as "create node if missing, then walk down".
+trie = {}
+def insert(trie, word):
+    node = trie
+    for c in word:
+        node = node.setdefault(c, {})   # walk/create one level per character
+    node['#'] = True   # '#' is the end-of-word sentinel (not a valid letter)
+
+def search(trie, word):
+    node = trie
+    for c in word:
+        if c not in node: return False
+        node = node[c]
+    return '#' in node   # sentinel present → word was inserted
+
+# ── Word Search on grid using Trie ───
+# Trie prunes dead-end paths early: if the current path doesn't match any word
+# prefix in the Trie, we stop exploring — avoiding redundant DFS branches.
+def find_words(board, words):
+    trie = Trie()
+    for w in words: trie.insert(w)
+
+    rows, cols = len(board), len(board[0])
+    result = set()
+
+    def dfs(node, r, c, path):
+        c_char = board[r][c]
+        if c_char not in node.children: return   # prune: no word starts this way
+        next_node = node.children[c_char]
+        path += c_char
+        if next_node.is_end:
+            result.add(path)                     # found a complete word
+        board[r][c] = '#'   # mark visited — prevents revisiting in this DFS path
+        for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+            nr, nc = r+dr, c+dc
+            if 0 <= nr < rows and 0 <= nc < cols and board[nr][nc] != '#':
+                dfs(next_node, nr, nc, path)     # pass the Trie node, not root!
+        board[r][c] = c_char   # restore cell after backtracking
+
+    for r in range(rows):
+        for c in range(cols):
+            dfs(trie.root, r, c, "")
+    return list(result)</code></pre>
+
+    <!-- ===== FENWICK TREE ===== -->
+    <h2>Fenwick Tree (Binary Indexed Tree)</h2>
+    <p>A Fenwick tree supports two operations on an array in O(log n): <strong>point update</strong> (change a value) and <strong>prefix sum query</strong>. It outperforms a prefix sum array when you need both queries <em>and</em> updates.</p>
+    <p><strong>Recognition signals:</strong> "Range sum with point updates", "count of smaller numbers to the right", "number of inversions", "dynamic prefix sum". The tell: you need prefix sums but the array keeps changing — a static prefix sum array breaks on every update.</p>
+    <p><strong>The lowest-set-bit (LSB) trick — <code>i &amp; (-i)</code>:</strong> In two's complement, <code>-i</code> flips all bits of <code>i</code> and adds 1, which has the effect of keeping only the lowest set bit. For example: <code>i = 6 = 0110</code>, <code>-i = ...11111010</code>, so <code>6 &amp; -6 = 0010 = 2</code>. This isolates the LSB with a single bitwise AND — no loops, no division needed.</p>
+    <p><strong>What each BIT cell "owns":</strong> <code>BIT[i]</code> stores the sum of a range whose size is exactly <code>i &amp; (-i)</code>. For example, <code>BIT[6]</code> (binary 110) owns a range of size 2 (its LSB), covering indices [5, 6]. <code>BIT[8]</code> (binary 1000) owns a range of size 8, covering [1, 8]. This non-uniform partitioning is what makes both update and query O(log n) — you touch at most log₂(n) cells.</p>
+    <p><strong>Why update goes UP and query goes DOWN:</strong> During <em>update</em> at index <code>i</code>, we add the LSB to move to the next cell whose range <em>includes</em> position <code>i</code> — responsibility propagates upward through parent ranges. During <em>query</em> of prefix sum [1..i], we subtract the LSB to strip away the range <code>BIT[i]</code> just covered, then move to the next non-overlapping range below — we decompose the prefix into disjoint chunks and sum them.</p>
+
+    <div class="visual-box">
+      <div class="label">Fenwick tree — each node stores sum of a specific range</div>
+Index:  1   2   3   4   5   6   7   8
+Array: [1,  3,  5,  7,  9,  11, 13, 15]
+
+BIT[1] = arr[1]                       = 1    (covers range [1,1])
+BIT[2] = arr[1]+arr[2]                = 4    (covers range [1,2])
+BIT[3] = arr[3]                       = 5    (covers range [3,3])
+BIT[4] = arr[1]+arr[2]+arr[3]+arr[4]  = 16   (covers range [1,4])
+BIT[5] = arr[5]                       = 9    (covers range [5,5])
+BIT[6] = arr[5]+arr[6]                = 20   (covers range [5,6])
+BIT[7] = arr[7]                       = 13   (covers range [7,7])
+BIT[8] = arr[1]+...+arr[8]            = 64   (covers range [1,8])
+
+Range covered by BIT[i]: determined by lowest set bit of i
+    </div>
+
+    <pre><code class="language-python">class FenwickTree:
+    def __init__(self, n):
+        self.n = n
+        self.tree = [0] * (n + 1)   # 1-indexed! index 0 is unused.
+                                     # This makes the LSB trick work correctly
+                                     # (0 & -0 = 0, which would loop forever).
+
+    def update(self, i, delta):
+        # Add delta to position i, then propagate upward.
+        # Each step: i += i & (-i) moves i to the next ancestor index whose
+        # range includes position i. We update every such ancestor.
+        # Number of ancestors = number of set bits we encounter = O(log n).
+        while i <= self.n:
+            self.tree[i] += delta
+            i += i & (-i)   # isolate LSB, add it → jump to the next range responsible for i
+
+    def query(self, i):
+        # Prefix sum [1..i]: decompose [1..i] into disjoint ranges bottom-up.
+        # Each step: self.tree[i] contributes its range's sum, then
+        # i -= i & (-i) strips that range, moving to the next lower range.
+        # We stop when i reaches 0 (all ranges accounted for).
+        total = 0
+        while i > 0:
+            total += self.tree[i]
+            i -= i & (-i)   # remove LSB → move down to the next disjoint range
+        return total
+
+    def range_query(self, l, r):
+        # Sum [l..r] = prefix[r] - prefix[l-1].
+        # Two O(log n) queries = O(log n) total.
+        return self.query(r) - self.query(l - 1)
+
+    def build(self, arr):
+        # Build in O(n) via n individual updates (each O(log n) → O(n log n) naive),
+        # but in practice this simple loop is fine. True O(n) build is possible
+        # by propagating sums directly, but rarely needed in interviews.
+        for i, v in enumerate(arr, 1):   # enumerate starting at 1 for 1-indexed BIT
+            self.update(i, v)
+
+# ── Example: Count of Smaller Numbers After Self ───
+# For each element, count how many elements to its right are smaller.
+# Process right-to-left: when we process nums[i], all elements already in the
+# BIT are to the right of i. Query prefix sum up to rank(nums[i])-1 = count of
+# elements already seen that are strictly smaller.
+def count_smaller(nums):
+    sorted_unique = sorted(set(nums))
+    # Coordinate compression: map values to 1-indexed ranks.
+    # This lets us use the BIT even when values are large or negative.
+    rank = {v: i+1 for i, v in enumerate(sorted_unique)}
+    n_ranks = len(sorted_unique)
+    ft = FenwickTree(n_ranks)
+    result = []
+
+    for x in reversed(nums):   # process right to left so "already seen" = "to the right"
+        r = rank[x]
+        # Count elements seen so far (to the right of x) with rank < r → value < x
+        result.append(ft.query(r - 1))
+        ft.update(r, 1)        # register x as "seen"
+
+    return result[::-1]        # reverse because we built it right-to-left</code></pre>
+
+    <!-- ===== FLOYD-WARSHALL ===== -->
+    <h2>Floyd-Warshall — All-Pairs Shortest Path</h2>
+    <p>Finds shortest paths between <strong>every pair</strong> of nodes. Works with negative weights (but not negative cycles). O(n³) time — practical for n ≤ 500 or so.</p>
+    <p><strong>Recognition signals:</strong> "Shortest path between all pairs of cities", "reachability matrix", "transitive closure", "find the city with fewest reachable neighbors within a threshold". The tell: you need shortest paths from multiple sources, not just one.</p>
+    <p><strong>The outer loop is "allowed intermediate nodes":</strong> The key invariant after processing outer loop iteration <code>k</code> is: <code>dist[i][j]</code> holds the shortest path from <code>i</code> to <code>j</code> using only nodes {0, 1, ..., k} as intermediates. We start with no intermediates (just direct edges), then expand the allowed set one node at a time.</p>
+    <p><strong>Why k must be the outermost loop:</strong> This is the critical correctness constraint. When we compute <code>dist[i][j]</code> via node <code>k</code>, we use <code>dist[i][k]</code> and <code>dist[k][j]</code>. For this to be correct, those values must already incorporate all intermediates {0..k-1} — which is only guaranteed if <code>k</code> is the outermost loop. If <code>k</code> were an inner loop, we might use <code>dist[i][k]</code> before it's been updated with all smaller intermediates, producing wrong answers.</p>
+    <p><strong>Negative cycle detection:</strong> In a graph with no negative cycles, the shortest path from a node to itself is always 0. If after all iterations <code>dist[i][i] &lt; 0</code> for any node <code>i</code>, it means the algorithm found a path that goes through a negative cycle — you can reduce the cost indefinitely by looping around it. This signals the problem has no well-defined shortest paths.</p>
+    <pre><code class="language-python">def floyd_warshall(n, edges):
+    INF = float('inf')
+    dist = [[INF] * n for _ in range(n)]
+
+    for i in range(n):
+        dist[i][i] = 0   # distance from a node to itself is always 0
+
+    for u, v, w in edges:
+        dist[u][v] = w
+        dist[v][u] = w   # remove this line for directed graphs
+
+    # Core DP: dist[i][j] = shortest path using intermediates from {0..k}
+    # After k iterations, we've allowed nodes 0 through k as intermediate hops.
+    for k in range(n):           # k = the new intermediate node being "unlocked"
+                                  # MUST be outermost — i and j can be in any order
+        for i in range(n):       # source node
+            for j in range(n):   # destination node
+                # Can we do better by routing through k?
+                if dist[i][k] + dist[k][j] < dist[i][j]:
+                    dist[i][j] = dist[i][k] + dist[k][j]
+
+    # Detect negative cycles: any dist[i][i] < 0 means a negative cycle exists
+    # that passes through node i. Shortest paths are undefined in such graphs.
+    for i in range(n):
+        if dist[i][i] < 0:
+            return None   # negative cycle detected
+
+    return dist
+
+# Use case: "Find the city with the fewest neighbors within distance threshold"</code></pre>
+
+    <!-- ===== BELLMAN-FORD ===== -->
+    <h2>Bellman-Ford — Negative Weight Edges</h2>
+    <p>Finds shortest paths from a single source, handling <strong>negative edge weights</strong>. Also detects negative cycles. O(VE) — slower than Dijkstra but more general.</p>
+    <p><strong>Recognition signals:</strong> "Shortest path with negative edge weights", "cheapest flights within k stops", "detect negative cycle". The tell: edges can be negative (Dijkstra breaks with negative weights) or there's a hard constraint on the number of hops.</p>
+    <p><strong>Why n-1 iterations suffice:</strong> In a graph with <code>n</code> nodes, any simple path (no repeated nodes) has at most <code>n-1</code> edges. Each iteration of Bellman-Ford guarantees that all shortest paths using at most <code>t</code> edges are correctly computed after <code>t</code> iterations. After <code>n-1</code> iterations, all simple shortest paths are found. If there were a shorter path requiring <code>n</code> or more edges, it would have to revisit a node — meaning it contains a cycle, and if that cycle shortened the path, it would be a negative cycle (which we detect separately).</p>
+    <p><strong>Negative cycle detection — the n-th iteration:</strong> After <code>n-1</code> iterations, if we run one more pass and any edge still relaxes (i.e., <code>dist[u] + w &lt; dist[v]</code>), it means there exists a reachable negative cycle. Going around that cycle one more time would further reduce the path cost, so the shortest path is undefined (negative infinity). The n-th iteration acts as a canary — it should find nothing new if the graph is well-behaved.</p>
+    <p><strong>"Cheapest Flights Within K Stops" variant:</strong> Limit to exactly <code>k+1</code> iterations (k stops = k+1 edges). Crucially, use a <em>copy</em> of the distance array at the start of each iteration — otherwise a single iteration might chain multiple edges (violating the "exactly t edges" constraint), effectively simulating more than one hop per round.</p>
+    <pre><code class="language-python">def bellman_ford(n, edges, source):
+    INF = float('inf')
+    dist = [INF] * n
+    dist[source] = 0   # source to itself costs 0; all others start as unreachable
+
+    # Relax ALL edges exactly n-1 times.
+    # After t iterations, dist[v] = length of shortest path using at most t edges.
+    # n-1 is sufficient because simple paths have at most n-1 edges.
+    for _ in range(n - 1):
+        updated = False
+        for u, v, w in edges:
+            if dist[u] != INF and dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                updated = True
+        if not updated:
+            break   # early termination: no relaxation happened → already converged
+
+    # n-th iteration check: if any edge can still be relaxed, a negative cycle
+    # exists on a path reachable from source. There's no well-defined shortest path.
+    for u, v, w in edges:
+        if dist[u] != INF and dist[u] + w < dist[v]:
+            return None   # negative cycle reachable from source
+
+    return dist
+
+# Use case: "Cheapest Flights Within K Stops"
+# Modified Bellman-Ford: limit to k+1 edge relaxations (k stops = k+1 edges).
+# CRITICAL: use a copy of prices at the start of each round so that within one
+# iteration we only use paths established in PREVIOUS rounds (enforcing the hop limit).
+def find_cheapest_price(n, flights, src, dst, k):
+    INF = float('inf')
+    prices = [INF] * n
+    prices[src] = 0
+
+    for _ in range(k + 1):         # k stops = at most k+1 edges used
+        temp = prices[:]            # snapshot: don't let this round's updates
+                                    # feed into other edges in the SAME round
+        for u, v, w in flights:
+            if prices[u] != INF and prices[u] + w < temp[v]:
+                temp[v] = prices[u] + w   # relax using PREVIOUS round's prices[u]
+        prices = temp
+
+    return prices[dst] if prices[dst] != INF else -1</code></pre>
+
+    <!-- ===== MONOTONIC DEQUE / SLIDING WINDOW MAX ===== -->
+    <h2>Monotonic Deque — Sliding Window Extremes</h2>
+    <p>A deque that maintains a monotonically decreasing (or increasing) sequence of <em>indices</em>. Enables O(n) sliding window maximum/minimum — O(n) total rather than O(nk).</p>
+    <p><strong>Recognition signals:</strong> "Maximum (or minimum) in every sliding window of size k", "max queue", "constrained sliding window". The tell: a fixed-size window moves across an array and you need the max/min of each window without reprocessing all k elements each time.</p>
+    <p><strong>Why a deque and not a stack:</strong> We need O(1) operations at <em>both</em> ends. From the <em>right</em> end we pop "useless" smaller elements as new elements arrive (same as a monotonic stack). From the <em>left</em> end we evict elements that have fallen out of the window (their index is too old). A stack only gives O(1) at one end — a deque gives O(1) at both.</p>
+    <p><strong>The "useless smaller element" insight:</strong> If <code>nums[j] &lt;= nums[i]</code> and <code>j &lt; i</code> (j came before i), then while i is in the window, j can <em>never</em> be the window maximum. Element i is both larger in value and will remain in the window longer (it expires later). So j is strictly dominated — we can safely discard it from the back of the deque. This is what keeps the deque monotonically decreasing.</p>
+    <p><strong>O(n) amortized:</strong> Each index is added to the deque exactly once (via <code>dq.append(i)</code>) and removed at most once — either evicted from the left when it exits the window, or popped from the right when dominated. Total operations = O(2n) = O(n).</p>
+    <p><strong>Pitfall:</strong> Store indices in the deque, not values. You need indices to (1) check if an element is still inside the window boundary (<code>dq[0] &lt; i - k + 1</code>), and (2) look up the actual maximum as <code>nums[dq[0]]</code>. Storing values makes both checks impossible.</p>
+    <pre><code class="language-python">from collections import deque
+
+def sliding_window_maximum(nums, k):
+    dq = deque()   # stores INDICES; nums[dq[0]] is always the window max
+    # Invariant: dq is monotonically decreasing by value (left = max, right = min in dq)
+    result = []
+
+    for i, x in enumerate(nums):
+        # Step 1: evict indices that have fallen outside the window [i-k+1, i]
+        # The leftmost index is always the oldest — if it's out of range, pop it.
+        while dq and dq[0] < i - k + 1:
+            dq.popleft()   # O(1): only the leftmost element can be out of range
+
+        # Step 2: maintain the decreasing invariant.
+        # Any index j at the right end where nums[j] <= x is now dominated by i:
+        # i is larger AND will stay in future windows longer. Discard j.
+        while dq and nums[dq[-1]] <= x:
+            dq.pop()   # pop from right — useless smaller element
+
+        dq.append(i)   # push current index; it becomes the new right end
+
+        # Step 3: record result once the first full window is formed
+        if i >= k - 1:
+            result.append(nums[dq[0]])   # dq[0] = index of the window's maximum
+
+    return result
+
+# Sliding window minimum — symmetric: maintain INCREASING order instead.
+# The "useless" element is now one that is LARGER and older (flip the comparison).
+def sliding_window_minimum(nums, k):
+    dq = deque()
+    # Invariant: dq is monotonically increasing by value (left = min in dq)
+    result = []
+    for i, x in enumerate(nums):
+        while dq and dq[0] < i - k + 1:
+            dq.popleft()                    # evict expired indices from left
+        while dq and nums[dq[-1]] >= x:    # >= ensures we pop equal elements too
+            dq.pop()                        # discard dominated larger element from right
+        dq.append(i)
+        if i >= k - 1:
+            result.append(nums[dq[0]])      # dq[0] = index of the window's minimum
+    return result</code></pre>
+
+    <!-- ===== BIT DP ===== -->
+    <h2>Bitmask DP</h2>
+    <p>When the state includes a <strong>subset of items</strong>, encode it as a bitmask integer. Common for problems with small n (≤ 20) where brute-force over all subsets is needed.</p>
+    <p><strong>Recognition signals:</strong> "Visit all cities/nodes exactly once", "assign each task to exactly one worker", n ≤ 20. The tell: the state must track <em>which</em> items have been processed, not just how many — and the set of remaining items changes the optimal future choices.</p>
+    <p><strong>When to use bitmask DP vs plain DP:</strong> Use bitmask DP when the order or identity of items visited matters to future decisions. If you only need counts (e.g., "how many coins used"), plain DP suffices. If you need "which specific items" (e.g., "which cities already visited affects the next cheapest move"), you need bitmask DP.</p>
+    <p><strong>Mask-as-subset encoding:</strong> An integer <code>mask</code> represents a subset: bit <code>j</code> is 1 if item <code>j</code> is in the subset. Key operations: check if j is in mask (<code>(mask &gt;&gt; j) &amp; 1</code>), add j to mask (<code>mask | (1 &lt;&lt; j)</code>), remove j from mask (<code>mask &amp; ~(1 &lt;&lt; j)</code>), iterate all submasks (<code>sub = mask; while sub: sub = (sub - 1) &amp; mask</code>). Total subsets of n items = 2ⁿ, so the DP table has 2ⁿ × n entries.</p>
+    <p><strong>TSP state meaning:</strong> <code>dp[mask][i]</code> = minimum cost to start at city 0, visit exactly the cities encoded in <code>mask</code>, and end at city <code>i</code>. The base case <code>dp[1][0] = 0</code> means: only city 0 visited (mask = 0b1 = 1), currently at city 0, cost = 0. We iterate over all masks in increasing order — smaller subsets are computed before the larger subsets that extend them.</p>
+    <p><strong>Complexity:</strong> O(2ⁿ × n²) for TSP — 2ⁿ masks × n current cities × n next cities. For n = 20 this is ~400M operations, which is feasible. For n = 25 it becomes ~800B — too slow.</p>
+    <pre><code class="language-python"># ── Traveling Salesman Problem (TSP) — classic bitmask DP ───
+# Find the minimum-cost Hamiltonian cycle through all n cities.
+# State: dp[mask][i] = min cost to visit exactly the cities in 'mask',
+#                      starting from city 0 and currently at city i.
+# Transition: for each unvisited city j, extend: dp[mask|(1<<j)][j] via cost[i][j].
+
+def tsp(cost, n):
+    INF = float('inf')
+    # dp table: 2^n masks × n ending cities
+    dp = [[INF] * n for _ in range(1 << n)]
+    dp[1][0] = 0   # base case: only city 0 visited (mask = 0b0001 = 1), at city 0, cost 0
+                   # mask=1 means bit 0 is set → city 0 is "visited"
+
+    # Iterate masks in increasing order so that smaller subsets are ready
+    # before we try to extend them into larger subsets
+    for mask in range(1 << n):
+        for i in range(n):
+            if dp[mask][i] == INF: continue         # state not reachable
+            if not (mask >> i) & 1: continue        # city i must actually be in mask
+                                                     # (otherwise this state is invalid)
+
+            for j in range(n):
+                if (mask >> j) & 1: continue        # j already visited — skip
+                new_mask = mask | (1 << j)          # add city j to visited set
+                new_cost = dp[mask][i] + cost[i][j]
+                if new_cost < dp[new_mask][j]:
+                    dp[new_mask][j] = new_cost      # relax: found a cheaper path to j
+
+    full_mask = (1 << n) - 1   # all bits set = all n cities visited
+    # Return the cheapest way to have visited all cities (ending anywhere)
+    return min(dp[full_mask][i] for i in range(n))
+
+# ── Assign Tasks to Workers (bitmask DP) ───
+# dp[mask] = min cost to complete exactly the tasks encoded in mask.
+# Worker assignment: worker index = popcount(mask) — workers are assigned in order,
+# the k-th worker (0-indexed) handles whichever task we add as the k-th bit.
+def min_cost_assignment(workers, tasks, cost_matrix):
+    n = len(tasks)
+    dp = [float('inf')] * (1 << n)
+    dp[0] = 0   # no tasks done, no cost
+
+    for mask in range(1 << n):
+        if dp[mask] == float('inf'): continue
+        # The number of tasks already assigned = number of set bits in mask
+        # That also tells us which worker is next (workers assigned in order 0,1,2,...)
+        worker_idx = bin(mask).count('1')
+        if worker_idx >= len(workers): continue
+
+        for task in range(n):
+            if not (mask >> task) & 1:           # task not yet assigned
+                new_mask = mask | (1 << task)    # mark task as assigned
+                new_cost = dp[mask] + cost_matrix[worker_idx][task]
+                dp[new_mask] = min(dp[new_mask], new_cost)
+
+    return dp[(1 << n) - 1]   # all tasks assigned</code></pre>
+
+    <!-- ===== PATTERN SUMMARY ===== -->
+    <h2>When to Use Each Pattern</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Pattern</th><th>Signal</th><th>Time</th></tr></thead>
+        <tbody>
+          <tr><td>Monotonic Stack</td><td>"Next greater/smaller element", "largest rectangle", histogram, stock spans</td><td>O(n)</td></tr>
+          <tr><td>Monotonic Deque</td><td>"Maximum/minimum in sliding window of size k"</td><td>O(n)</td></tr>
+          <tr><td>Greedy (intervals)</td><td>"Maximum non-overlapping", "minimum rooms", "merge intervals"</td><td>O(n log n)</td></tr>
+          <tr><td>Greedy (jump)</td><td>"Can you reach end", "minimum jumps"</td><td>O(n)</td></tr>
+          <tr><td>Merge Sort</td><td>"Count inversions", "sort linked list", stable sort needed</td><td>O(n log n)</td></tr>
+          <tr><td>Quick Select</td><td>"k-th largest/smallest" without full sort</td><td>O(n) avg</td></tr>
+          <tr><td>Trie</td><td>"Prefix search", "autocomplete", "word search", "longest common prefix"</td><td>O(L)</td></tr>
+          <tr><td>Fenwick Tree</td><td>"Range sum with point updates", "count smaller numbers"</td><td>O(log n)</td></tr>
+          <tr><td>Floyd-Warshall</td><td>"All-pairs shortest path", small graph (n ≤ 500)</td><td>O(n³)</td></tr>
+          <tr><td>Bellman-Ford</td><td>"Shortest path with negative weights", "path with at most k edges"</td><td>O(VE)</td></tr>
+          <tr><td>Bitmask DP</td><td>Small n (≤ 20), "visit all elements exactly once", subset states</td><td>O(2ⁿ · n)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="nav-footer">
+      <a href="module11.html" class="nav-btn">
+        <span class="nav-dir">← Previous</span>
+        <span class="nav-title">Expressions & Formulas</span>
+      </a>
+      <a href="index.html" class="nav-btn next">
+        <span class="nav-dir">↩ Back to</span>
+        <span class="nav-title">Course Home</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

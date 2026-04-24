@@ -408,3 +408,136 @@ tr:hover td { background: var(--surface); }
   .sidebar { display: none; }
   .main { margin-left: 0; padding: 24px 20px; }
 }
+
+/* ===== FIGURE SYSTEM ===== */
+.fig { margin: 20px 0 28px; }
+.fig-caption {
+  font-size: 0.76rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* --- Array / cell diagrams --- */
+.arr-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 22px;
+  overflow-x: auto;
+  margin: 16px 0 6px;
+}
+.arr-step { margin-bottom: 16px; }
+.arr-step:last-child { margin-bottom: 0; }
+.step-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.arr-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  flex-wrap: nowrap;
+}
+.arr-row + .arr-row { margin-top: 3px; }
+/* Generic cell unit */
+.c { display: flex; flex-direction: column; align-items: center; min-width: 38px; }
+.cv { /* value box */
+  width: 38px; height: 38px;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.84rem; font-weight: 600;
+  background: var(--surface2); color: var(--text);
+}
+.ci { font-size: 0.6rem; color: var(--muted); font-family: var(--font-mono); margin-top: 3px; }
+.cp { font-size: 0.7rem; font-weight: 700; font-family: var(--font-mono); margin-top: 3px; min-height: 14px; }
+/* Color variants for cv */
+.cv.lo  { border-color: var(--blue);   background: rgba(96,165,250,0.14); color: var(--blue); }
+.cv.hi  { border-color: var(--accent); background: rgba(124,106,247,0.16); color: var(--accent); }
+.cv.win { border-color: var(--accent2); background: rgba(86,207,178,0.12); }
+.cv.mid { border-color: var(--yellow); background: rgba(251,191,36,0.16); color: var(--yellow); }
+.cv.ok  { border-color: var(--green);  background: rgba(52,211,153,0.14); color: var(--green); }
+.cv.drop{ border-color: var(--red);    background: rgba(248,113,113,0.12); color: var(--red); }
+.cv.dim { color: var(--muted); }
+.cv.ans { border-color: var(--green); background: rgba(52,211,153,0.22); font-weight:800; color: var(--green); }
+/* Color variants for cp pointer labels */
+.cp.l { color: var(--blue); }
+.cp.r { color: var(--accent); }
+.cp.m { color: var(--yellow); }
+.cp.w { color: var(--accent2); }
+/* Invisible spacer cell */
+.cs { min-width: 38px; height: 38px; }
+/* Row separator */
+.arr-sep {
+  border: none; border-top: 1px dashed var(--border);
+  margin: 10px 0;
+}
+
+/* --- Bit grid --- */
+.bit-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 22px;
+  overflow-x: auto;
+  margin: 16px 0 6px;
+}
+.bit-row { display: flex; gap: 3px; align-items: flex-end; margin: 5px 0; }
+.bit-row-lbl {
+  font-size: 0.7rem; color: var(--muted);
+  font-family: var(--font-mono);
+  min-width: 88px; padding-bottom: 8px;
+}
+.bv { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.bv-pos { font-size: 0.56rem; color: var(--muted); font-family: var(--font-mono); }
+.bv-val {
+  width: 34px; height: 34px;
+  border: 1.5px solid var(--border); border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 0.88rem; font-weight: 700;
+  background: var(--surface2);
+}
+.bv-val.on  { border-color: var(--accent); background: rgba(124,106,247,0.2); color: var(--accent); }
+.bv-val.off { color: var(--muted); }
+.bv-val.chg { border-color: var(--red); background: rgba(248,113,113,0.16); color: var(--red); }
+.bv-val.res { border-color: var(--green); background: rgba(52,211,153,0.16); color: var(--green); }
+
+/* --- DP table figures --- */
+.dp-fig {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 16px 0 6px;
+}
+.dp-fig table { margin: 0; font-size: 0.8rem; border-collapse: collapse; }
+.dp-fig td, .dp-fig th {
+  min-width: 34px; height: 34px;
+  text-align: center; padding: 2px 4px;
+  font-family: var(--font-mono); font-size: 0.78rem;
+  border: 1px solid var(--border);
+}
+.dp-fig th { font-size: 0.68rem; color: var(--accent); background: var(--surface2); font-weight: 700; }
+.dp-fig td.hi  { background: rgba(124,106,247,0.18); color: var(--accent); font-weight: 700; }
+.dp-fig td.mat { background: rgba(52,211,153,0.18); color: var(--green); font-weight: 700; }
+.dp-fig td.cur { background: rgba(251,191,36,0.18); color: var(--yellow); font-weight: 700; }
+.dp-fig td.dep { background: rgba(96,165,250,0.14); color: var(--blue); }
+.dp-fig td.dim { color: var(--muted); }
+
+/* --- Legend chips --- */
+.legend {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  margin-top: 10px; font-size: 0.72rem;
+}
+.legend-item { display: flex; align-items: center; gap: 5px; color: var(--muted); }
+.legend-dot {
+  width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
+}

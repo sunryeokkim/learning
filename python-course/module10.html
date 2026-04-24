@@ -65,7 +65,7 @@
 </head>
 <body>
   <nav class="sidebar">
-    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 12 Modules</p></div>
     <div class="sidebar-nav">
       <div class="sidebar-section">Course</div>
       <a href="index.html"><span class="num">🏠</span> Home</a>
@@ -80,6 +80,8 @@
       <a href="module8.html"><span class="num">8</span> Trees</a>
       <a href="module9.html"><span class="num">9</span> Standard Library</a>
       <a href="module10.html" class="active"><span class="num">10</span> Problem Walkthroughs</a>
+      <a href="module11.html"><span class="num">11</span> Expressions &amp; Formulas</a>
+      <a href="module12.html"><span class="num">12</span> More Patterns</a>
     </div>
   </nav>
 
@@ -113,18 +115,27 @@
 
       <div class="thought-process">
         <div class="label">Thought Process</div>
-        <strong>Brute force:</strong> Try every pair (i,j) where i &lt; j. Check if nums[i]+nums[j]==target. O(n²) time.<br><br>
-        <strong>Optimization:</strong> For each number x, we need to find target-x. If we've already seen target-x, we have our answer. Store <em>seen values and their indices</em> in a hash map as we scan. This gives O(n) time.
+        <strong>Brute force:</strong> Try every pair (i,j) where i &lt; j. Check if nums[i]+nums[j]==target. O(n²) time — two nested loops scanning all combinations.<br><br>
+        <strong>Why hash map?</strong> At each element x we know exactly what value we need: <code>target - x</code>. The question becomes "have I seen this value before?" — a hash map answers that in O(1). This reduces two nested loops to a single pass.<br><br>
+        <strong>Why store the index (not the value)?</strong> The problem asks us to return <em>indices</em>, not values. The value is already the key in the map; the index is the payload we need to recover when we find a match.<br><br>
+        <strong>Why check complement BEFORE inserting x?</strong> Consider <code>nums=[3,3], target=6</code>. When we process the second 3 we want to pair it with the first 3 (index 0). If we inserted x first, <code>seen[3]</code> would already be overwritten to index 1, and we'd incorrectly return [1,1] — a single element paired with itself. Checking first and inserting after prevents this.<br><br>
+        <strong>Complexity justification:</strong> Each element is visited once (O(n) iterations); each hash-map lookup and insert is O(1) amortized. Total: O(n) time, O(n) space for the map (worst case we store every element before finding a pair).
       </div>
 
       <pre><code class="language-python">def two_sum(nums, target):
-    seen = {}                       # value → index
+    seen = {}                        # maps value → index of where we last saw it
     for i, x in enumerate(nums):
-        complement = target - x
-        if complement in seen:      # O(1) lookup
+        complement = target - x      # the exact value we need to pair with x to hit target
+        if complement in seen:       # O(1) average — found a valid pair
+            # Return [earlier_index, current_index]; seen[complement] is always < i
+            # because we only store elements we've already passed.
             return [seen[complement], i]
+        # Store AFTER the complement check — this is critical for the edge case
+        # where x + x == target (e.g. nums=[3,3], target=6).  If we stored first,
+        # seen[3] would point to the current index and we'd return [i, i], which
+        # is the same element used twice — an invalid answer.
         seen[x] = i
-    return []
+    return []   # problem guarantees exactly one solution, so this is unreachable
 
 # Time: O(n) | Space: O(n)</code></pre>
     </div>
@@ -144,25 +155,37 @@
 
       <div class="thought-process">
         <div class="label">Thought Process</div>
-        <strong>Key insight:</strong> The answer is some contiguous window of characters. We want the longest window where every character appears at most once.<br><br>
-        <strong>Pattern:</strong> Variable sliding window. Expand right, shrink left when we see a duplicate. Track the last-seen index of each character to jump the left pointer past duplicates in O(1) instead of crawling.
+        <strong>Brute force:</strong> Check all O(n²) substrings, scan each for uniqueness in O(n). Total O(n³). Even with a set, O(n²) time is straightforward but we can do better.<br><br>
+        <strong>Key insight:</strong> The answer is some contiguous window [left, right]. Rather than restarting from scratch, we can <em>slide</em> the window: we never need to move left backwards, so we make a single left-to-right pass.<br><br>
+        <strong>Why hash map instead of set?</strong> A set tells us whether a character is in the window, but not <em>where</em> it is. When we see a repeat we need to jump left directly to one position past the duplicate's index. Storing the index in a map lets us do that in O(1) — no crawling one step at a time.<br><br>
+        <strong>Why the <code>last_seen[c] &gt;= left</code> guard?</strong> The map is never cleared between windows — it accumulates the last index for every character we've ever visited. A character might be in the map from a previous window (index &lt; left) that we already moved past. That stale entry is harmless — the character is not in our current window — and we must <em>not</em> use it to shrink left backwards (that would break the invariant that left only moves right). The guard filters out stale entries so we only act on characters genuinely inside [left, right].<br><br>
+        <strong>Why jump left directly?</strong> If the duplicate was at index p, every window that includes index p is already invalid. Crawling left one step at a time would give the same final position but waste O(window_size) steps. Jumping to p+1 is correct and O(1).<br><br>
+        <strong>Edge cases:</strong> Empty string (loop never runs, best stays 0). All identical chars (every step shrinks left to right, best stays 1). All unique chars (left never moves, best = n).
       </div>
 
       <pre><code class="language-python">def length_of_longest_substring(s):
-    last_seen = {}   # char → last index where we saw it
-    left = best = 0
+    last_seen = {}   # char → most recent index where that char was seen (across all windows)
+    left = 0         # left boundary of the current window (inclusive)
+    best = 0         # length of the longest valid window seen so far
 
     for right, c in enumerate(s):
-        # If c was seen within our current window [left, right], shrink
+        # Two conditions must both be true before we shrink the window:
+        # 1. c appears in the map (we've seen it before)
+        # 2. its last-seen index is >= left (it's actually inside the current window,
+        #    not a stale entry from a previous window we already moved past)
         if c in last_seen and last_seen[c] >= left:
-            left = last_seen[c] + 1   # jump left past the previous occurrence
+            # Jump left directly to one past the duplicate — any window that
+            # includes the old occurrence of c would be invalid.  Jumping is O(1);
+            # crawling one step at a time would be O(window_size) for the same result.
+            left = last_seen[c] + 1
 
-        last_seen[c] = right
-        best = max(best, right - left + 1)
+        last_seen[c] = right                    # record (or overwrite) c's latest index
+        best = max(best, right - left + 1)      # window size = right - left + 1
 
     return best
 
-# Time: O(n) | Space: O(min(n, alphabet_size))</code></pre>
+# Time: O(n) — each character is visited once by 'right'; 'left' only moves rightward.
+# Space: O(min(n, alphabet_size)) — map holds at most one entry per distinct character.</code></pre>
     </div>
 
     <!-- PROBLEM 3 -->
@@ -180,9 +203,13 @@
 
       <div class="thought-process">
         <div class="label">Thought Process</div>
-        <strong>If division allowed:</strong> total_product / nums[i]. But division is banned and nums might have zeros.<br><br>
-        <strong>Key insight:</strong> output[i] = (product of all elements LEFT of i) × (product of all elements RIGHT of i).<br><br>
-        Two passes: pass 1 fills left products, pass 2 multiplies in right products on-the-fly.
+        <strong>Naive — division:</strong> compute total product, then divide by nums[i] for each position. Two problems: (1) division is explicitly banned, and (2) if any element is 0 the total product is 0 and division is undefined (or gives 0/0). You'd need special-case logic for one zero (every output is 0 except at the zero's index) and two zeros (all outputs are 0). Messy and fragile.<br><br>
+        <strong>Brute force — O(n²):</strong> For each index i, multiply all other elements with a nested loop. Correct, but too slow.<br><br>
+        <strong>Key insight:</strong> <code>output[i] = (product of everything LEFT of i) × (product of everything RIGHT of i)</code>. We can compute those two products independently and multiply them together — no division anywhere.<br><br>
+        <strong>Why two passes eliminate the need for a second array:</strong> The naive version of this insight requires two auxiliary arrays (left_products[n] and right_products[n]) plus the result — O(n) extra space. Instead: pass 1 builds left products directly into the result array. Pass 2 maintains a single running <code>right_product</code> variable and multiplies it into result[i] in-place. We never need to store all right products simultaneously — we only need the cumulative product from the right up to the current index.<br><br>
+        <strong>Left_product accumulation pattern:</strong> Before processing index i, <code>left_product</code> holds the product of nums[0..i-1]. We write that into result[i], then update left_product by multiplying nums[i]. The write happens before the multiply — this gives result[i] the product of everything strictly left of i (not including i itself).<br><br>
+        <strong>Edge cases:</strong> Single zero: the zero's position gets the product of all other elements; all other positions get 0. Multiple zeros: all positions get 0 (correct — nothing multiplied by zero is zero). Single element: output is [1] (product of zero other elements is the empty product = 1).<br><br>
+        <strong>Complexity justification:</strong> Two sequential single passes = O(n). The result array is the required output (doesn't count as extra space per the problem statement); the only extra variable is the running product scalar = O(1) additional space.
       </div>
 
       <div class="visual-box">
@@ -204,23 +231,32 @@ Final: [24, 12, 8, 6]  ✓
 
       <pre><code class="language-python">def product_except_self(nums):
     n = len(nums)
-    result = [1] * n
+    result = [1] * n   # will hold the final answer; initialized to 1 (identity for multiplication)
 
-    # Pass 1: result[i] = product of all elements to the LEFT of i
-    left_product = 1
+    # ── Pass 1: build left prefix products ──────────────────────────────────
+    # Invariant: at the start of iteration i, left_product == product(nums[0..i-1])
+    # We write that value into result[i] BEFORE updating left_product with nums[i].
+    # This ensures result[i] holds the product of everything strictly left of i.
+    left_product = 1   # product of elements seen so far (starts as empty product = 1)
     for i in range(n):
-        result[i] = left_product
-        left_product *= nums[i]
+        result[i] = left_product      # record product of nums[0..i-1]
+        left_product *= nums[i]       # now left_product = product(nums[0..i])
 
-    # Pass 2: multiply in product of all elements to the RIGHT of i
-    right_product = 1
+    # After pass 1: result = [1, nums[0], nums[0]*nums[1], ..., nums[0]*…*nums[n-2]]
+
+    # ── Pass 2: multiply in right suffix products ────────────────────────────
+    # We scan right-to-left, maintaining right_product = product(nums[i+1..n-1]).
+    # Multiplying result[i] (which already has the left product) by right_product
+    # gives the final answer for index i.  No second array needed — one scalar suffices.
+    right_product = 1  # product of elements seen so far from the right (starts as empty product = 1)
     for i in range(n - 1, -1, -1):
-        result[i] *= right_product
-        right_product *= nums[i]
+        result[i] *= right_product    # combine: left_product[i] × right_product[i]
+        right_product *= nums[i]      # extend right_product one step to the left
 
     return result
 
-# Time: O(n) | Space: O(1) (result array doesn't count)</code></pre>
+# Time: O(n) — two independent single passes over the array.
+# Space: O(1) extra — only two scalar accumulators; the result array is required output.</code></pre>
     </div>
 
     <!-- PROBLEM 4 -->
@@ -238,22 +274,38 @@ Final: [24, 12, 8, 6]  ✓
 
       <div class="thought-process">
         <div class="label">Thought Process</div>
-        <strong>Key decision at each element:</strong> should we extend the previous subarray or start fresh?<br>
-        Extend if <code>current_sum + nums[i] > nums[i]</code>, which simplifies to <code>current_sum > 0</code>.<br><br>
-        If the running sum ever goes negative, it only hurts us — discard it and start fresh.
+        <strong>Brute force:</strong> Try all O(n²) start/end pairs, compute each subarray sum in O(n). Total O(n³). With prefix sums you can bring subarray-sum queries to O(1), reducing this to O(n²) — still not optimal.<br><br>
+        <strong>DP recurrence in plain English:</strong> Define dp[i] = "the maximum sum of a subarray that ends exactly at index i". For each position i we have exactly two choices: either start a brand-new subarray at i (sum = nums[i]), or extend the best subarray ending at i-1 (sum = dp[i-1] + nums[i]). We take whichever is larger: <code>dp[i] = max(nums[i], dp[i-1] + nums[i])</code>. The answer is max(dp).<br><br>
+        <strong>Why discard a negative prefix?</strong> If dp[i-1] is negative, then dp[i-1] + nums[i] &lt; nums[i]. The previous subarray is a liability — it drags the sum down. Starting fresh at nums[i] is always better. We never gain anything by dragging along a negative running total.<br><br>
+        <strong>Why initialize with nums[0] (not 0 or -infinity)?</strong> The problem guarantees at least one element and asks for the maximum subarray sum — not the maximum non-empty sum that beats 0. If all elements are negative (e.g. [-5,-3,-1]), the answer is -1 (the least-negative element), not 0. Initializing current and best to nums[0] ensures we never incorrectly claim an empty subarray with sum 0 is better.<br><br>
+        <strong>Space optimization:</strong> We only ever reference dp[i-1] when computing dp[i], so we don't need the full dp array — just a single scalar (current). This collapses space from O(n) to O(1).<br><br>
+        <strong>Edge cases:</strong> Single element: the loop body never runs, we return nums[0]. All negative: current resets to each element in turn (since current + x &lt; x when current &lt; 0), best tracks the largest (least negative) element. All positive: current grows monotonically and equals the entire array sum.
       </div>
 
       <pre><code class="language-python">def max_subarray(nums):
+    # Initialize both trackers to nums[0], not 0.
+    # This correctly handles all-negative arrays — the answer is the
+    # largest single element, not 0 (which would imply an empty subarray).
     current = best = nums[0]
+
     for x in nums[1:]:
-        # Either extend previous subarray or start new one at x
+        # DP recurrence: dp[i] = max(nums[i], dp[i-1] + nums[i])
+        # In words: start fresh at x, or extend the previous subarray.
+        # If current < 0, current + x < x, so we always start fresh
+        # when the running sum has gone negative (a negative prefix only hurts us).
         current = max(x, current + x)
-        best = max(best, current)
+
+        best = max(best, current)   # track the global best across all ending positions
+
     return best
 
-# DP perspective: dp[i] = max sum ending at index i
-# dp[i] = max(nums[i], dp[i-1] + nums[i])
-# Time: O(n) | Space: O(1)</code></pre>
+# DP perspective (written out explicitly):
+#   dp[i] = max sum of subarray ending at index i
+#   dp[i] = max(nums[i], dp[i-1] + nums[i])
+#   answer = max(dp[0], dp[1], ..., dp[n-1])
+#
+# We compress dp[] → single variable 'current' because dp[i] depends only on dp[i-1].
+# Time: O(n) — single pass | Space: O(1) — two scalars</code></pre>
     </div>
 
     <!-- PROBLEM 5 -->
@@ -270,31 +322,50 @@ Final: [24, 12, 8, 6]  ✓
 
       <div class="thought-process">
         <div class="label">Thought Process</div>
-        This is exactly "count connected components" on a grid graph. For each unvisited land cell, do a DFS/BFS to mark the entire connected component as visited. Count how many times we start a new DFS.
+        <strong>Graph framing:</strong> Treat every '1' cell as a node; add edges between horizontally or vertically adjacent '1' cells. The problem becomes "count connected components in an undirected graph." BFS or DFS both work — each traversal from an unvisited node explores exactly one component.<br><br>
+        <strong>Why mutate the grid ('1' → '0') instead of a separate visited set?</strong> Using a separate boolean grid costs O(m*n) extra space. Setting cells to '0' directly reuses the grid as the visited structure — O(1) extra space. This is a standard competitive-programming trick ("flood fill" / "sink the island"). The input grid is treated as mutable; if that's unacceptable in a real system, use a visited set instead.<br><br>
+        <strong>What happens when multiple DFS calls meet at a boundary?</strong> They can't — once cell (r,c) is set to '0' by the first DFS that reaches it, any subsequent DFS checking that cell will see '0' and return immediately (the base-case guard <code>grid[r][c] != '1'</code>). There is no double-counting or conflict.<br><br>
+        <strong>Recursive DFS stack depth risk:</strong> The call stack can go as deep as the number of cells in a connected component — up to m*n in the worst case (one giant island). Python's default recursion limit is 1000 (adjustable with <code>sys.setrecursionlimit</code>). For very large grids this risks a <code>RecursionError</code>. An iterative BFS/DFS with an explicit queue/stack eliminates this risk entirely at the cost of slightly more code.<br><br>
+        <strong>Complexity justification:</strong> Every cell is visited at most twice — once by the outer loop, and once (possibly) by a DFS from a neighboring cell, which immediately returns because the cell was already sunk. Total work is O(m*n). Recursion stack depth is O(m*n) worst case (all land, one component).
       </div>
 
       <pre><code class="language-python">def num_islands(grid):
     if not grid: return 0
-    rows, cols = len(grid), len(grid[0])
+    rows, cols = len(grid), len(grid[0])   # grid dimensions
 
     def dfs(r, c):
-        # Base cases: out of bounds or water or already visited
+        # Base cases — stop recursion if:
+        #   1. We've gone out of bounds (hit the grid edge)
+        #   2. The current cell is water ('0')
+        #   3. The current cell was already visited (previously sunk to '0')
+        # Cases 2 and 3 are handled by the same check because we use '0' as
+        # our "visited" marker — mutating the grid avoids a separate visited set.
         if r < 0 or r >= rows or c < 0 or c >= cols or grid[r][c] != '1':
             return
-        grid[r][c] = '0'    # mark as visited (sink the island)
-        dfs(r+1, c); dfs(r-1, c)
-        dfs(r, c+1); dfs(r, c-1)
+
+        # Mark this land cell as visited by "sinking" it.
+        # Any future DFS arriving here (from a neighbor) will see '0' and return.
+        # This is safe because a cell in the same connected component should not
+        # be counted as a separate island start — the outer loop checks for '1'.
+        grid[r][c] = '0'
+
+        # Recurse into all 4-directional neighbors.
+        # The base-case guard above handles boundary checks — no need to check here.
+        dfs(r+1, c); dfs(r-1, c)   # down, up
+        dfs(r, c+1); dfs(r, c-1)   # right, left
 
     islands = 0
     for r in range(rows):
         for c in range(cols):
-            if grid[r][c] == '1':
-                dfs(r, c)       # DFS marks entire island as visited
-                islands += 1
+            if grid[r][c] == '1':   # found an unvisited land cell — new island
+                dfs(r, c)           # DFS sinks all cells in this connected component
+                islands += 1        # increment only once per connected component
 
     return islands
 
-# Time: O(rows * cols) | Space: O(rows * cols) for recursion stack</code></pre>
+# Time: O(rows * cols) — each cell is visited at most a constant number of times.
+# Space: O(rows * cols) worst case for the recursion stack (one giant island).
+#        Use iterative BFS to avoid Python's recursion limit on large grids.</code></pre>
     </div>
 
     <!-- PROBLEM 6 -->
@@ -312,40 +383,54 @@ Final: [24, 12, 8, 6]  ✓
 
       <div class="thought-process">
         <div class="label">Thought Process</div>
-        <strong>State:</strong> Can we segment <code>s[i:]</code>?<br>
-        <strong>Transition:</strong> For each word in the dictionary, if <code>s[i:i+len(word)] == word</code>, then check if <code>s[i+len(word):]</code> can be segmented.<br>
-        <strong>Base case:</strong> Empty string → True. With memoization, each index is computed once.
+        <strong>Brute force — recursion without memo:</strong> At each index i, try every word in wordDict. If the word matches s[i:i+len(word)], recurse from i+len(word). Exponential in the worst case — the same suffix is recomputed many times.<br><br>
+        <strong>Why DP?</strong> The problem has optimal substructure: s can be broken if and only if some prefix is a word AND the rest can be broken. It also has overlapping subproblems: whether s[5:] can be broken is asked many times from different starting splits. DP (or memoization) ensures each index is computed exactly once.<br><br>
+        <strong>DP state definition:</strong> <code>dp[i]</code> = True means "the first i characters of s (i.e. s[0:i]) can be segmented into dictionary words." The index represents how many characters we've successfully processed, not a position in the string.<br><br>
+        <strong>Why dp[0] = True?</strong> dp[0] represents the empty string — zero characters consumed. An empty string trivially can be segmented (with zero words). This base case is essential: when j=0 in the inner loop, dp[j] must be True so that s[0:i] can be considered as a single word starting from the beginning.<br><br>
+        <strong>Why inner loop goes j from 0 to i?</strong> We're trying all possible positions where the last word in the segmentation could start. If dp[j] is True (s[0:j] is segmentable) AND s[j:i] is in wordDict, then s[0:i] is also segmentable. We try every possible split point j to cover all dictionary words that could end at position i.<br><br>
+        <strong>Why <code>set(wordDict)</code>?</strong> wordDict is a list — membership testing is O(len(wordDict)). Converting to a set makes each lookup O(1) on average. Without this, the inner loop becomes O(n * |wordDict|) per outer iteration instead of O(n).<br><br>
+        <strong>Edge cases:</strong> Empty string (dp[0]=True, dp[n]=dp[0]=True → returns True). Word longer than s (s[j:i] never matches, dp stays False). Duplicate words in wordDict (set handles deduplication automatically).
       </div>
 
       <pre><code class="language-python">def word_break(s, wordDict):
-    word_set = set(wordDict)    # O(1) lookup
+    word_set = set(wordDict)    # convert list to set for O(1) average membership test
+                                # without this, `s[j:i] in wordDict` is O(|wordDict|) per check
     n = len(s)
-    dp = [False] * (n + 1)
-    dp[0] = True                # empty string can always be segmented
+    dp = [False] * (n + 1)     # dp[i] = True means s[0:i] can be segmented into dict words
+    dp[0] = True                # base case: the empty string is always "segmented" (zero words)
+                                # this seed is critical — without it, no valid split starting at
+                                # index 0 could ever be recognized
 
-    for i in range(1, n + 1):
-        for j in range(i):
-            if dp[j] and s[j:i] in word_set:   # s[0..j-1] ok, and s[j..i-1] is a word
+    for i in range(1, n + 1):          # i = number of characters we're trying to cover
+        for j in range(i):             # j = candidate start of the final word in this segment
+            # dp[j]: s[0:j] is already confirmed segmentable
+            # s[j:i] in word_set: the remaining slice is a valid dictionary word
+            # Together: s[0:i] can be segmented as s[0:j] + s[j:i]
+            if dp[j] and s[j:i] in word_set:
                 dp[i] = True
-                break           # found a valid split — no need to keep looking
+                break           # one valid split is enough — no need to find all of them
 
-    return dp[n]
+    return dp[n]   # has the entire string been successfully segmented?
 
-# Alternatively, with @cache (top-down):
+# ── Alternatively, with @cache (top-down memoization) ─────────────────────────
 from functools import cache
 
 def word_break_memo(s, wordDict):
     word_set = set(wordDict)
-    @cache
+    @cache                      # Python 3.9+ — memoizes can_break(i) results
     def can_break(i):
-        if i == len(s): return True
+        if i == len(s): return True     # consumed all characters — success
         for word in word_set:
-            if s[i:i+len(word)] == word and can_break(i + len(word)):
+            end = i + len(word)
+            # Check if the word fits and matches; then recurse on the remainder.
+            # Short-circuit evaluation: s[i:end] == word is checked only if end <= len(s)
+            if s[i:end] == word and can_break(end):
                 return True
-        return False
-    return can_break(0)
+        return False            # no word starting at i leads to a valid segmentation
+    return can_break(0)         # start from index 0 (beginning of string)
 
-# Time: O(n² * max_word_len) | Space: O(n)</code></pre>
+# Time: O(n² * max_word_len) — n² subproblems, each doing O(n) string slicing
+# Space: O(n) — dp array or memoization cache of size n+1</code></pre>
     </div>
 
     <!-- PROBLEM 7 -->
@@ -362,9 +447,11 @@ def word_break_memo(s, wordDict):
 
       <div class="thought-process">
         <div class="label">Thought Process</div>
-        <strong>Naive:</strong> Merge lists two at a time → O(kN) total where N = total nodes.<br><br>
-        <strong>Heap approach:</strong> The next element to add to the merged list is always the smallest among the current heads of all k lists. Use a min-heap to find this in O(log k). Total: O(N log k).<br><br>
-        <strong>Python trap:</strong> Heap compares nodes, but ListNode has no comparison operator. Use <code>(val, tie_breaker, node)</code> to avoid comparisons between ListNode objects.
+        <strong>Naive — sequential merge:</strong> Merge list 2 into list 1, then merge list 3 into the result, and so on. Each two-list merge costs O(a+b) where a,b are the list lengths. In the worst case (all lists same length L, so N=kL), the first merge produces a list of 2L, the second of 3L, etc. Total work: 2L + 3L + … + kL = O(k²L) = O(kN). Fine for small k, but quadratic in k.<br><br>
+        <strong>Why a min-heap?</strong> At any moment, the next node to append is the minimum among the current heads of all k remaining lists. A min-heap answers "which is the smallest?" in O(log k) and "remove the smallest / insert new element" also in O(log k). Total: O(N log k) — we do N heap operations, each costing O(log k) because the heap has at most k elements.<br><br>
+        <strong>Why counter as tie-breaker?</strong> Python's heapq compares tuple elements left-to-right. If two nodes have equal values, it tries to compare the second tuple element. We store <code>(val, counter, node)</code>. If val ties, it compares counter — a unique monotonically increasing integer — so it never reaches the third element (node). Without counter, Python would attempt <code>node1 &lt; node2</code>; ListNode defines no <code>__lt__</code>, so Python raises a <code>TypeError</code> at runtime. Counter is the minimal fix — it costs no extra space (one integer) and always breaks ties deterministically.<br><br>
+        <strong>Why push node.next instead of refilling the heap?</strong> Each linked list is a chain — once we consume a node, the natural "next candidate" from that list is node.next. Pushing node.next keeps exactly one representative per non-exhausted list in the heap at all times. The heap never grows beyond k elements. If we tried to pre-push all N nodes upfront, we'd use O(N) space.<br><br>
+        <strong>Edge cases:</strong> Empty lists input (no pushes, dummy.next is None → return None). Some lists are None/empty (the initial <code>if node</code> guard skips them). k=1 (heap pops all nodes sequentially — correct but O(N log 1) = O(N)).
       </div>
 
       <pre><code class="language-python">import heapq
@@ -375,26 +462,39 @@ class ListNode:
         self.next = next
 
 def merge_k_lists(lists):
-    heap = []
-    counter = 0   # tie-breaker — prevents comparing ListNode objects
+    heap = []     # min-heap of (value, tie_breaker, node); at most k elements at any time
+    counter = 0   # monotonically increasing integer; used as tie-breaker when values are equal
+                  # prevents Python from comparing ListNode objects (which have no __lt__)
+                  # and raising TypeError
 
+    # Seed the heap with the head of each non-empty list.
+    # We only push one node per list — the smallest node in each list is at the head
+    # because each input list is already sorted.
     for node in lists:
         if node:
             heapq.heappush(heap, (node.val, counter, node))
             counter += 1
 
+    # Dummy head node — lets us avoid special-casing the first node.
+    # curr tracks the tail of the merged list we're building.
     dummy = curr = ListNode(0)
+
     while heap:
-        val, _, node = heapq.heappop(heap)
-        curr.next = node
-        curr = curr.next
+        val, _, node = heapq.heappop(heap)  # extract the globally smallest current head
+        curr.next = node                     # append it to the merged list
+        curr = curr.next                     # advance the tail pointer
+
+        # If this node has a successor, push it onto the heap.
+        # This keeps exactly one representative per non-exhausted input list in the heap,
+        # so heap size never exceeds k.  We push AFTER popping — the heap stays at most k.
         if node.next:
             heapq.heappush(heap, (node.next.val, counter, node.next))
             counter += 1
 
-    return dummy.next
+    return dummy.next   # skip the dummy sentinel; return the real head of the merged list
 
-# Time: O(N log k) | Space: O(k) — heap holds at most k elements</code></pre>
+# Time: O(N log k) — N total nodes, each pushed/popped once; heap ops cost O(log k)
+# Space: O(k) — heap holds at most k elements simultaneously</code></pre>
     </div>
 
     <!-- PROBLEM 8 -->
@@ -411,35 +511,52 @@ def merge_k_lists(lists):
 
       <div class="thought-process">
         <div class="label">Thought Process</div>
-        This is topological sort on a directed graph where edges point from prerequisite to dependent. If there's a cycle, no ordering exists → return []. Use Kahn's algorithm: process nodes with in-degree 0 first, decrement neighbors' in-degrees, add them when they reach 0.
+        <strong>Graph framing:</strong> Model courses as nodes and prerequisites as directed edges (prerequisite → dependent). A valid course order = a topological ordering of this DAG. If the graph has a cycle, no topological ordering exists — at least one course would require itself (directly or transitively) to already be completed.<br><br>
+        <strong>What does in-degree represent physically?</strong> In-degree of node X = the number of courses that must be completed before X. A course with in-degree 0 has no remaining prerequisites — it is ready to take right now. In-degree is the concrete, countable measure of "how many blockers does this course still have?"<br><br>
+        <strong>Why process in-degree-0 nodes first?</strong> They are the only courses we can legally take given the current state of completions. Taking one of them reduces its dependents' in-degrees — some dependents may reach 0 and become newly available. Kahn's algorithm is essentially a BFS that processes "unblocked" nodes wave by wave.<br><br>
+        <strong>Why does output length &lt; n indicate a cycle?</strong> In a DAG, every node eventually reaches in-degree 0 as its prerequisites are processed. In a graph with a cycle, the nodes in the cycle never reach in-degree 0 (each one still depends on another node in the cycle). They can never be added to the queue. The BFS terminates with those nodes unprocessed — the output is shorter than n. This is a clean, elegant cycle-detection side effect of Kahn's algorithm — no separate DFS needed.<br><br>
+        <strong>Edge cases:</strong> No prerequisites (all in-degrees are 0; any permutation of 0..n-1 is valid). Self-loop <code>[a,a]</code> (in-degree of a starts at 1, never reaches 0 → empty output). All courses form one cycle → empty output.<br><br>
+        <strong>Complexity justification:</strong> Building the graph: O(E). Initial queue: O(V). BFS: each node is enqueued/dequeued once O(V); each edge is examined once when its source is dequeued O(E). Total O(V+E).
       </div>
 
       <pre><code class="language-python">from collections import defaultdict, deque
 
 def find_order(n, prerequisites):
+    # Build adjacency list: graph[prereq] = list of courses that require prereq
+    # Edge direction: prereq → dependent (taking prereq "unlocks" the dependent)
     graph = defaultdict(list)
+
+    # in-degree[i] = number of prerequisites course i still needs
+    # equivalently: number of incoming edges to node i in the directed graph
     indegree = [0] * n
 
     for course, prereq in prerequisites:
-        graph[prereq].append(course)
-        indegree[course] += 1
+        graph[prereq].append(course)   # prereq must come before course
+        indegree[course] += 1          # course has one more blocker
 
-    # Start with courses that have no prerequisites
+    # Seed the BFS with all courses that have zero remaining prerequisites.
+    # These are the only courses we can legally take at the start.
     queue = deque([i for i in range(n) if indegree[i] == 0])
-    order = []
+    order = []   # topological ordering built up as we process nodes
 
     while queue:
-        course = queue.popleft()
-        order.append(course)
+        course = queue.popleft()    # take a course that is now unblocked
+        order.append(course)        # add it to the valid ordering
+
         for dependent in graph[course]:
+            # Completing 'course' removes one prerequisite from each dependent.
             indegree[dependent] -= 1
+            # If the dependent now has zero remaining prerequisites, it's ready.
             if indegree[dependent] == 0:
                 queue.append(dependent)
 
-    # If we processed all courses, a valid order exists; otherwise, cycle
+    # If order contains all n courses, we successfully ordered them → valid DAG.
+    # If order is shorter, some courses were never unblocked → they're in a cycle.
+    # Nodes in a cycle never reach in-degree 0, so they are never enqueued.
     return order if len(order) == n else []
 
-# Time: O(V + E) | Space: O(V + E)</code></pre>
+# Time: O(V + E) — each node and edge processed exactly once
+# Space: O(V + E) — graph storage + indegree array + queue + output</code></pre>
     </div>
 
     <!-- PROBLEM 9 -->
@@ -457,8 +574,13 @@ def find_order(n, prerequisites):
 
       <div class="thought-process">
         <div class="label">Thought Process</div>
-        <strong>Key insight:</strong> Water at position i = min(max_height_left[i], max_height_right[i]) - height[i].<br><br>
-        <strong>Two-pointer optimization:</strong> We don't need to precompute both prefix arrays. Maintain a left_max and right_max. The side with the smaller max is the bottleneck — process it and advance that pointer.
+        <strong>Brute force:</strong> For each position i, scan left to find max height, scan right to find max height, compute water = min(left_max, right_max) - height[i]. O(n²) time.<br><br>
+        <strong>Prefix-max arrays:</strong> Precompute left_max[i] (max height from 0 to i) and right_max[i] (max height from i to n-1) in two passes. Then water[i] = max(0, min(left_max[i], right_max[i]) - height[i]). O(n) time, O(n) space.<br><br>
+        <strong>The key observation (why min?):</strong> Water cannot rise above the shorter of the two walls on either side. If the left wall is 3 and the right wall is 5, water at i can only be as deep as 3 (the shorter one) minus the bar height at i. The taller wall provides more than enough support — only the shorter wall is the limiting factor.<br><br>
+        <strong>Why the side with smaller max is safe to process?</strong> Suppose left_max &lt; right_max. We know for certain that there exists some bar to the right that is at least as tall as right_max (&gt; left_max). Therefore, water at the left pointer is definitively bounded by left_max (not the right side). We don't need to know exactly where the right wall is — just that it's tall enough. This lets us process the left side confidently and advance the left pointer.<br><br>
+        <strong>Why update max BEFORE computing water?</strong> If height[l] is taller than left_max, the current bar is itself a wall — water cannot pool here (water = max - height would be zero or negative). We update left_max first so that left_max always represents the true maximum up to and including the current bar. Computing water first and then updating would give a negative water amount for the tallest bars seen so far.<br><br>
+        <strong>Two-pointer optimization (O(1) space):</strong> We never need both prefix arrays stored simultaneously. At any point we only need left_max and right_max — the running maximums for the left and right pointers. The two pointers converge inward, and at each step we process whichever side has the smaller max (the safe-to-process side).<br><br>
+        <strong>Loop termination:</strong> The loop ends when l == r (pointers meet). At that point every cell has been processed exactly once — each pointer moves inward by one step per iteration.
       </div>
 
       <div class="visual-box">
@@ -472,27 +594,44 @@ Symmetric for the right side.
 
       <pre><code class="language-python">def trap(height):
     if not height: return 0
-    l, r = 0, len(height) - 1
-    left_max = right_max = 0
-    water = 0
+    l, r = 0, len(height) - 1   # two pointers starting at opposite ends
+    left_max = right_max = 0    # running maximums: tallest bar seen from the left/right so far
+    water = 0                   # accumulated trapped water
 
+    # Loop invariant: every index outside [l, r] has already been fully processed.
+    # Termination: l and r converge; loop ends when they meet (l == r).
     while l < r:
-        if height[l] <= height[r]:          # left side is the bottleneck
+        if height[l] <= height[r]:
+            # Left side is the bottleneck — left_max is the limiting wall.
+            # We know right_max >= height[r] >= height[l] >= left_max's candidate,
+            # so the right side is guaranteed tall enough; only left_max matters here.
+
+            # IMPORTANT: update left_max BEFORE computing water.
+            # If height[l] is a new tallest bar, left_max rises to meet it — this bar
+            # is a wall, not a basin.  Water would be left_max - left_max = 0.
+            # Updating first avoids a negative water calculation.
             if height[l] >= left_max:
-                left_max = height[l]         # update max, no water here
+                left_max = height[l]         # new left wall found; no water trapped here
             else:
-                water += left_max - height[l]  # water = max - current height
-            l += 1
-        else:                               # right side is the bottleneck
+                # Current bar is shorter than the left wall — water pools here.
+                # Amount = left_max (ceiling from the left) - height[l] (floor).
+                # We trust the right side is at least left_max tall (from the condition above).
+                water += left_max - height[l]
+            l += 1   # advance the left pointer inward
+
+        else:
+            # Symmetric case: right side is the bottleneck.
+            # height[r] < height[l], so right_max is the limiting wall.
             if height[r] >= right_max:
-                right_max = height[r]
+                right_max = height[r]        # new right wall found; no water trapped here
             else:
-                water += right_max - height[r]
-            r -= 1
+                water += right_max - height[r]   # water pools in the right-side basin
+            r -= 1   # advance the right pointer inward
 
     return water
 
-# Time: O(n) | Space: O(1)</code></pre>
+# Time: O(n) — each element visited once; l and r each move inward n/2 steps total.
+# Space: O(1) — only four scalar variables regardless of input size.</code></pre>
     </div>
 
     <!-- PROBLEM 10 -->
@@ -510,30 +649,51 @@ Symmetric for the right side.
 
       <div class="thought-process">
         <div class="label">Thought Process</div>
-        <strong>Brute force:</strong> Check all O(n²) substrings → O(n³).<br><br>
-        <strong>DP approach:</strong> dp[i][j] = True if s[i..j] is palindrome. O(n²) time and space.<br><br>
-        <strong>Expand around center:</strong> Every palindrome has a center (single char or two equal chars). Expand outward while chars match. O(n²) time, O(1) space — preferred.
+        <strong>Brute force:</strong> Generate all O(n²) substrings, check each for palindrome property in O(n). Total O(n³).<br><br>
+        <strong>DP approach:</strong> Define dp[i][j] = True if s[i..j] is a palindrome. Recurrence: dp[i][j] = (s[i] == s[j]) AND dp[i+1][j-1]. Fill the table from shorter substrings to longer. O(n²) time and O(n²) space — correct, but the space is often unnecessary.<br><br>
+        <strong>Why center expansion covers ALL palindromes:</strong> Every palindrome has exactly one center — either a single character (odd length, e.g. "aba" centers on 'b') or a pair of equal characters (even length, e.g. "abba" centers on "bb"). No palindrome can exist without a center. Therefore, trying every possible center (2n-1 centers: n single chars + n-1 adjacent pairs) and expanding is guaranteed to find the longest one. We miss nothing.<br><br>
+        <strong>Why two expand calls per index?</strong> Odd-length palindromes have a single character center (l == r). Even-length palindromes have a two-character center (l and r = l+1 must be equal). These are fundamentally different structures — a single expand call starting at (i, i) will only find odd-length palindromes. The second call at (i, i+1) catches even-length ones. Both calls are needed to be exhaustive.<br><br>
+        <strong>Why nonlocal?</strong> Python closures can read variables from enclosing scopes but cannot rebind them (assign to them) without declaration. <code>start</code> and <code>length</code> are defined in the enclosing function's scope. Without <code>nonlocal start, length</code>, the assignment <code>start = l</code> inside expand would create a new local variable named start, shadowing the outer one — the outer start would never be updated. <code>nonlocal</code> tells Python "these names refer to the enclosing scope's variables, not new locals."<br><br>
+        <strong>Complexity justification:</strong> There are 2n-1 centers. For each center, expansion runs at most n/2 steps before hitting a mismatch or a boundary. Total iterations: O(n * n/2) = O(n²). No auxiliary data structures — space is O(1) (just two integer variables start and length).<br><br>
+        <strong>Edge cases:</strong> Single character (expand(0,0) runs one iteration, length=1). All identical characters (expansion always succeeds; the center at the midpoint expands to cover the full string). Two characters, different (expand(0,1) fails immediately; answer is either char, length=1).
       </div>
 
       <pre><code class="language-python">def longest_palindrome(s):
-    start = length = 0
+    start = 0    # starting index of the longest palindrome found so far
+    length = 0   # length of the longest palindrome found so far
 
     def expand(l, r):
+        # nonlocal is required because we ASSIGN to start and length (not just read them).
+        # Without it, Python would create new local variables inside expand, and the
+        # outer start/length would never be updated — the function would always return s[0:0].
         nonlocal start, length
+
+        # Expand outward as long as:
+        #   1. l hasn't gone past the left boundary
+        #   2. r hasn't gone past the right boundary
+        #   3. the characters at both ends match (palindrome property)
+        # Loop invariant: s[l..r] is a palindrome at the start of each iteration.
         while l >= 0 and r < len(s) and s[l] == s[r]:
-            if r - l + 1 > length:
-                start = l
-                length = r - l + 1
-            l -= 1
-            r += 1
+            if r - l + 1 > length:   # found a new longest palindrome
+                start = l            # record where it starts
+                length = r - l + 1   # record its length
+            l -= 1   # expand one step to the left
+            r += 1   # expand one step to the right
 
     for i in range(len(s)):
-        expand(i, i)       # odd-length palindromes (center at i)
-        expand(i, i + 1)   # even-length palindromes (center between i and i+1)
+        # Call 1: odd-length palindromes — center is the single character at index i.
+        # Starting with l=r=i means s[i..i] (length 1) is trivially a palindrome.
+        expand(i, i)
 
-    return s[start:start + length]
+        # Call 2: even-length palindromes — center is between index i and i+1.
+        # Starting with l=i, r=i+1 checks if s[i]==s[i+1] before expanding further.
+        # If they don't match, the while condition fails immediately (no work wasted).
+        expand(i, i + 1)
 
-# Time: O(n²) | Space: O(1)
+    return s[start:start + length]   # slice out the longest palindromic substring
+
+# Time: O(n²) — 2n-1 centers, each expands at most O(n) steps in total.
+# Space: O(1) — only two integer variables; no auxiliary arrays needed.
 
 # ── Pattern Recognition Summary ──────────────────────────────
 # Here's the decision tree for choosing an approach:
@@ -583,9 +743,9 @@ Symmetric for the right side.
         <span class="nav-dir">← Previous</span>
         <span class="nav-title">Standard Library</span>
       </a>
-      <a href="index.html" class="nav-btn next">
-        <span class="nav-dir">↩ Back to</span>
-        <span class="nav-title">Course Home</span>
+      <a href="module11.html" class="nav-btn next">
+        <span class="nav-dir">Next →</span>
+        <span class="nav-title">Expressions & Formulas</span>
       </a>
     </div>
   </main>

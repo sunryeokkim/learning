@@ -11,7 +11,7 @@
 </head>
 <body>
   <nav class="sidebar">
-    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 12 Modules</p></div>
     <div class="sidebar-nav">
       <div class="sidebar-section">Course</div>
       <a href="index.html"><span class="num">🏠</span> Home</a>
@@ -26,6 +26,8 @@
       <a href="module8.html"><span class="num">8</span> Trees</a>
       <a href="module9.html"><span class="num">9</span> Standard Library</a>
       <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+      <a href="module11.html"><span class="num">11</span> Expressions &amp; Formulas</a>
+      <a href="module12.html"><span class="num">12</span> More Patterns</a>
     </div>
   </nav>
 
@@ -39,6 +41,10 @@
     <!-- ===== BINARY SEARCH ===== -->
     <h2>Binary Search</h2>
     <p>Binary search finds a target in a <strong>sorted array</strong> in O(log n) time by repeatedly halving the search space. The key insight: after every comparison, you can eliminate half the remaining candidates.</p>
+    <p><strong>Recognition signals:</strong> The problem says "sorted array", "find in O(log n)", or the input is clearly ordered (rotated, range of integers, etc.). Also watch for "minimum/maximum value satisfying a condition" — that is binary search on the answer in disguise.</p>
+    <p><strong>Key insight / invariant:</strong> At every point in the algorithm, if <code>target</code> exists in the array it must be in <code>arr[lo..hi]</code>. Each iteration provably shrinks that window by at least half. When <code>lo &gt; hi</code> the window is empty, proving the target is absent.</p>
+    <p><strong>Why sorted is required:</strong> The decision "go left or go right" depends on comparing <code>arr[mid]</code> to <code>target</code>. That comparison is only meaningful when the array is ordered — in an unsorted array, a larger value at <code>mid</code> tells you nothing about which side holds the target.</p>
+    <p><strong>Pitfall:</strong> Binary search is only correct on truly sorted (or monotone) data. Applying it to an unsorted array silently produces wrong answers with no error.</p>
 
     <div class="visual-box">
       <div class="label">Binary search trace — finding 7 in [1,3,5,7,9,11,13]</div>
@@ -54,19 +60,23 @@ Step 3: lo=4, hi=4, mid=4, arr[4]=9 == 9 → FOUND at index 4
     </div>
 
     <h3>The Template — Exact Search</h3>
+    <p><strong>Why <code>&lt;=</code> in the while condition:</strong> Both bounds are <em>inclusive</em>, so a single-element window (<code>lo == hi</code>) is still a valid, unexamined candidate. Using <code>&lt;</code> would skip that last element and miss targets at the final position.</p>
+    <p><strong>Why <code>mid + 1</code> and <code>mid - 1</code> (not <code>mid</code>):</strong> We already know <code>arr[mid] != target</code> at the point we update <code>lo</code> or <code>hi</code>, so <code>mid</code> itself can be safely excluded. Including <code>mid</code> in the next window would not cause a wrong answer here, but it could create an infinite loop in variants where <code>mid</code> is kept (see the "Find First True" template).</p>
+    <p><strong>What happens on exit:</strong> The loop exits when <code>lo &gt; hi</code>, which means the search window is empty — every element has been eliminated. Returning <code>-1</code> at that point is correct by the invariant.</p>
     <pre><code class="language-python">def binary_search(arr, target):
-    lo, hi = 0, len(arr) - 1
+    lo, hi = 0, len(arr) - 1   # both bounds inclusive; search space is arr[lo..hi]
+    # Invariant: if target exists in arr, it is within arr[lo..hi]
 
-    while lo <= hi:           # <= because single-element ranges are valid
-        mid = (lo + hi) // 2  # no overflow in Python (arbitrary int)
+    while lo <= hi:             # <= because a window of size 1 (lo==hi) is still valid
+        mid = (lo + hi) // 2   # integer midpoint; Python ints never overflow
         if arr[mid] == target:
-            return mid
+            return mid          # found — exact match; invariant satisfied trivially
         elif arr[mid] < target:
-            lo = mid + 1      # target is in the right half
+            lo = mid + 1        # arr[mid] too small; exclude mid and everything left of it
         else:
-            hi = mid - 1      # target is in the left half
-
-    return -1   # target not found</code></pre>
+            hi = mid - 1        # arr[mid] too large; exclude mid and everything right of it
+    # Loop exits when lo > hi — search space is empty; target is not present
+    return -1</code></pre>
 
     <div class="callout info">
       <div class="callout-icon">ℹ️</div>
@@ -78,97 +88,190 @@ Step 3: lo=4, hi=4, mid=4, arr[4]=9 == 9 → FOUND at index 4
 
     <h3>Leftmost / Rightmost Insertion — bisect_left and bisect_right</h3>
     <p>These are the most important binary search variants. They find the leftmost or rightmost position where you could insert <code>target</code> while keeping the array sorted.</p>
+    <p><strong>Mental model for bisect_left:</strong> Imagine sliding a card labelled <code>target</code> from the left into the sorted deck. Stop at the first position where inserting it keeps the deck sorted — that is the leftmost position where <code>arr[i] &gt;= target</code>. All indices to the left have strictly smaller values.</p>
+    <p><strong>Mental model for bisect_right:</strong> Same card, but push it as far right as possible before the order breaks — stop at the first position where <code>arr[i] &gt; target</code>. All indices to the left have values <code>&lt;= target</code>.</p>
+    <p><strong>Counting occurrences:</strong> Because <code>bisect_left</code> marks the start and <code>bisect_right</code> marks one-past-the-end of the run of equal values, their difference is exactly the count of occurrences. This is O(log n) versus O(n) for a linear scan.</p>
+    <p><strong>Pitfall:</strong> After <code>bisect_left</code>, always guard with <code>i &lt; len(arr) and arr[i] == target</code> before concluding the value is present — the function returns a valid insertion index even when the target is absent.</p>
+
+    <div class="fig">
+      <div class="arr-wrap">
+        <div class="step-label">arr = [1, 3, 3, 3, 5, 7] — searching for target = 3</div>
+        <div class="arr-row">
+          <div style="min-width:10px"></div>
+          <div class="c"><div class="cv">1</div><div class="ci">0</div></div>
+          <div class="c"><div class="cv mid">3</div><div class="ci">1</div></div>
+          <div class="c"><div class="cv mid">3</div><div class="ci">2</div></div>
+          <div class="c"><div class="cv mid">3</div><div class="ci">3</div></div>
+          <div class="c"><div class="cv">5</div><div class="ci">4</div></div>
+          <div class="c"><div class="cv">7</div><div class="ci">5</div></div>
+          <div class="c" style="min-width:20px;align-items:flex-start">
+            <div style="width:2px;height:38px;background:var(--border);border-radius:1px"></div>
+            <div class="ci">6 (end)</div>
+          </div>
+        </div>
+        <div class="arr-row" style="margin-top:6px">
+          <div style="min-width:10px"></div>
+          <div class="cs"></div>
+          <div class="c"><div class="cp l">↑ L</div></div>
+          <div class="cs"></div>
+          <div class="c"></div>
+          <div class="c"><div class="cp r">↑ R</div></div>
+          <div class="cs"></div>
+          <div class="c" style="min-width:20px"></div>
+        </div>
+        <hr class="arr-sep">
+        <div style="font-family:var(--font-mono);font-size:0.82rem;display:flex;gap:24px;flex-wrap:wrap">
+          <span><span style="color:var(--blue)">bisect_left (arr, 3)</span> → <span style="color:var(--blue)">1</span>&nbsp; insert <em>before</em> the first 3</span>
+          <span><span style="color:var(--accent)">bisect_right(arr, 3)</span> → <span style="color:var(--accent)">4</span>&nbsp; insert <em>after</em>  the last 3</span>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--muted);margin-top:8px">
+          Count of 3s = bisect_right − bisect_left = 4 − 1 = 3  ✓
+        </div>
+      </div>
+      <div class="fig-caption"><code>bisect_left</code> gives the leftmost valid insertion index; <code>bisect_right</code> gives the rightmost. Their difference is the count of occurrences of target.</div>
+    </div>
+
     <pre><code class="language-python">import bisect
 
 arr = [1, 3, 3, 3, 5, 7]
 #      0  1  2  3  4  5
 
 # bisect_left — leftmost position where target could be inserted
-bisect.bisect_left(arr, 3)    # → 1  (insert before first 3)
-bisect.bisect_left(arr, 4)    # → 4  (insert between 3 and 5)
-bisect.bisect_left(arr, 0)    # → 0  (insert before everything)
-bisect.bisect_left(arr, 9)    # → 6  (insert after everything)
+# Result: index of first element >= target (or len(arr) if all elements < target)
+bisect.bisect_left(arr, 3)    # → 1  (insert before first 3; arr[1]==3 is the match)
+bisect.bisect_left(arr, 4)    # → 4  (4 absent; arr[4]==5 is the first element > 4)
+bisect.bisect_left(arr, 0)    # → 0  (0 smaller than everything; insert at front)
+bisect.bisect_left(arr, 9)    # → 6  (9 larger than everything; insert at end)
 
 # bisect_right — rightmost position (also called bisect())
-bisect.bisect_right(arr, 3)   # → 4  (insert after last 3)
-bisect.bisect_right(arr, 4)   # → 4  (same as left when value absent)
+# Result: index of first element strictly > target (one past the last occurrence)
+bisect.bisect_right(arr, 3)   # → 4  (insert after last 3; arr[4]==5 is first > 3)
+bisect.bisect_right(arr, 4)   # → 4  (same as left when value absent — no equal elements to skip)
 
 # Common use: check if value exists in sorted array
 def exists(arr, target):
     i = bisect.bisect_left(arr, target)
+    # bisect_left finds where target WOULD be; check that slot actually holds target
     return i < len(arr) and arr[i] == target
 
 # Count occurrences of value in sorted array — O(log n)
 def count_occurrences(arr, target):
-    left  = bisect.bisect_left(arr, target)
-    right = bisect.bisect_right(arr, target)
-    return right - left   # all indices in [left, right) contain target
+    left  = bisect.bisect_left(arr, target)   # index of first occurrence (or insert point)
+    right = bisect.bisect_right(arr, target)  # index one past last occurrence
+    return right - left   # all indices in [left, right) contain target; slice length = count
 
 # Floor — largest element <= target
 def floor(arr, target):
+    # bisect_right gives one-past the last element <= target, so step back one
     i = bisect.bisect_right(arr, target) - 1
-    return arr[i] if i >= 0 else None
+    return arr[i] if i >= 0 else None   # i == -1 means every element is > target
 
 # Ceiling — smallest element >= target
 def ceiling(arr, target):
+    # bisect_left gives the first position where arr[i] >= target
     i = bisect.bisect_left(arr, target)
-    return arr[i] if i < len(arr) else None
+    return arr[i] if i < len(arr) else None   # i == len means every element is < target
 
 # Insert while maintaining sorted order
-bisect.insort(arr, 4)   # inserts 4 in the correct position — O(n) due to shift</code></pre>
+bisect.insort(arr, 4)   # inserts 4 in the correct position — O(log n) to find, O(n) to shift</code></pre>
 
     <h3>Manual Variants — Find First True</h3>
+    <p><strong>Recognition signals:</strong> "Find the leftmost index where...", "find the first element satisfying...", or any problem where you need a boundary between two states in a sorted/ordered structure.</p>
+    <p><strong>The monotone requirement:</strong> This template only works when the condition is monotone — the array of boolean values looks like <code>[False, False, ..., True, True, ...]</code> with no True-to-False transition. If the condition is not monotone, binary search will converge to the wrong boundary.</p>
+    <p><strong>Why <code>hi = len(arr)</code> (not <code>len(arr) - 1</code>):</strong> If every element is False, the correct return value is <code>len(arr)</code> (meaning "not found" / "insert at end"). Using <code>len(arr) - 1</code> as the initial upper bound would prevent <code>lo</code> from ever reaching <code>len(arr)</code>, returning a wrong index.</p>
+    <p><strong>Why <code>hi = mid</code> (not <code>mid - 1</code>):</strong> When <code>condition(arr[mid])</code> is True, <code>mid</code> itself is a candidate answer. Setting <code>hi = mid - 1</code> would lose it. In contrast, we set <code>lo = mid + 1</code> in the False branch because <code>mid</code> is definitely not the answer.</p>
+    <p><strong>Why <code>lo &lt; hi</code> (not <code>lo &lt;= hi</code>):</strong> The loop maintains the invariant that the answer is in <code>[lo, hi]</code>. When <code>lo == hi</code>, we have pinpointed a single candidate — no more iterations needed. Using <code>&lt;=</code> would produce one extra iteration that could cause an infinite loop when <code>hi = mid</code> and <code>lo == hi == mid</code>.</p>
+    <p><strong>Pitfall:</strong> When searching for "last True" and biasing <code>mid</code> upward (<code>(lo + hi + 1) // 2</code>), forgetting the <code>+1</code> causes an infinite loop when <code>lo + 1 == hi</code> — <code>mid</code> rounds down to <code>lo</code>, <code>lo = mid = lo</code> never advances.</p>
+
+    <div class="fig">
+      <div class="arr-wrap">
+        <div class="step-label">Binary search on a monotone boolean condition — finds the boundary</div>
+        <div class="arr-row">
+          <div style="min-width:80px;font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);padding-bottom:5px">feasible(x):</div>
+          <div class="c"><div class="cv drop">F</div><div class="ci">0</div></div>
+          <div class="c"><div class="cv drop">F</div><div class="ci">1</div></div>
+          <div class="c"><div class="cv drop">F</div><div class="ci">2</div></div>
+          <div class="c"><div class="cv ans">T</div><div class="ci">3</div></div>
+          <div class="c"><div class="cv ok">T</div><div class="ci">4</div></div>
+          <div class="c"><div class="cv ok">T</div><div class="ci">5</div></div>
+          <div class="c"><div class="cv ok">T</div><div class="ci">6</div></div>
+        </div>
+        <div class="arr-row" style="margin-top:4px">
+          <div style="min-width:80px"></div>
+          <div class="cs"></div><div class="cs"></div><div class="cs"></div>
+          <div class="c"><div class="cp" style="color:var(--green)">↑ answer</div></div>
+        </div>
+        <hr class="arr-sep">
+        <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--muted)">
+          Iteration 1: lo=0, hi=7, mid=3 → feasible(3)=T → hi=3<br>
+          Iteration 2: lo=0, hi=3, mid=1 → feasible(1)=F → lo=2<br>
+          Iteration 3: lo=2, hi=3, mid=2 → feasible(2)=F → lo=3<br>
+          lo == hi == 3 → <span style="color:var(--green)">answer is index 3</span>
+        </div>
+      </div>
+      <div class="fig-caption">The condition must be monotone: all <span style="color:#f87171">False</span> on the left, all <span style="color:#34d399">True</span> on the right. Binary search finds the exact boundary in O(log n).</div>
+    </div>
     <p>The most powerful binary search template: find the <strong>boundary</strong> where a condition switches from False to True. This solves "find leftmost X", "find first element ≥ k", and "search on the answer" problems.</p>
 
     <pre><code class="language-python"># Pattern: array looks like [False, False, ..., False, True, True, ..., True]
 # Find the FIRST index where condition is True
+# Requires: condition is monotone (no True-to-False transition anywhere)
 
 def first_true(arr, condition):
-    lo, hi = 0, len(arr)   # hi = len(arr), not len-1!
-    while lo < hi:           # NOT lo <= hi
+    lo, hi = 0, len(arr)   # hi = len(arr), not len(arr)-1, so lo can reach len(arr) when all False
+    # Invariant: answer (first True index) is in the half-open range [lo, hi]
+    while lo < hi:           # stop when window collapses to a single point (lo == hi)
         mid = (lo + hi) // 2
         if condition(arr[mid]):
-            hi = mid         # mid might be the answer, search left half including mid
+            hi = mid         # mid is True and could be the FIRST True; keep it in range
         else:
-            lo = mid + 1     # mid is definitely not the answer
-    return lo   # lo == hi == first True position (or len(arr) if all False)
+            lo = mid + 1     # mid is False; it cannot be the answer, exclude it
+    # lo == hi; this is the first True index, or len(arr) if every element was False
+    return lo
 
-# Example: first index where arr[i] >= target
+# Example: first index where arr[i] >= target (equivalent to bisect_left)
 arr = [1, 3, 5, 7, 9]
-lo, hi = 0, len(arr)
+lo, hi = 0, len(arr)        # hi = len(arr) so we can return "not found" = len(arr)
 while lo < hi:
     mid = (lo + hi) // 2
     if arr[mid] >= 6:
-        hi = mid
+        hi = mid             # arr[mid] satisfies condition; might be leftmost, so keep mid
     else:
-        lo = mid + 1
+        lo = mid + 1         # arr[mid] < 6; too small, discard left half including mid
 # lo = 3 (arr[3]=7 is first element >= 6)
 
 # Pattern: Find LAST index where condition is True (search from right)
 def last_true(arr, condition):
-    lo, hi = -1, len(arr) - 1
+    lo, hi = -1, len(arr) - 1   # lo starts at -1 so it can signal "all False"
+    # Invariant: answer (last True index) is in [lo, hi]; lo tracks the best True seen so far
     while lo < hi:
-        mid = (lo + hi + 1) // 2   # bias mid upward to avoid infinite loop
+        mid = (lo + hi + 1) // 2   # +1 biases mid UPWARD to avoid lo==mid infinite loop
         if condition(arr[mid]):
-            lo = mid               # mid could be last true, search right
+            lo = mid               # mid is True and could be the LAST True; push lo up
         else:
-            hi = mid - 1
-    return lo   # -1 if no True found</code></pre>
+            hi = mid - 1           # mid is False; last True must be left of mid
+    # lo == hi; this is the last True index, or -1 if no True was found
+    return lo</code></pre>
 
     <h3>Binary Search on the Answer — The Most Powerful Pattern</h3>
     <p>Many optimization problems can be solved by binary searching on the <em>answer value</em> rather than an array index. The key insight: if you can <strong>check</strong> whether a given answer is feasible in O(f(n)), you can find the optimal answer in O(f(n) log(answer_range)).</p>
+    <p><strong>Recognition signals:</strong> "Find the minimum/maximum value such that...", "what is the smallest capacity/speed/length that allows...", or "minimize the maximum / maximize the minimum". Whenever the feasibility of a candidate answer is easy to check in a linear pass, binary search on the answer applies.</p>
+    <p><strong>Key insight — why feasibility must be monotone:</strong> If some answer value <code>X</code> is feasible, then any value larger than <code>X</code> must also be feasible (for a minimization problem). This monotone structure — False for small values, True from some threshold onward — is exactly what binary search needs. Verify this property before applying the pattern.</p>
+    <p><strong>How to set lo and hi:</strong> <code>lo</code> is the smallest answer that could possibly be correct (a natural lower bound, e.g. 1, or <code>max(arr)</code>). <code>hi</code> is the largest it could ever need to be (a natural upper bound, e.g. <code>sum(arr)</code>). Being conservative is fine — extra iterations cost only O(log factor).</p>
+    <p><strong>Pitfall:</strong> Choosing bounds that exclude the real answer (e.g., setting <code>lo = 0</code> when 0 is never valid but the real minimum is 1) or bounds that are too loose (e.g., <code>hi = 10**18</code> when the answer fits in <code>10**6</code>) both work correctly but the latter wastes log-factor iterations. More dangerously, if the feasibility check is not truly monotone, the algorithm will still converge — just to the wrong value, silently.</p>
 
     <pre><code class="language-python"># Template for "find minimum X such that condition(X) is True"
-# The search space of X must be monotone: False...False, True...True
+# Requires: is_feasible is monotone — once True for some value, True for all larger values
 
 lo, hi = minimum_possible_answer, maximum_possible_answer
+# Invariant: answer is in [lo, hi]; lo is always infeasible, hi is always feasible (or boundary)
 while lo < hi:
     mid = (lo + hi) // 2
     if is_feasible(mid):   # can we achieve answer = mid?
-        hi = mid           # mid works, try smaller
+        hi = mid           # mid works; it could be optimal, so keep it in range
     else:
-        lo = mid + 1       # mid doesn't work, need larger
-# lo is the minimum feasible answer
+        lo = mid + 1       # mid doesn't work; optimal must be strictly larger
+# lo == hi is the minimum feasible answer
 
 # ─────────────────────────────────────────────────────────────────
 # EXAMPLE: "Koko Eating Bananas"
@@ -178,16 +281,19 @@ import math
 
 def min_eating_speed(piles, h):
     def can_finish(speed):
+        # ceil(p/speed) hours needed per pile; sum must fit in h total hours
         hours = sum(math.ceil(p / speed) for p in piles)
         return hours <= h
-
+    # lo=1: can't eat slower than 1 banana/hr (speed=0 is undefined)
+    # hi=max(piles): eating at this speed finishes any pile in exactly 1 hour — always feasible
     lo, hi = 1, max(piles)
     while lo < hi:
         mid = (lo + hi) // 2
         if can_finish(mid):
-            hi = mid
+            hi = mid        # speed mid is sufficient; try slower
         else:
-            lo = mid + 1
+            lo = mid + 1    # speed mid is too slow; must go faster
+    # lo is the minimum speed that finishes all piles within h hours
     return lo
 
 # ─────────────────────────────────────────────────────────────────
@@ -199,19 +305,21 @@ def ship_within_days(weights, days):
         current_load, day_count = 0, 1
         for w in weights:
             if current_load + w > capacity:
-                day_count += 1
+                day_count += 1   # start a new day
                 current_load = 0
             current_load += w
         return day_count <= days
 
-    lo = max(weights)       # minimum possible: must fit heaviest package
-    hi = sum(weights)       # maximum possible: ship everything on day 1
+    lo = max(weights)   # lower bound: capacity must fit the heaviest single package
+    hi = sum(weights)   # upper bound: enough capacity to ship everything on day 1 (always feasible)
+    # Monotone: if capacity C ships in <=days days, capacity C+1 also can (more room per day)
     while lo < hi:
         mid = (lo + hi) // 2
         if can_ship(mid):
-            hi = mid
+            hi = mid        # capacity mid works; try smaller
         else:
-            lo = mid + 1
+            lo = mid + 1    # capacity mid too small; need more
+    # lo is the minimum feasible capacity
     return lo</code></pre>
 
     <!-- ===== SORTING ===== -->
@@ -219,69 +327,82 @@ def ship_within_days(weights, days):
 
     <h3>Python's Sort — Timsort</h3>
     <p>Python uses <strong>Timsort</strong> — a hybrid of merge sort and insertion sort. It's O(n log n) worst case and O(n) on already-sorted data. It is <strong>stable</strong>: equal elements keep their original relative order.</p>
+    <p><strong>Recognition signals:</strong> Any problem that says "sort then sweep" or requires a canonical ordering before applying a greedy or two-pointer technique. Also applies when the problem asks you to rank, group, or process elements in a specific order.</p>
+    <p><strong>Why stability matters:</strong> A stable sort preserves the relative order of elements that compare as equal. This lets you sort by a secondary key first, then sort by the primary key — the two-pass approach works because equal primary keys keep their secondary order intact. In Python you rarely need this trick since <code>key=</code> tuples handle multi-criteria sorting in one pass, but stability is still important when sorting objects that only expose a partial comparison.</p>
+    <p><strong>The <code>key=</code> mental model:</strong> Python extracts the key value for each element once, sorts the keys (which must be comparable), and reorders elements to match. This is the Schwartzian transform — O(n) key computations, O(n log n) comparisons on cheap keys. Think of it as "decorate → sort → undecorate" done automatically.</p>
+    <p><strong>Pitfall:</strong> Do not pass a comparison function directly — Python 3 removed <code>cmp=</code>. Use <code>key=</code> for almost everything. Only reach for <code>functools.cmp_to_key</code> when the comparison cannot be expressed as a key (e.g., non-transitive orderings or string concatenation comparisons like largest-number problems).</p>
 
     <pre><code class="language-python"># sort() — in-place, returns None
 nums = [3, 1, 4, 1, 5, 9]
 nums.sort()                    # [1, 1, 3, 4, 5, 9]
 nums.sort(reverse=True)        # [9, 5, 4, 3, 1, 1]
 
-# sorted() — returns new list, original unchanged
+# sorted() — returns new list, original unchanged; works on any iterable
 nums = [3, 1, 4, 1, 5, 9]
 asc = sorted(nums)             # [1, 1, 3, 4, 5, 9]  — nums unchanged
 desc = sorted(nums, reverse=True)
 
 # Sort any iterable (not just lists)
 sorted("banana")               # ['a', 'a', 'a', 'b', 'n', 'n']
-sorted({3: 'c', 1: 'a', 2: 'b'})  # [1, 2, 3] — sorts dict keys
+sorted({3: 'c', 1: 'a', 2: 'b'})  # [1, 2, 3] — sorts dict keys (values ignored)
 
-# ── The key parameter ─── (accepts any callable → one argument → comparable value)
+# ── The key parameter ─── (callable: element → comparable sort key)
+# Python calls key(element) once per element, sorts by the returned keys
 words = ["banana", "fig", "cherry", "apple"]
-words.sort(key=len)                      # sort by length
+words.sort(key=len)                      # sort by word length
 words.sort(key=lambda w: w[-1])          # sort by last character
-words.sort(key=lambda w: (len(w), w))    # sort by length, then alphabetically
+words.sort(key=lambda w: (len(w), w))    # primary: length, secondary: alphabetical
 
-# Sort by multiple criteria — tuple comparison does this naturally
+# Sort by multiple criteria — tuple comparison is lexicographic by default
 students = [("Alice", 90), ("Bob", 85), ("Eve", 90)]
-students.sort(key=lambda s: (-s[1], s[0]))  # desc score, then asc name
+students.sort(key=lambda s: (-s[1], s[0]))  # negate score for descending; name ascending
 # [("Alice", 90), ("Eve", 90), ("Bob", 85)]
 
-# Stability example
+# Stability example — equal primary keys retain their original relative order
 nums = [(1, "b"), (2, "a"), (1, "a")]
 nums.sort(key=lambda x: x[0])
-# [(1, "b"), (1, "a"), (2, "a")]  — equal keys keep original order</code></pre>
+# [(1, "b"), (1, "a"), (2, "a")]  — both 1s were already in this order; stability preserved it</code></pre>
 
     <h3>Sorting Patterns for Coding Problems</h3>
+    <p><strong>Recognition signals:</strong> "Merge overlapping intervals", "arrange to maximize/minimize some property", "sort by custom rule", or "elements appear in a fixed priority order". Sorting is usually the first step in a greedy algorithm.</p>
+    <p><strong>Key insight — custom key functions avoid <code>cmp_to_key</code>:</strong> Most custom orderings can be expressed as a tuple key. For example, sorting strings so that <code>AB</code> comes before <code>BA</code> requires comparing <code>a+b</code> vs <code>b+a</code> — that cannot be expressed as a simple key, so it is one of the few genuine uses of <code>functools.cmp_to_key</code>. For everything else, a tuple key is simpler, faster, and more readable.</p>
+    <p><strong>Pitfall — modifying a list while sorting:</strong> Never sort a list of mutable objects (like <code>[start, end]</code> lists) by a key that changes during iteration. In the merge-intervals pattern, mutation happens <em>after</em> sorting is complete, so it is safe. Also note that <code>intervals.sort()</code> on lists-of-lists sorts lexicographically, which is usually correct for <code>[start, end]</code> pairs.</p>
     <pre><code class="language-python"># ── Interval scheduling (sort by start, then end) ───
+# Tuple/list comparison is lexicographic, so (start, end) sorts by start first
 intervals.sort()   # tuples sort lexicographically — (start, end)
 
 # ── Merge intervals ───
-intervals.sort(key=lambda x: x[0])
+intervals.sort(key=lambda x: x[0])   # sort by start time; ties broken by end time implicitly
 merged = [intervals[0]]
 for start, end in intervals[1:]:
-    if start <= merged[-1][1]:         # overlapping
-        merged[-1][1] = max(merged[-1][1], end)
+    if start <= merged[-1][1]:         # current interval overlaps the last merged one
+        merged[-1][1] = max(merged[-1][1], end)   # extend the merged interval's end
     else:
-        merged.append([start, end])
+        merged.append([start, end])    # no overlap; start a new merged interval
 
 # ── Relative sort / custom order ───
 order = ["grape", "apple", "banana"]
-order_map = {v: i for i, v in enumerate(order)}
+order_map = {v: i for i, v in enumerate(order)}   # maps each item to its desired rank
 items = ["banana", "apple", "grape", "kiwi"]
+# Items in order_map get their rank; unknown items get rank len(order) (sorted last)
 items.sort(key=lambda x: order_map.get(x, len(order)))
 
 # ── Sort by frequency, then value ───
 nums = [1, 1, 2, 2, 2, 3]
-freq = Counter(nums)
-nums.sort(key=lambda x: (-freq[x], x))  # desc freq, then asc value
+freq = Counter(nums)                             # build frequency map in O(n)
+nums.sort(key=lambda x: (-freq[x], x))          # negate freq for descending; value for ascending tie-break
 # [2, 2, 2, 1, 1, 3]
 
 # ── Counting sort — O(n+k) when range is bounded ───
+# Use when values are non-negative integers in a small known range [0, k]
+# Faster than Timsort when k << n*log(n); not applicable for floats or strings
 def counting_sort(arr, max_val=None):
     if max_val is None:
-        max_val = max(arr)
-    count = [0] * (max_val + 1)
+        max_val = max(arr)          # O(n) scan to find range; skip if you already know it
+    count = [0] * (max_val + 1)    # bucket for each value 0..max_val
     for x in arr:
-        count[x] += 1
+        count[x] += 1              # tally occurrences; O(n)
+    # Reconstruct: for each value x, emit it count[x] times — O(n+k) total
     return [x for x, c in enumerate(count) for _ in range(c)]</code></pre>
 
     <div class="table-wrap">

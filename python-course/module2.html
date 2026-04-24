@@ -11,7 +11,7 @@
 </head>
 <body>
   <nav class="sidebar">
-    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 12 Modules</p></div>
     <div class="sidebar-nav">
       <div class="sidebar-section">Course</div>
       <a href="index.html"><span class="num">🏠</span> Home</a>
@@ -26,6 +26,8 @@
       <a href="module8.html"><span class="num">8</span> Trees</a>
       <a href="module9.html"><span class="num">9</span> Standard Library</a>
       <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+      <a href="module11.html"><span class="num">11</span> Expressions &amp; Formulas</a>
+      <a href="module12.html"><span class="num">12</span> More Patterns</a>
     </div>
   </nav>
 
@@ -72,52 +74,52 @@ from_range = list(range(5))    # [0, 1, 2, 3, 4]
 zeros  = [0] * 10              # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 # ✓ Correct 2D grid (n rows, m cols)
-grid = [[0] * m for _ in range(n)]   # each row is a SEPARATE list object
+grid = [[0] * m for _ in range(n)]   # WHY comprehension: each iteration creates a NEW list object, so rows are independent
 
 # ❌ WRONG 2D grid — all rows are the SAME object
-grid = [[0] * m] * n
+grid = [[0] * m] * n   # WHY broken: `* n` copies the reference n times, not the list itself
 grid[0][0] = 1
-print(grid[1][0])  # also 1! — they share the same inner list</code></pre>
+print(grid[1][0])  # also 1! — all rows point to the same inner list in memory</code></pre>
 
     <h3>All List Operations with Complexities</h3>
     <pre><code class="language-python">a = [3, 1, 4, 1, 5, 9, 2, 6]
 
 # ── Access ─── O(1)
 a[0]           # 3    — first element
-a[-1]          # 6    — last element
+a[-1]          # 6    — last element; WHY: negative indices count from the end, so -1 == len(a)-1
 a[2:5]         # [4, 1, 5] — slice (creates new list, O(k))
 
 # ── Search ─── O(n)
-3 in a         # True  — linear scan
+3 in a         # True  — linear scan; no shortcut, must inspect each element
 a.index(4)     # 2     — first index of value (ValueError if missing)
 a.count(1)     # 2     — number of occurrences
 
 # ── Modification at END ─── O(1) amortized
 a.append(7)           # adds 7 at end
-x = a.pop()           # removes & returns last element → 7
+x = a.pop()           # removes & returns last element → 7; WHY O(1): no shifting, just decrement length
 
 # ── Modification at FRONT/MIDDLE ─── O(n) — shifts all elements
-a.insert(0, 99)       # insert 99 at index 0 — O(n) — avoid in tight loops
-a.pop(0)              # remove from front — O(n) — use deque instead!
-a.remove(1)           # remove first occurrence of value 1 — O(n)
+a.insert(0, 99)       # insert 99 at index 0 — O(n) — every existing element shifts right by one
+a.pop(0)              # remove from front — O(n) — every remaining element shifts left; use deque instead!
+a.remove(1)           # remove first occurrence of value 1 — O(n); scans left-to-right, then shifts
 
 # ── Sorting ─── O(n log n)
-a.sort()                       # in-place, stable, Timsort
+a.sort()                       # in-place, stable, Timsort; stable = equal elements preserve original relative order
 a.sort(reverse=True)           # descending
 b = sorted(a)                  # returns new sorted list (a unchanged)
-a.sort(key=lambda x: -x)       # sort by custom key
-a.sort(key=lambda x: (x%2, x)) # sort odds before evens, then by value
+a.sort(key=lambda x: -x)       # sort by custom key; key fn is called once per element, not on every comparison
+a.sort(key=lambda x: (x%2, x)) # WHY tuple key: Python sorts tuples lexicographically, so x%2 is primary, x is tiebreaker
 
 # ── Bulk operations ───
 a.reverse()           # in-place reverse — O(n)
 a.clear()             # remove all elements — O(n) (runs destructors)
 a.extend([7, 8, 9])   # append all items from iterable — O(k)
-a + [7, 8, 9]         # concatenation — O(n+k) — creates new list
-a * 3                  # repetition — O(n*k) — creates new list
-a.copy()              # shallow copy (same as a[:])
+a + [7, 8, 9]         # concatenation — O(n+k) — creates new list; does NOT modify a
+a * 3                  # repetition — O(n*k) — creates new list; same shallow-copy pitfall as 2D grid above
+a.copy()              # shallow copy: new list, but contained objects are NOT copied (same as a[:])
 
 # ── Aggregates ───
-len(a)                # O(1) — stored separately
+len(a)                # O(1) — stored separately in the list's internal header, not recomputed
 sum(a)                # O(n)
 min(a), max(a)        # O(n)
 min(a, key=abs)       # min by absolute value</code></pre>
@@ -134,6 +136,29 @@ min(a, key=abs)       # min by absolute value</code></pre>
     <h2>Dictionary — The Hash Map</h2>
     <p>A Python dict is a <strong>hash table</strong>. It maps keys to values using a hash function. Since Python 3.7, dicts maintain <strong>insertion order</strong>. Average-case O(1) for lookup, insert, and delete.</p>
 
+    <div class="fig">
+      <div class="visual-box">
+        <div class="label">How d["name"] = "Alice" is stored and retrieved</div>
+  Insert:  <span style="color:var(--accent2)">"name"</span>  →  hash("name") % 8  →  bucket <span style="color:var(--yellow)">3</span>  →  store "Alice"
+  Lookup:  <span style="color:var(--accent2)">"name"</span>  →  hash("name") % 8  →  bucket <span style="color:var(--yellow)">3</span>  →  return "Alice"   O(1)
+
+  Internal hash table (8 buckets):
+  ┌───┬────────────────────────────┐
+  │ 0 │  empty                     │
+  │ 1 │  "age"     ──────────────► 30
+  │ 2 │  empty                     │
+  │ 3 │  "name"    ──────────────► "Alice"
+  │ 4 │  empty                     │
+  │ 5 │  empty                     │
+  │ 6 │  "city"    ──────────────► "NYC"
+  │ 7 │  empty                     │
+  └───┴────────────────────────────┘
+  Collision: two keys land in the same bucket → stored in same slot with probing.
+  Load factor &gt; 0.67 → Python resizes table (doubles capacity) → rehash all keys.
+      </div>
+      <div class="fig-caption">Hash table internals. Every key lookup computes <code>hash(key) % capacity</code> to jump directly to the right bucket — no scanning needed.</div>
+    </div>
+
     <h3>Creating and Accessing</h3>
     <pre><code class="language-python"># Literal
 d = {"name": "Alice", "age": 30, "score": 99}
@@ -146,31 +171,31 @@ squares = {x: x**2 for x in range(5)}    # {0:0, 1:1, 2:4, 3:9, 4:16}
 filtered = {k: v for k, v in d.items() if v > 1}
 
 # ── Access ─── O(1) average
-d["name"]           # "Alice" — KeyError if key doesn't exist
+d["name"]           # "Alice" — KeyError if key doesn't exist; WHY: fail-fast is safer than silently returning None
 d.get("name")       # "Alice"
-d.get("missing")    # None   — no error
-d.get("missing", 0) # 0      — custom default ← use this constantly
+d.get("missing")    # None   — no error; WHY: safe when key absence is expected and None is a valid sentinel
+d.get("missing", 0) # 0      — custom default ← prefer over `if key in d` to avoid double lookup
 
 # ── Insert/Update ─── O(1) average
-d["city"] = "NYC"          # insert or overwrite
+d["city"] = "NYC"          # insert or overwrite; WHY O(1): hash(key) directly finds the bucket
 d.update({"x": 1, "y": 2}) # merge another dict (Python 3.9+: d |= {...})
 
 # ── Delete ─── O(1) average
-del d["age"]               # KeyError if missing
+del d["age"]               # KeyError if missing; use when absence is a bug
 val = d.pop("score")       # remove and return value (KeyError if missing)
-val = d.pop("score", -1)   # remove and return, or -1 if missing ✓
+val = d.pop("score", -1)   # WHY default: avoids KeyError when key may legitimately be absent
 d.clear()                  # remove all
 
 # ── Membership ─── O(1) average
-"name" in d        # True  — checks KEYS only
+"name" in d        # True  — checks KEYS only; hash lookup, not a scan
 "Alice" in d       # False — values not checked this way
-"Alice" in d.values()  # True — O(n), checks values
+"Alice" in d.values()  # True — O(n): values have no hash index, so this is a linear scan
 
 # ── Iteration ───
-for key in d:               # iterate over keys (insertion order, Python 3.7+)
-for key in d.keys():        # same
+for key in d:               # iterate over keys (insertion order guaranteed since Python 3.7)
+for key in d.keys():        # same; explicit, useful for clarity
 for val in d.values():      # iterate over values
-for key, val in d.items():  # iterate over key-value pairs ← most common</code></pre>
+for key, val in d.items():  # iterate over key-value pairs ← most common; unpacks each (k,v) tuple</code></pre>
 
     <h3>defaultdict — Remove Boilerplate</h3>
     <p><code>defaultdict</code> automatically creates a missing key with a default value, eliminating the need to check if a key exists before using it.</p>
@@ -180,16 +205,16 @@ for key, val in d.items():  # iterate over key-value pairs ← most common</code
 graph = {}
 for u, v in edges:
     if u not in graph:
-        graph[u] = []
+        graph[u] = []      # WHY guard: plain dict raises KeyError on missing key, so we must pre-create the list
     graph[u].append(v)
 
 # With defaultdict — clean
-graph = defaultdict(list)     # missing key → empty list
+graph = defaultdict(list)     # WHY list (not list()): pass the callable itself; defaultdict calls it on first miss
 for u, v in edges:
-    graph[u].append(v)        # no check needed!
+    graph[u].append(v)        # no check needed — defaultdict inserts [] automatically on first access
 
 # Common factory functions
-count  = defaultdict(int)     # missing key → 0
+count  = defaultdict(int)     # missing key → 0; WHY int: int() returns 0, so count[x] += 1 works on first sight
 graph  = defaultdict(list)    # missing key → []
 nested = defaultdict(dict)    # missing key → {}
 sets   = defaultdict(set)     # missing key → set()
@@ -198,7 +223,7 @@ sets   = defaultdict(set)     # missing key → set()
 words = ["apple", "ant", "banana", "bear", "cherry"]
 groups = defaultdict(list)
 for w in words:
-    groups[w[0]].append(w)
+    groups[w[0]].append(w)   # w[0] is the first character; safe because words are non-empty strings
 # groups = {'a': ['apple','ant'], 'b': ['banana','bear'], 'c': ['cherry']}</code></pre>
 
     <h3>Counter — Frequency Maps in One Line</h3>
@@ -215,26 +240,26 @@ freq = Counter(words)
 
 # Access like a dict — missing keys return 0 (not KeyError!)
 freq["cat"]       # 3
-freq["elephant"]  # 0 ← no KeyError, unlike regular dict
+freq["elephant"]  # 0 ← WHY: Counter is a subclass of defaultdict(int), so missing keys default to 0
 
 # Most common
-freq.most_common(2)      # [('cat', 3), ('dog', 2)] — sorted by count desc
-freq.most_common()[:-2]  # everything except the 2 least common
+freq.most_common(2)      # [('cat', 3), ('dog', 2)] — sorted by count desc; uses a heap internally for efficiency
+freq.most_common()[:-2]  # everything except the 2 least common; [:-2] is a negative slice (Python list slicing)
 
 # Arithmetic — very useful for anagram/subset problems
 c1 = Counter("aab")
 c2 = Counter("ab")
-c1 - c2          # Counter({'a': 1}) — subtract counts (drops zeros/negatives)
+c1 - c2          # Counter({'a': 1}) — WHY drops zeros/negatives: result only keeps positive counts; use subtract() to keep negatives
 c1 + c2          # Counter({'a': 3, 'b': 2}) — add counts
-c1 & c2          # Counter({'a': 1, 'b': 1}) — min of each count (intersection)
+c1 & c2          # Counter({'a': 1, 'b': 1}) — min of each count; use for "does s1 contain all chars of s2?" checks
 c1 | c2          # Counter({'a': 2, 'b': 1}) — max of each count (union)
 
 # Update counter
-freq.update("cat")        # adds counts
-freq.subtract(["cat"])    # subtracts counts (can go negative, unlike -)
+freq.update("cat")        # adds counts; in-place, unlike + which returns a new Counter
+freq.subtract(["cat"])    # subtracts counts (can go negative, unlike - operator which drops non-positives)
 
 # Total count
-sum(freq.values())        # total number of items counted</code></pre>
+sum(freq.values())        # total number of items counted; no built-in total() on Counter in Python < 3.10</code></pre>
 
     <!-- ===== SET ===== -->
     <h2>Set — The Hash Set</h2>
@@ -243,45 +268,45 @@ sum(freq.values())        # total number of items counted</code></pre>
     <pre><code class="language-python">s = {1, 2, 3, 4, 5}
 
 # ── Membership ─── O(1) average  ← the main reason to use set
-5 in s        # True
+5 in s        # True; WHY O(1): hash(5) jumps directly to the right bucket, no scan
 99 in s       # False
 
 # ── Modification ─── O(1) average
-s.add(6)         # add element (no-op if already present)
-s.remove(3)      # remove — raises KeyError if not found
-s.discard(99)    # remove if present — NO error if missing ← prefer this
-s.pop()          # remove and return an arbitrary element
+s.add(6)         # add element (no-op if already present; WHY safe: hash table handles duplicates silently)
+s.remove(3)      # remove — raises KeyError if not found; use when absence is a bug
+s.discard(99)    # remove if present — NO error if missing ← prefer when key may legitimately be absent
+s.pop()          # WHY arbitrary: sets are unordered (hash table), so "first" element is not defined
 
 # ── Set operations ─── O(min(len(a),len(b))) to O(len(a)+len(b))
 a = {1, 2, 3, 4}
 b = {3, 4, 5, 6}
 
 a | b     # {1, 2, 3, 4, 5, 6}  — union  (in a OR b)
-a & b     # {3, 4}              — intersection (in both)
-a - b     # {1, 2}              — difference (in a, NOT in b)
+a & b     # {3, 4}              — intersection (in both); scans smaller set, probes larger
+a - b     # {1, 2}              — difference (in a, NOT in b); NOT commutative
 b - a     # {5, 6}              — difference (in b, NOT in a)
-a ^ b     # {1, 2, 5, 6}        — symmetric diff (in one but not both)
+a ^ b     # {1, 2, 5, 6}        — symmetric diff (in one but not both); equivalent to (a | b) - (a & b)
 
-# Operator vs method — methods also accept any iterable
-a.union([5, 6, 7])            # same as a | {5, 6, 7}
+# Operator vs method — methods also accept any iterable (operators require both sides to be sets)
+a.union([5, 6, 7])            # same as a | {5, 6, 7}; WHY use method: avoids converting to set first
 a.intersection([3, 4, 99])    # same as a & {3, 4, 99}
 
 # ── Subset / Superset ───
 {1, 2}.issubset({1, 2, 3})    # True — all of {1,2} in {1,2,3}
 {1, 2, 3}.issuperset({1, 2})  # True
-{1, 2}.isdisjoint({3, 4})     # True — no elements in common
+{1, 2}.isdisjoint({3, 4})     # True — no elements in common; faster than checking len(a & b) == 0
 
 # ── Common coding problem patterns ───
-# Deduplicate a list (loses order in Python < 3.7, but list(dict.fromkeys()) preserves order)
+# Deduplicate a list (loses order because sets are unordered; use list(dict.fromkeys()) to preserve insertion order)
 unique = list(set([3, 1, 4, 1, 5, 9, 2, 6, 5]))
 
-# Find elements in one list not in another
+# Find elements in one list not in another; set conversion is O(n), subtraction O(n) — better than nested loops O(n²)
 missing = set(expected) - set(actual)
 
 # Track visited nodes in BFS/DFS
 visited = set()
 visited.add(node)
-if node not in visited:  # O(1) vs list's O(n)</code></pre>
+if node not in visited:  # O(1) vs list's O(n); critical for graph traversal correctness and performance</code></pre>
 
     <!-- ===== TUPLE ===== -->
     <h2>Tuple — Immutable Sequence</h2>
@@ -290,36 +315,37 @@ if node not in visited:  # O(1) vs list's O(n)</code></pre>
     <pre><code class="language-python"># Creation
 point = (3, 4)
 triple = (1, "hello", 3.14)   # can mix types
-single = (42,)                 # trailing comma — without it, just parentheses!
+single = (42,)                 # WHY trailing comma: without it, (42) is just an integer in parentheses, not a tuple
 empty  = ()
 
 # Unpacking — works anywhere Python expects a sequence
-x, y = point               # x=3, y=4
-a, b, c = 1, 2, 3          # tuple packing then unpacking
-a, *rest = [1, 2, 3, 4]    # a=1, rest=[2,3,4]
-*init, last = [1, 2, 3, 4] # init=[1,2,3], last=4
+x, y = point               # x=3, y=4; Python matches left-hand vars to tuple positions
+a, b, c = 1, 2, 3          # WHY no parens needed: Python packs RHS into a tuple, then unpacks to LHS
+a, *rest = [1, 2, 3, 4]    # a=1, rest=[2,3,4]; * is a "splat" that absorbs remaining elements into a list
+*init, last = [1, 2, 3, 4] # init=[1,2,3], last=4; splat can appear anywhere, but only one per unpack
 
 # Swap without temp variable
-a, b = b, a   # Python evaluates right side first, then assigns
+a, b = b, a   # WHY safe: Python fully evaluates the RHS tuple (b, a) before assigning; no clobbering
 
 # As dict key — VERY useful for 2D grid memos, coordinate tracking
 memo = {}
-memo[(row, col)] = value
+memo[(row, col)] = value    # WHY tuple works as key: tuples are immutable, so their hash is stable
 visited = set()
-visited.add((row, col))   # tuple in set ✓
-# visited.add([row, col]) # ERROR — list is not hashable ✗
+visited.add((row, col))   # tuple in set ✓; hashable because all elements are immutable
+# visited.add([row, col]) # ERROR — list is mutable, so Python refuses to hash it ✗
 
 # Named tuple — like a struct, readable field access
 from collections import namedtuple
-Point = namedtuple("Point", ["x", "y"])
+Point = namedtuple("Point", ["x", "y"])  # creates a new class; first arg is the class name for repr
 p = Point(3, 4)
 p.x      # 3
 p.y      # 4
-p[0]     # 3 — still indexable like a regular tuple
+p[0]     # 3 — still indexable like a regular tuple; named tuple IS a tuple subclass
 
 # Sort stability with tuples — sort by multiple criteria
 events = [("B", 2), ("A", 1), ("A", 3), ("B", 1)]
-events.sort()  # sorts by first element, then second: [('A',1),('A',3),('B',1),('B',2)]</code></pre>
+events.sort()  # WHY correct: tuple comparison is lexicographic — first element first, second as tiebreaker
+               # result: [('A',1),('A',3),('B',1),('B',2)]</code></pre>
 
     <!-- ===== DEQUE ===== -->
     <h2>Deque — Double-Ended Queue</h2>
@@ -330,52 +356,53 @@ events.sort()  # sorts by first element, then second: [('A',1),('A',3),('B',1),(
 # Creation
 q = deque()
 q = deque([1, 2, 3])
-q = deque(range(5), maxlen=3)  # maxlen: auto-drops oldest when full (sliding window!)
+q = deque(range(5), maxlen=3)  # WHY maxlen: when full, each append automatically evicts the opposite end (circular buffer)
 
 # ── O(1) operations ───
 q.append(4)        # add to RIGHT end    → deque([1, 2, 3, 4])
 q.appendleft(0)    # add to LEFT end     → deque([0, 1, 2, 3, 4])
 q.pop()            # remove from RIGHT   → returns 4
-q.popleft()        # remove from LEFT    → returns 0 ← BFS queue operation
+q.popleft()        # remove from LEFT    → returns 0; WHY O(1): deque is a doubly-linked list of fixed-size blocks, no shifting
 
 # ── Other operations ───
-q.rotate(1)        # rotate right by 1 (last element moves to front)
+q.rotate(1)        # rotate right by 1 (last element moves to front); equivalent to q.appendleft(q.pop())
 q.rotate(-2)       # rotate left by 2
 q.extend([5, 6])   # extend right
-q.extendleft([7])  # extend left (note: reverses order of input)
+q.extendleft([7])  # WHY reverses: each element is appendleft'd one at a time, so the input order is reversed
 
 len(q)             # O(1)
-q[0]               # O(1) — left end
-q[-1]              # O(1) — right end
-q[2]               # O(n) — middle access is slow (unlike list)
+q[0]               # O(1) — left end; pointer to head block
+q[-1]              # O(1) — right end; pointer to tail block
+q[2]               # O(n) — WHY slow: must traverse linked block chain; use list if you need random access
 
 # BFS template using deque
 def bfs(graph, start, target):
     from collections import deque
-    queue = deque([(start, 0)])   # (node, distance)
-    visited = {start}
-    while queue:
-        node, dist = queue.popleft()
+    queue = deque([(start, 0)])   # (node, distance); seed with start node at distance 0
+    visited = {start}             # mark start visited immediately to prevent re-enqueuing it
+    while queue:                  # terminates when all reachable nodes are exhausted
+        node, dist = queue.popleft()   # FIFO: popleft ensures we process nodes level by level (shortest path first)
         if node == target:
             return dist
         for neighbor in graph[node]:
-            if neighbor not in visited:
-                visited.add(neighbor)
+            if neighbor not in visited:       # WHY check before adding: prevents exponential re-visits
+                visited.add(neighbor)         # mark BEFORE enqueuing, not after, to avoid duplicate entries in queue
                 queue.append((neighbor, dist + 1))
-    return -1
+    return -1   # target unreachable from start
 
 # Sliding window maximum (monotonic deque)
 def max_sliding_window(nums, k):
-    dq = deque()   # stores INDICES, maintains decreasing order of values
+    dq = deque()   # stores INDICES (not values), so we can check if an index has left the window
     result = []
     for i, x in enumerate(nums):
-        while dq and nums[dq[-1]] <= x:  # remove smaller elements from right
+        # Loop invariant: after this while loop, dq contains indices in decreasing order of nums value
+        while dq and nums[dq[-1]] <= x:  # WHY pop smaller: a previous element smaller than x can NEVER be the max while x is in the window
             dq.pop()
         dq.append(i)
-        if dq[0] < i - k + 1:            # remove elements outside window
-            dq.popleft()
-        if i >= k - 1:
-            result.append(nums[dq[0]])    # max is always at left of deque
+        if dq[0] < i - k + 1:            # WHY i - k + 1: that's the leftmost valid index for the current window
+            dq.popleft()                  # evict index that has slid out of the window
+        if i >= k - 1:                    # WHY k-1: first full window is complete when we reach index k-1
+            result.append(nums[dq[0]])    # dq[0] is always the index of the max in the current window
     return result</code></pre>
 
     <!-- ===== HEAP ===== -->
@@ -383,70 +410,121 @@ def max_sliding_window(nums, k):
     <p>Python's <code>heapq</code> module provides a <strong>min-heap</strong>: the smallest element is always at the top (index 0). A heap is a complete binary tree stored in an array, where every parent ≤ its children.</p>
 
     <div class="visual-box">
-      <div class="label">Min-heap structure (stored as array)</div>
+      <div class="label">Min-heap structure — tree view and array layout</div>
 Tree view:              Array representation:
         1               [1, 3, 2, 7, 5, 4, 6]
        / \               0  1  2  3  4  5  6
       3   2
-     / \ / \
-    7  5 4  6
+     / \ / \            Parent of index i  →  (i-1) // 2
+    7  5 4  6           Left  child of i   →  2*i + 1
+                        Right child of i   →  2*i + 2
 
-Parent of index i  → (i-1) // 2
-Left child of i    → 2*i + 1
-Right child of i   → 2*i + 2
+  Heap property: every node ≤ both its children  →  minimum is always at index 0
+    </div>
+
+    <div class="fig">
+      <div class="visual-box">
+        <div class="label">heappush(heap, 1) — sift-up trace on [2, 5, 3, 8, 7, 6]</div>
+  Step 1 — append 1 at next free position (end):
+          2                 2
+         / \               / \
+        5   3    →        5   3
+       / \ /             / \ / \
+      8  7 6            8  7 6  <span style="color:var(--accent)">1</span>  ← new node
+
+  Step 2 — compare with parent (3): 1 &lt; 3 → swap:
+          2                 2
+         / \               / \
+        5   3    →        5   <span style="color:var(--accent)">1</span>
+       / \ / \            / \ / \
+      8  7 6  1          8  7 6  3
+
+  Step 3 — compare with parent (2): 1 &lt; 2 → swap:
+          2                 <span style="color:var(--accent)">1</span>
+         / \               / \
+        5   1    →        5   2
+       / \ / \            / \ / \
+      8  7 6  3          8  7 6  3   ← done, 1 is now the root
+        </div>
+      <div class="fig-caption"><strong>Sift-up</strong>: new element bubbles up by swapping with its parent until the heap property is restored. O(log n) swaps worst case.</div>
+    </div>
+
+    <div class="fig">
+      <div class="visual-box">
+        <div class="label">heappop() — sift-down trace on [1, 3, 2, 7, 5, 4, 6]</div>
+  Step 1 — remove root (1), move last element (6) to root:
+          1                 <span style="color:var(--red)">6</span>
+         / \               / \
+        3   2    →        3   2
+       / \ / \           / \ /
+      7  5 4  6(rm)     7  5 4
+
+  Step 2 — compare 6 with children (3,2): smaller child is 2 → swap:
+          6                 2
+         / \               / \
+        3   2    →        3   <span style="color:var(--accent)">6</span>
+       / \ /             / \ /
+      7  5 4            7  5 4
+
+  Step 3 — compare 6 with children (4): 4 &lt; 6 → swap:
+          2                 2
+         / \               / \
+        3   6    →        3   <span style="color:var(--accent)">4</span>
+       / \ /             / \ /
+      7  5 4            7  5 6   ← done, heap property restored
+        </div>
+      <div class="fig-caption"><strong>Sift-down</strong>: the replacement root swaps with its smallest child until it finds its correct level. Returns 1 (the old root). O(log n) swaps.</div>
     </div>
 
     <pre><code class="language-python">import heapq
 
 # ── Building a heap ───
 heap = []
-heapq.heappush(heap, 5)   # O(log n)
+heapq.heappush(heap, 5)   # O(log n): sifts new element up to restore heap property
 heapq.heappush(heap, 2)
 heapq.heappush(heap, 8)
 heapq.heappush(heap, 1)
 
-heapq.heappop(heap)    # → 1  (always the minimum)  O(log n)
-heap[0]                # → 2  (peek at minimum without removing)  O(1)
+heapq.heappop(heap)    # → 1 (always the minimum); moves last element to root then sifts down — O(log n)
+heap[0]                # → 2; WHY O(1): min is always at index 0 by heap property — no sifting needed
 
 # Build from existing list — O(n), faster than n pushes
 nums = [5, 3, 8, 1, 9, 2]
-heapq.heapify(nums)     # transforms in-place to min-heap
+heapq.heapify(nums)     # WHY O(n) not O(n log n): bottom-up construction; only half the nodes need sifting, and shorter sifts dominate
 
 # ── Max-heap trick — negate values ───
 max_heap = []
 for x in [5, 3, 8, 1]:
-    heapq.heappush(max_heap, -x)       # push negated
+    heapq.heappush(max_heap, -x)       # WHY negate: heapq only provides min-heap; negating reverses the ordering
 
-max_val = -heapq.heappop(max_heap)     # negate back → 8
+max_val = -heapq.heappop(max_heap)     # negate back to recover the true value → 8
 
 # ── k-th largest element pattern ───
 def kth_largest(nums, k):
-    # Keep a min-heap of size k
-    # The top of the heap is the k-th largest element
     heap = []
     for x in nums:
         heapq.heappush(heap, x)
         if len(heap) > k:
-            heapq.heappop(heap)      # remove smallest — keeps k largest
-    return heap[0]                   # k-th largest
+            heapq.heappop(heap)      # WHY pop the min: we want to keep the k largest, so discard the smallest seen so far
+    # Loop invariant at end: heap contains exactly the k largest elements seen so far
+    return heap[0]   # heap[0] is the minimum of those k elements, i.e. the k-th largest overall
 
 # ── Heap with tuples (priority, value) ───
-# Python compares tuples element-by-element
-# So (priority, item) lets you sort by priority first
+# WHY tuple: heapq compares tuples element-by-element, so the first field acts as the sort key
 task_queue = []
 heapq.heappush(task_queue, (3, "low priority"))
 heapq.heappush(task_queue, (1, "urgent"))
 heapq.heappush(task_queue, (2, "medium"))
-heapq.heappop(task_queue)   # → (1, "urgent")
+heapq.heappop(task_queue)   # → (1, "urgent"); smallest priority integer wins
 
-# Dijkstra pattern
+# Dijkstra pattern — same idea: dist is primary sort key, node breaks ties
 heapq.heappush(heap, (dist, node))
-dist, node = heapq.heappop(heap)
+dist, node = heapq.heappop(heap)   # always yields the unvisited node with the shortest known distance
 
 # ── Convenience functions ───
-heapq.nlargest(3, [5,3,8,1,9,2])   # [9, 8, 5]  — O(n + k log n)
+heapq.nlargest(3, [5,3,8,1,9,2])   # [9, 8, 5]  — O(n + k log n); uses a heap of size k internally
 heapq.nsmallest(3, [5,3,8,1,9,2])  # [1, 2, 3]  — O(n + k log n)
-# (use sorted() if k is close to n)</code></pre>
+# WHY use sorted() when k ≈ n: O(n log n) sort beats O(n + k log n) once k is a large fraction of n</code></pre>
 
     <div class="table-wrap">
       <table>

@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 11 – Expressions, Formulas & Operators</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 12 Modules</p></div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Course</div>
+      <a href="index.html"><span class="num">🏠</span> Home</a>
+      <div class="sidebar-section">Modules</div>
+      <a href="module1.html"><span class="num">1</span> Python Fundamentals</a>
+      <a href="module2.html"><span class="num">2</span> Core Data Structures</a>
+      <a href="module3.html"><span class="num">3</span> Control Flow & Functions</a>
+      <a href="module4.html"><span class="num">4</span> Searching & Sorting</a>
+      <a href="module5.html"><span class="num">5</span> Algorithm Patterns</a>
+      <a href="module6.html"><span class="num">6</span> Graph Algorithms</a>
+      <a href="module7.html"><span class="num">7</span> Dynamic Programming</a>
+      <a href="module8.html"><span class="num">8</span> Trees</a>
+      <a href="module9.html"><span class="num">9</span> Standard Library</a>
+      <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+      <a href="module11.html" class="active"><span class="num">11</span> Expressions & Formulas</a>
+      <a href="module12.html"><span class="num">12</span> More Patterns</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="module-header">
+      <div class="module-number">Module 11</div>
+      <h1>Expressions, Formulas &amp; Operators</h1>
+      <p class="subtitle">The mathematical building blocks used constantly in coding problems — bitwise tricks, modular arithmetic, combinatorics, index formulas, and the Python-specific operators that trip people up.</p>
+    </div>
+
+    <!-- ===== ARITHMETIC OPERATORS ===== -->
+    <h2>Arithmetic Operators — Every Detail</h2>
+
+    <h3>Division: Three Operators You Must Know</h3>
+    <p>Python has <strong>three separate division operators</strong>. This is different from C++/Java which have only one. Getting these wrong is a very common source of bugs.</p>
+    <pre><code class="language-python"># /   → True division — ALWAYS returns float
+10 / 3      # 3.3333...
+10 / 2      # 5.0       ← still a float, even when exact!
+9 / 3       # 3.0
+
+# //  → Floor division — rounds toward negative infinity
+# WHY floor (not truncation): Python chose mathematical consistency over C-compat
+10 // 3     # 3         ← floor(3.33) = 3
+-10 // 3    # -4        ← floor(-3.33) = -4 (NOT -3!)
+10 // -3    # -4        ← floor(-3.33) = -4
+7 // 2      # 3
+-7 // 2     # -4        ← TRAP: truncation would give -3, floor gives -4
+
+# %   → Modulo — result has same sign as DIVISOR (in Python)
+# WHY: Python guarantees a = (a//b)*b + (a%b); floor division forces this sign rule
+10 % 3      # 1
+-10 % 3     # 2         ← TRAP: not -1! Python: result is always >= 0 when divisor > 0
+10 % -3     # -2        ← negative when divisor is negative
+-7 % 2      # 1         ← always non-negative when divisor is positive
+
+# Identity: a == (a // b) * b + (a % b)  — always holds in Python
+# Check: -10 == (-4)*3 + 2 = -12 + 2 = -10 ✓
+
+# divmod — both at once in one call (more efficient than doing both)
+# WHY use divmod: single division instruction internally vs two separate ops
+divmod(10, 3)    # (3, 1)   — (quotient, remainder)
+divmod(-10, 3)   # (-4, 2)  — consistent with // and %
+divmod(17, 5)    # (3, 2)
+
+# ** → Exponentiation
+2 ** 10         # 1024
+(-2) ** 3       # -8
+2 ** -1         # 0.5   ← WHY float: negative exponent can't be represented as int
+2 ** 0          # 1</code></pre>
+
+    <div class="callout warning">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <strong>Floor division vs truncation — the negative number trap</strong>
+        <p>C++/Java truncate toward zero: <code>-7/2 = -3</code>. Python floors toward <code>-∞</code>: <code>-7//2 = -4</code>. If you're porting an algorithm, this is the most common source of off-by-one errors. When you need truncation: <code>int(-7/2)</code> gives <code>-3</code>.</p>
+      </div>
+    </div>
+
+    <h3>Augmented Assignment Operators</h3>
+    <pre><code class="language-python">x = 10
+x += 3    # x = 13   — add and assign
+x -= 2    # x = 11   — subtract and assign
+x *= 4    # x = 44   — multiply and assign
+x //= 3   # x = 14   — floor divide and assign (same floor rules as //)
+x **= 2   # x = 196  — power and assign
+x %= 7    # x = 0    — modulo and assign
+x &= 0b1010  # bitwise AND and assign — clears bits not in mask
+x |= 0b0101  # bitwise OR and assign  — sets bits in mask
+x ^= 0b1111  # bitwise XOR and assign — toggles bits in mask
+x <<= 2   # left shift and assign  — multiplies x by 4
+x >>= 1   # right shift and assign — floor-divides x by 2
+
+# NOTE: Python has no ++ or -- operators. Use += 1 and -= 1.
+# WHY: ++ is ambiguous with unary + in Python's grammar; was intentionally omitted</code></pre>
+
+    <!-- ===== BITWISE ===== -->
+    <h2>Bitwise Operators</h2>
+    <p>Bitwise operators work directly on the binary representation of integers. Essential for bitmask DP, flag manipulation, and interview bit tricks.</p>
+
+    <div class="visual-box">
+      <div class="label">Binary representation review</div>
+Decimal 13 = binary 1101
+             bit 3  bit 2  bit 1  bit 0
+                1      1      0      1
+
+Bit positions are 0-indexed from the RIGHT.
+Bit 0 (rightmost) = least significant bit (LSB)
+Bit 31 (for 32-bit) = most significant bit (MSB)
+
+To read bit i of number n:  (n >> i) & 1
+To read bit 3 of 13: (13 >> 3) & 1 = (1) & 1 = 1  ✓
+    </div>
+
+    <h3>The Six Bitwise Operators</h3>
+    <pre><code class="language-python"># a = 0b1100 = 12    b = 0b1010 = 10
+
+a = 12    # 1 1 0 0
+b = 10    # 1 0 1 0
+
+a & b     # 1 0 0 0 = 8   — AND:  1 only where BOTH are 1
+a | b     # 1 1 1 0 = 14  — OR:   1 where AT LEAST ONE is 1
+a ^ b     # 0 1 1 0 = 6   — XOR:  1 where EXACTLY ONE is 1 (differs)
+~a        # -(a+1) = -13  — NOT:  flips all bits; WHY -(a+1): two's complement inversion
+a << 1    # 1 1 0 0 0 = 24 — left shift: multiply by 2^n (new low bits are always 0)
+a >> 1    # 0 1 1 0 = 6    — right shift: floor divide by 2^n (sign bit replicated on left)
+
+# Shift rules
+n << k   ==  n * (2**k)
+n >> k   ==  n // (2**k)   # WHY floor: arithmetic right shift replicates sign bit, matching floor div</code></pre>
+
+    <h3>Bit Tricks — The Essential Toolkit</h3>
+
+    <div class="fig">
+      <div class="bit-wrap">
+        <div class="step-label">Bit operations on n = 0b1101 = 13 — each row is an independent operation on the same n</div>
+        <div class="bit-row">
+          <div class="bit-row-lbl">n = 13 (base)</div>
+          <div class="bv"><div class="bv-pos">bit3</div><div class="bv-val on">1</div></div>
+          <div class="bv"><div class="bv-pos">bit2</div><div class="bv-val on">1</div></div>
+          <div class="bv"><div class="bv-pos">bit1</div><div class="bv-val off">0</div></div>
+          <div class="bv"><div class="bv-pos">bit0</div><div class="bv-val on">1</div></div>
+          <span style="font-size:0.75rem;color:var(--muted);align-self:center;margin-left:14px">0b1101</span>
+        </div>
+        <div class="bit-row">
+          <div class="bit-row-lbl">set bit 1 → 15</div>
+          <div class="bv"><div class="bv-val on">1</div></div>
+          <div class="bv"><div class="bv-val on">1</div></div>
+          <div class="bv"><div class="bv-val res">1</div></div>
+          <div class="bv"><div class="bv-val on">1</div></div>
+          <span style="font-size:0.75rem;color:var(--green);align-self:center;margin-left:14px">n | (1&lt;&lt;1)</span>
+        </div>
+        <div class="bit-row">
+          <div class="bit-row-lbl">clear bit 2 → 9</div>
+          <div class="bv"><div class="bv-val on">1</div></div>
+          <div class="bv"><div class="bv-val chg">0</div></div>
+          <div class="bv"><div class="bv-val off">0</div></div>
+          <div class="bv"><div class="bv-val on">1</div></div>
+          <span style="font-size:0.75rem;color:var(--red);align-self:center;margin-left:14px">n &amp; ~(1&lt;&lt;2)</span>
+        </div>
+        <div class="bit-row">
+          <div class="bit-row-lbl">toggle bit 0 → 12</div>
+          <div class="bv"><div class="bv-val on">1</div></div>
+          <div class="bv"><div class="bv-val on">1</div></div>
+          <div class="bv"><div class="bv-val off">0</div></div>
+          <div class="bv"><div class="bv-val chg">0</div></div>
+          <span style="font-size:0.75rem;color:var(--yellow);align-self:center;margin-left:14px">n ^ (1&lt;&lt;0)</span>
+        </div>
+        <div class="bit-row">
+          <div class="bit-row-lbl">n &amp; (n−1) → 12</div>
+          <div class="bv"><div class="bv-val on">1</div></div>
+          <div class="bv"><div class="bv-val on">1</div></div>
+          <div class="bv"><div class="bv-val off">0</div></div>
+          <div class="bv"><div class="bv-val chg">0</div></div>
+          <span style="font-size:0.75rem;color:var(--muted);align-self:center;margin-left:14px">clear lowest set bit</span>
+        </div>
+        <div class="bit-row">
+          <div class="bit-row-lbl">n &amp; (−n) → 1</div>
+          <div class="bv"><div class="bv-val off">0</div></div>
+          <div class="bv"><div class="bv-val off">0</div></div>
+          <div class="bv"><div class="bv-val off">0</div></div>
+          <div class="bv"><div class="bv-val res">1</div></div>
+          <span style="font-size:0.75rem;color:var(--muted);align-self:center;margin-left:14px">isolate lowest set bit</span>
+        </div>
+      </div>
+      <div class="fig-caption">Green = bit turned ON / isolated. Red = bit turned OFF. Yellow = bit flipped. Each row is an independent operation on n=13 (0b1101). Bit positions (3→0 left to right) stay consistent across all rows.</div>
+    </div>
+
+    <pre><code class="language-python"># ── Check if bit i is set ───
+def is_bit_set(n, i):
+    # WHY >> before &: shift puts bit i into position 0, then & 1 masks all others
+    return (n >> i) & 1 == 1
+# Example: is bit 2 set in 12 (=1100)?
+(12 >> 2) & 1   # → 1  ✓
+
+# ── Set bit i (turn it ON) ───
+def set_bit(n, i):
+    # WHY |: OR sets the target bit regardless of its current value; other bits unchanged
+    return n | (1 << i)
+set_bit(0b1000, 1)  # → 0b1010
+
+# ── Clear bit i (turn it OFF) ───
+def clear_bit(n, i):
+    # WHY ~(1<<i): creates a mask with all 1s except bit i; AND then forces that bit to 0
+    return n & ~(1 << i)
+clear_bit(0b1010, 1)  # → 0b1000
+
+# ── Toggle bit i (flip it) ───
+def toggle_bit(n, i):
+    # WHY XOR: 1 XOR 1 = 0, 0 XOR 1 = 1 — flips exactly one bit; all others stay unchanged
+    return n ^ (1 << i)
+toggle_bit(0b1010, 1)   # → 0b1000 (was 1, now 0)
+toggle_bit(0b1000, 1)   # → 0b1010 (was 0, now 1)
+
+# ── Count set bits (popcount) ───
+bin(13).count('1')      # 3  — simple string method
+n.bit_count()           # 3  — Python 3.10+, fastest
+
+# Manual (Brian Kernighan's algorithm): O(number of set bits)
+def count_bits(n):
+    count = 0
+    while n:             # loop invariant: n still has unprocessed set bits
+        n &= n - 1       # WHY n&(n-1): n-1 flips lowest set bit and all below it; AND clears only that bit
+        count += 1
+    return count
+    # WHY terminate: each iteration removes one set bit; loop ends when n == 0
+
+# ── Check if n is a power of 2 ───
+def is_power_of_2(n):
+    # WHY n>0 guard: 0 passes the bitmask test but is not a power of 2
+    return n > 0 and (n & (n - 1)) == 0
+# A power of 2 has exactly one set bit: 0b1000
+# n-1 flips that bit and all below it: 0b0111
+# Their AND is 0 iff n has exactly one set bit (i.e., is a power of 2)
+
+# ── Isolate lowest set bit ───
+n & (-n)      # e.g., 12 (1100) → 4 (0100)
+# WHY -n: two's complement negation inverts all bits then adds 1, which causes
+#         a carry ripple that stops exactly at the lowest set bit position,
+#         leaving only that bit set in both n and -n.
+# Used in Fenwick Tree / BIT for index traversal
+
+# ── Clear lowest set bit ───
+n & (n - 1)   # e.g., 12 (1100) → 8 (1000)
+# WHY n-1: subtracting 1 borrows from the lowest set bit, clearing it and setting all bits below it;
+#          AND with n then clears those lower bits since they are 0 in n
+
+# ── XOR to find unique element ───
+# WHY XOR: identical values cancel (a^a=0) and order doesn't matter (XOR is commutative+associative)
+# So XOR-ing an array with one unique element leaves only the unique one
+nums = [4, 1, 2, 1, 2]
+result = 0              # WHY start at 0: 0 is the XOR identity (n^0 = n)
+for x in nums:
+    result ^= x
+# result = 4  (1^1=0, 2^2=0, 4^0=4)
+
+# Swap two integers without a temp variable
+a, b = 5, 9
+a ^= b   # a = 5^9 = 12   (a now holds a^b)
+b ^= a   # b = 9^12 = 5   (b^(a^b) = a — original a extracted)
+a ^= b   # a = 12^5 = 9   ((a^b)^a = b — original b extracted)
+# Now a=9, b=5  (simpler: just use `a, b = b, a` in Python)
+# WHY this works: XOR is its own inverse; applying it twice restores the original value</code></pre>
+
+    <h3>Bitmask Patterns for Subsets</h3>
+    <p>A bitmask represents a subset: bit <code>i</code> = 1 means element <code>i</code> is included. With <code>n</code> elements there are <code>2^n</code> subsets, each represented by an integer <code>0..2^n - 1</code>.</p>
+
+    <div class="fig">
+      <div class="arr-wrap">
+        <div class="step-label">Bitmask subset enumeration — n=3 elements [A, B, C] → 2³=8 subsets (masks 0–7)</div>
+        <div style="overflow-x:auto;margin:8px 0">
+          <div class="dp-fig" style="display:inline-block;margin:0">
+            <table>
+              <thead>
+                <tr><th>mask</th><th>bit2 (A)</th><th>bit1 (B)</th><th>bit0 (C)</th><th>elements in subset</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="dim">0b000 = 0</td><td class="dim">0</td><td class="dim">0</td><td class="dim">0</td><td class="dim">∅ (empty)</td></tr>
+                <tr><td>0b001 = 1</td><td>0</td><td>0</td><td class="dep">1</td><td>{C}</td></tr>
+                <tr><td>0b010 = 2</td><td>0</td><td class="dep">1</td><td>0</td><td>{B}</td></tr>
+                <tr><td>0b011 = 3</td><td>0</td><td class="dep">1</td><td class="dep">1</td><td>{B, C}</td></tr>
+                <tr><td>0b100 = 4</td><td class="dep">1</td><td>0</td><td>0</td><td>{A}</td></tr>
+                <tr><td>0b101 = 5</td><td class="dep">1</td><td>0</td><td class="dep">1</td><td>{A, C}</td></tr>
+                <tr><td>0b110 = 6</td><td class="dep">1</td><td class="dep">1</td><td>0</td><td>{A, B}</td></tr>
+                <tr><td class="mat">0b111 = 7</td><td class="mat">1</td><td class="mat">1</td><td class="mat">1</td><td class="mat">{A, B, C} (full)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="fig-caption">Bit i = 1 means element i is in the subset. Check: <code>mask &amp; (1 &lt;&lt; i)</code>. Add element i: <code>mask | (1 &lt;&lt; i)</code>. All subsets of a mask: <code>sub = (sub−1) &amp; mask</code> (iterate down to 0).</div>
+    </div>
+
+    <pre><code class="language-python">n = 3   # elements: [a, b, c]
+# Subsets:  000=∅  001={c}  010={b}  011={b,c}  100={a}  101={a,c}  110={a,b}  111={a,b,c}
+
+# Enumerate ALL subsets of n elements
+for mask in range(1 << n):   # WHY 1<<n: 2^n total subsets; each integer 0..(2^n-1) is one subset
+    # mask & (1<<i) is nonzero iff element i is in this subset
+    subset = [i for i in range(n) if mask & (1 << i)]
+    print(bin(mask), subset)
+
+# Check if subset A is a subset of B (both bitmasks)
+def is_subset(A, B):
+    # WHY (A&B)==A: every bit set in A must also be set in B; AND zeros any bit missing in B
+    return (A & B) == A
+
+# Enumerate all subsets of a given mask (common in bitmask DP)
+mask = 0b1011
+sub = mask              # start from mask itself (the largest subset)
+while sub > 0:
+    # loop invariant: sub is a nonzero subset of mask (all set bits in sub are also set in mask)
+    # process sub as a subset of mask
+    sub = (sub - 1) & mask   # WHY (sub-1)&mask: sub-1 flips lowest set bit and all below it;
+                              # & mask restricts the result back to bits allowed by mask,
+                              # skipping non-mask bits and stepping to the next valid subset
+# WHY terminate at sub>0 (not sub>=0): the empty subset (0) is a valid subset but
+# the update `(0-1)&mask` wraps to mask itself, causing an infinite loop — handle 0 separately if needed
+
+# Total subsets of a mask: O(3^n) over all masks (not O(4^n)!)
+# This is because each element is in 4 states: not in mask, in mask but not sub, in both</code></pre>
+
+    <!-- ===== COMPARISON AND BOOLEAN ===== -->
+    <h2>Comparison &amp; Boolean Operators</h2>
+
+    <h3>Chained Comparisons</h3>
+    <pre><code class="language-python"># Python uniquely supports chaining — very clean for range checks
+0 <= x < n              # valid index check  (equivalent to: 0<=x and x<n)
+lo <= mid <= hi         # mid is between lo and hi
+a < b < c < d           # strictly increasing chain
+0 <= r < rows and 0 <= c < cols   # grid bounds check (still need 'and' here — chaining stops at 'and')
+
+# WHY chaining is safe: each operand evaluated exactly once (no double-evaluation side effects)
+x = 5
+1 < x < 10              # True  (x is strictly between 1 and 10)
+1 < x < 4               # False</code></pre>
+
+    <h3>Short-Circuit Evaluation</h3>
+    <pre><code class="language-python"># 'and' returns FIRST FALSY value, or last value if all truthy
+# WHY not True/False: 'and'/'or' preserve the actual object, enabling idiom-style defaults
+False and expensive()   # → False   (expensive() never called!)
+None and crash()        # → None    (crash() never called!)
+"hello" and "world"     # → "world" (both truthy, returns last)
+0 and 1                 # → 0       (first falsy)
+
+# 'or' returns FIRST TRUTHY value, or last value if all falsy
+True or expensive()     # → True    (expensive() never called!)
+None or "default"       # → "default"
+0 or False or 42        # → 42      (first truthy)
+0 or [] or {}           # → {}      (all falsy, returns last)
+
+# Common patterns in coding problems
+val = d.get(key) or default_val   # fallback when key missing or value is falsy
+node = node and node.next         # safe pointer advance: if node is None, short-circuits before .next
+result = results or [-1]          # return [-1] if results is empty
+
+# Walrus operator := — assign AND use in one expression (Python 3.8+)
+# WHY walrus: eliminates re-computing an expression just to both test and use it
+if n := len(nums):          # assigns len(nums) to n, checks if truthy (nonzero)
+    print(f"length: {n}")
+
+while chunk := file.read(1024):   # loop terminates when read() returns b'' (falsy empty bytes)
+    process(chunk)
+
+# In list comprehension
+filtered = [y for x in data if (y := transform(x)) > 0]   # compute once, filter and use</code></pre>
+
+    <!-- ===== MATH FORMULAS ===== -->
+    <h2>Mathematical Formulas</h2>
+
+    <h3>Arithmetic &amp; Geometric Series</h3>
+    <pre><code class="language-python"># Sum of 1 + 2 + 3 + ... + n
+n * (n + 1) // 2           # WHY //2: the product n*(n+1) always has one even factor, so exact int division
+                           # e.g., n=10 → 55
+
+# Sum of a + (a+d) + (a+2d) + ... (arithmetic series, k terms)
+# = k * (2a + (k-1)*d) / 2
+# = k * (first + last) / 2   ← use this form when you know the last term directly
+
+# Sum of squares: 1² + 2² + ... + n²
+n * (n + 1) * (2*n + 1) // 6
+# WHY //6: the product of three consecutive-ish terms is always divisible by 6 (provable by induction)
+
+# Sum of cubes: 1³ + 2³ + ... + n³
+(n * (n + 1) // 2) ** 2    # equals square of triangular number — nice identity
+
+# Sum of geometric series: a + a*r + a*r² + ... + a*r^(k-1)
+# = a * (r^k - 1) / (r - 1)   for r != 1
+# WHY r!=1 guard: denominator is 0 when r=1; that case is just a*k
+
+# Number of pairs from n elements: n*(n-1)/2
+# WHY: n choices for first element, n-1 for second, divide by 2 since order doesn't matter
+n * (n - 1) // 2</code></pre>
+
+    <h3>GCD, LCM, and Modular Arithmetic</h3>
+    <pre><code class="language-python">import math
+
+# GCD — Euclidean algorithm: O(log min(a,b))
+math.gcd(48, 18)     # 6
+math.gcd(0, 5)       # 5  (gcd(0,n) = n by definition — base case of Euclidean algorithm)
+math.gcd(12, 8, 6)   # 2  (Python 3.9+ — multiple args)
+
+# GCD of a list
+from functools import reduce
+reduce(math.gcd, [12, 8, 6, 4])   # 2
+
+# LCM
+math.lcm(4, 6)       # 12  (Python 3.9+)
+# Manual: lcm(a,b) = a * b // gcd(a,b)
+# WHY divide by gcd: cancels the shared factor counted twice in a*b
+def lcm(a, b): return a * b // math.gcd(a, b)
+
+# LCM of a list
+reduce(math.lcm, [4, 6, 10])   # 60
+
+# ── Modular Arithmetic ── (critical when answers can be huge)
+MOD = 10**9 + 7    # standard competitive programming modulus (prime)
+# WHY prime: primality is required for modular inverse via Fermat's little theorem
+
+# These identities hold with any prime modulus:
+(a + b) % MOD == ((a % MOD) + (b % MOD)) % MOD
+(a * b) % MOD == ((a % MOD) * (b % MOD)) % MOD
+(a - b) % MOD == ((a % MOD) - (b % MOD) + MOD) % MOD  # +MOD prevents negative
+# WHY +MOD before final %: Python % is always non-negative, but (a%MOD - b%MOD) can be negative;
+#                          adding MOD shifts the range to [0, 2*MOD) so the final % corrects it
+
+# Division under modulo — use modular inverse (only when MOD is prime)
+# a / b ≡ a * b^(MOD-2) (mod MOD)   by Fermat's little theorem
+# WHY MOD-2: Fermat's little theorem gives b^(MOD-1) ≡ 1 (mod MOD), so b^(MOD-2) ≡ b^(-1)
+def mod_inverse(b, mod=MOD):
+    return pow(b, mod - 2, mod)    # Python's built-in 3-arg pow does modular exponentiation in O(log exp)
+
+(a * mod_inverse(b)) % MOD   # ≡ a/b (mod MOD)
+
+# ── Fast Modular Exponentiation ──
+# Python's built-in pow(base, exp, mod) does this in O(log exp)
+pow(2, 1000000, MOD)      # 2^1000000 mod (10^9+7) — instant!
+pow(base, exp, mod)       # ALWAYS use this 3-arg form instead of (base**exp) % mod
+# WHY: (base**exp) computes the full integer first (astronomically large), THEN mods it — catastrophic
+
+# Manual binary exponentiation (to understand how it works):
+def fast_pow(base, exp, mod):
+    result = 1          # WHY start at 1: multiplicative identity (1*x = x)
+    base %= mod         # WHY reduce early: keeps base small before squaring loop begins
+    while exp > 0:      # loop invariant: answer = result * base^exp (mod mod)
+        if exp & 1:     # WHY &1: checks lowest bit of exp to decide if this power of base contributes
+            result = result * base % mod
+        base = base * base % mod  # square: moves to next power of 2 of the original base
+        exp >>= 1       # WHY >>1: discards the processed bit; terminates when all bits consumed
+    return result</code></pre>
+
+    <h3>Combinatorics</h3>
+    <pre><code class="language-python">import math
+
+# n choose k (binomial coefficient)
+math.comb(10, 3)    # 120   = 10! / (3! * 7!)
+
+# n permute k
+math.perm(5, 2)     # 20    = 5! / 3!
+
+# With modular arithmetic (for large n, k)
+MOD = 10**9 + 7
+
+def precompute_factorials(n, mod):
+    fact = [1] * (n + 1)
+    for i in range(1, n + 1):
+        fact[i] = fact[i-1] * i % mod      # build prefix factorial table iteratively
+    inv_fact = [1] * (n + 1)
+    inv_fact[n] = pow(fact[n], mod - 2, mod)  # WHY start from n: compute inv of n! via Fermat's theorem,
+                                               # then derive smaller inverses by working backwards
+    for i in range(n - 1, -1, -1):
+        inv_fact[i] = inv_fact[i+1] * (i+1) % mod  # WHY: inv_fact[i] = inv_fact[i+1] * (i+1)
+                                                     # because fact[i] * (i+1) = fact[i+1]
+    return fact, inv_fact
+
+def comb_mod(n, k, fact, inv_fact, mod=MOD):
+    if k < 0 or k > n: return 0    # WHY guard: C(n,k)=0 for invalid k; avoids index-out-of-bounds
+    # nCk = n! / (k! * (n-k)!) — use precomputed inverse factorials to avoid division under mod
+    return fact[n] * inv_fact[k] % mod * inv_fact[n-k] % mod
+
+# Pascal's triangle — for repeated nCk queries with small n
+def pascal(n):
+    C = [[0]*(n+1) for _ in range(n+1)]
+    for i in range(n+1):
+        C[i][0] = 1          # WHY base case C[i][0]=1: choosing 0 elements from i is always 1 way
+        for j in range(1, i+1):
+            C[i][j] = C[i-1][j-1] + C[i-1][j]  # WHY: Pascal's identity — include or exclude element i
+    return C</code></pre>
+
+    <h3>Number / Digit Formulas</h3>
+    <pre><code class="language-python">import math
+
+# Number of digits of n (base 10)
+def num_digits(n):
+    return len(str(n))           # simplest
+    # or: math.floor(math.log10(n)) + 1  for n > 0
+    # WHY avoid log10 in general: floating-point rounding can give wrong answer near powers of 10
+
+# Extract all digits of n
+def get_digits(n):
+    digits = []
+    n = abs(n)          # WHY abs: % on negative numbers gives non-intuitive results in some contexts
+    while n:            # loop invariant: remaining digits of n not yet extracted
+        digits.append(n % 10)   # extracts least-significant digit
+        n //= 10                 # strips the extracted digit
+    return digits[::-1]   # WHY reverse: loop produces digits LSB-first; reverse for MSB-first display
+# e.g., get_digits(1234) → [1, 2, 3, 4]
+
+# Digit sum
+def digit_sum(n):
+    return sum(int(d) for d in str(n))
+    # or: sum(get_digits(n))
+
+# Reverse a number
+def reverse_num(n):
+    sign = -1 if n < 0 else 1
+    return sign * int(str(abs(n))[::-1])
+
+# Check if palindrome number (without string conversion)
+def is_palindrome_num(n):
+    if n < 0 or (n % 10 == 0 and n != 0): return False
+    # WHY early return for n%10==0 (and n!=0): a number ending in 0 can't be a palindrome
+    # because that would require it to start with 0, which integers can't
+    reversed_half = 0
+    while n > reversed_half:     # loop terminates when we've processed half the digits
+        reversed_half = reversed_half * 10 + n % 10   # grow reversed side by one digit
+        n //= 10                                       # shrink original side by one digit
+    # WHY n==reversed_half//10 handles odd-length: middle digit doesn't need to match anything
+    return n == reversed_half or n == reversed_half // 10
+
+# Integer square root (exact, no float imprecision)
+math.isqrt(17)   # 4   — floor(sqrt(17))
+math.isqrt(16)   # 4
+# WHY isqrt over int(math.sqrt(n)): sqrt() uses floats; for large n, rounding error can give wrong result
+
+# Check if perfect square
+def is_perfect_square(n):
+    r = math.isqrt(n)
+    return r * r == n   # WHY multiply back: isqrt floors, so squaring verifies it's exact
+
+# Number of trailing zeros in n!
+def trailing_zeros_factorial(n):
+    count = 0
+    # WHY count factors of 5: each trailing zero = one factor of 10 = one pair (2,5);
+    #     factors of 2 always exceed factors of 5 in n!, so only 5s are the bottleneck
+    while n >= 5:        # loop terminates when no more multiples of 5 remain
+        n //= 5          # WHY //=5 iteratively: counts multiples of 5, then 25, then 125, etc.
+        count += n       # n after division = count of multiples of 5^k in original n
+    return count</code></pre>
+
+    <!-- ===== INDEX FORMULAS ===== -->
+    <h2>Index Formulas</h2>
+    <p>These expressions appear repeatedly when working with grids, heaps, and circular structures.</p>
+
+    <h3>Grid Index Conversions</h3>
+    <pre><code class="language-python"># 2D grid of shape (rows, cols)
+# Convert between 1D index and 2D coordinates
+
+# 1D → 2D
+row = idx // cols    # WHY //cols: integer division gives which row (how many full rows fit)
+col = idx  % cols    # WHY %cols: remainder gives position within that row
+
+# 2D → 1D
+idx = row * cols + col   # WHY *cols: skip 'row' full rows, then offset by column
+
+# Example: 3x4 grid
+# idx=5 → row=5//4=1, col=5%4=1 → grid[1][1]
+# grid[2][3] → idx=2*4+3=11
+
+# Neighbor directions (memorize these)
+dirs_4 = [(0,1),(0,-1),(1,0),(-1,0)]              # up/down/left/right
+dirs_8 = [(dr,dc) for dr in [-1,0,1] for dc in [-1,0,1] if (dr,dc)!=(0,0)]
+# WHY exclude (0,0): that's the cell itself, not a neighbor
+
+# Grid bounds check
+def in_bounds(r, c, rows, cols):
+    return 0 <= r < rows and 0 <= c < cols
+    # WHY check all four conditions: any out-of-range index causes IndexError or silent wrap in lists
+
+# Diagonal neighbor check (for chess problems, 8-connectivity)
+for dr in range(-1, 2):    # dr in {-1, 0, 1}
+    for dc in range(-1, 2): # dc in {-1, 0, 1}
+        if dr == 0 and dc == 0: continue   # WHY skip: (0,0) is the current cell, not a neighbor
+        nr, nc = r+dr, c+dc</code></pre>
+
+    <h3>Circular / Modular Indexing</h3>
+    <pre><code class="language-python">n = len(arr)
+
+# Next element (wraps around)
+next_idx = (i + 1) % n    # WHY %n: when i==n-1, (n-1+1)%n == 0, wrapping back to start
+
+# Previous element (wraps around — % in Python is always non-negative)
+prev_idx = (i - 1) % n     # Python: (-1) % 5 == 4 ✓  (C++: would be -1, requiring manual +n fix)
+# WHY this works in Python: Python's % always returns a non-negative result when n>0
+
+# Advance by k steps
+new_idx = (i + k) % n      # WHY %n: handles k > n (multiple full laps) correctly
+
+# Distance between i and j in a circular array (shorter arc)
+clockwise     = (j - i) % n    # WHY %n: if j<i, result goes negative; % wraps it to the forward distance
+counter_clock = (i - j) % n    # WHY %n: symmetric — distance going the other way
+min_dist = min(clockwise, counter_clock)
+
+# Common in circular array problems: unroll the array
+doubled = arr + arr   # length 2n — treat circular problem as linear
+# WHY 2n: any circular window of length <=n appears as a contiguous subarray somewhere in doubled</code></pre>
+
+    <h3>Heap Index Formulas</h3>
+    <pre><code class="language-python"># In a heap stored as array (0-indexed):
+parent(i)       = (i - 1) // 2   # WHY -1 before //2: root is at 0; left child of root is 1, parent(1)=(1-1)//2=0 ✓
+left_child(i)   = 2 * i + 1      # WHY +1: root at 0 means left child of root is 1 (not 0)
+right_child(i)  = 2 * i + 2      # WHY +2: right child is always one past the left child
+
+# In a heap stored as array (1-indexed — used in some competitive programming):
+parent(i)       = i // 2         # WHY simpler: root at 1 makes parent(2)=1, parent(3)=1 — cleaner math
+left_child(i)   = 2 * i          # WHY no +1: root at 1 means left child of root is exactly 2
+right_child(i)  = 2 * i + 1</code></pre>
+
+    <!-- ===== COMMON EXPRESSION PATTERNS ===== -->
+    <h2>Common Expression Patterns</h2>
+
+    <h3>Clamping and Ranges</h3>
+    <pre><code class="language-python"># Clamp value to [lo, hi]
+clamped = max(lo, min(hi, value))   # WHY min first: caps at hi, then max ensures floor at lo
+clamped = min(max(value, lo), hi)   # same thing — both forms are correct and equivalent
+
+# Python 3: no built-in clamp, but these one-liners work
+# Or use numpy.clip for arrays
+
+# Map a value from [in_min, in_max] to [out_min, out_max]
+def linear_map(x, in_min, in_max, out_min, out_max):
+    # WHY (x-in_min)/(in_max-in_min): normalizes x to [0,1] relative to input range
+    # then scale and shift into the output range
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min</code></pre>
+
+    <h3>Infinity and Comparisons</h3>
+    <pre><code class="language-python">INF = float('inf')    # WHY float('inf'): Python has no integer infinity; this IEEE 754 value
+                      #                   compares greater than any finite number
+NEG_INF = float('-inf')   # compares less than any finite number
+
+# Works with all comparisons
+5 < float('inf')      # True
+float('-inf') < -10**18  # True
+
+# For integer-only code, common large constants:
+INF = 10**18    # WHY not float('inf'): some code paths expect int arithmetic (e.g., DP tables)
+# Or: INF = 2**63 - 1  (max 64-bit signed int — safe upper bound for most contest constraints)
+
+# Initialize min/max searches
+best_min = float('inf')    # WHY inf: guarantees first real value always beats the initial sentinel
+best_max = float('-inf')   # WHY -inf: guarantees first real value always beats the initial sentinel
+for x in nums:
+    best_min = min(best_min, x)
+    best_max = max(best_max, x)</code></pre>
+
+    <h3>String / Character Expressions</h3>
+    <pre><code class="language-python"># ── Map letter to 0-25 index ───
+i = ord(c) - ord('a')       # WHY subtract ord('a'): normalizes 'a'..'z' to 0..25 regardless of ASCII value
+c = chr(i + ord('a'))       # inverse: 0→'a', 1→'b', ..., 25→'z'
+
+# ── Check character type without imports ───
+'a' <= c <= 'z'    # lowercase letter
+'A' <= c <= 'Z'    # uppercase letter
+'0' <= c <= '9'    # digit
+# WHY chained comparison works: characters compare by Unicode code point, which is contiguous for a-z, A-Z, 0-9
+# (same as c.islower(), c.isupper(), c.isdigit())
+
+# ── Encode/decode a string as frequency vector ───
+def to_freq(s):
+    freq = [0] * 26
+    for c in s:
+        freq[ord(c) - ord('a')] += 1
+    return tuple(freq)   # WHY tuple: lists are not hashable; tuple can be used as dict/set key
+
+# Anagram detection: same frequency vector
+def is_anagram(s, t):
+    return sorted(s) == sorted(t)             # O(n log n)
+    # return Counter(s) == Counter(t)         # O(n)
+    # return to_freq(s) == to_freq(t)         # O(n), works for lowercase only
+    # WHY all three equivalent: anagrams have identical character multisets
+
+# ── Palindrome check ───
+def is_palindrome(s):
+    return s == s[::-1]   # WHY [::-1]: Python negative step creates a reversed copy; O(n) time and space
+
+def is_palindrome_two_pointer(s):
+    l, r = 0, len(s) - 1
+    # loop invariant: s[0..l-1] == s[r+1..n-1] (outer characters confirmed equal so far)
+    while l < r:           # WHY l<r: when they meet or cross, all characters checked
+        if s[l] != s[r]: return False
+        l += 1; r -= 1
+    return True</code></pre>
+
+    <h3>Distance Formulas</h3>
+    <pre><code class="language-python">import math
+
+# Manhattan distance (grid distance, no diagonals)
+def manhattan(r1, c1, r2, c2):
+    return abs(r1 - r2) + abs(c1 - c2)
+    # WHY abs: distance is always non-negative regardless of direction
+
+# Euclidean distance
+def euclidean(r1, c1, r2, c2):
+    return math.sqrt((r1-r2)**2 + (c1-c2)**2)
+    # or: math.hypot(r1-r2, c1-c2)   — numerically stabler for very large values
+    # or: math.dist((r1,c1), (r2,c2))  — Python 3.8+, works for arbitrary dimensions
+
+# Chebyshev distance (king moves on a chessboard — max of abs differences)
+def chebyshev(r1, c1, r2, c2):
+    return max(abs(r1-r2), abs(c1-c2))
+    # WHY max: a king moves one step in any direction per turn; the longer axis determines total moves
+
+# Avoid sqrt for comparison (comparing distances² is equivalent and avoids float)
+# WHY: sqrt is monotonically increasing, so d1 < d2 iff d1² < d2²; keeps result as exact int
+# Instead of: if euclidean(p1, p2) < euclidean(p3, p4)
+# Use:        if (p1[0]-p2[0])**2 + (p1[1]-p2[1])**2 < (p3[0]-p4[0])**2 + (p3[1]-p4[1])**2</code></pre>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Operation</th><th>Python Expression</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Check bit <code>i</code> set</td><td><code>(n >> i) & 1</code></td><td>Returns 0 or 1</td></tr>
+          <tr><td>Set bit <code>i</code></td><td><code>n | (1 << i)</code></td><td></td></tr>
+          <tr><td>Clear bit <code>i</code></td><td><code>n & ~(1 << i)</code></td><td></td></tr>
+          <tr><td>Toggle bit <code>i</code></td><td><code>n ^ (1 << i)</code></td><td></td></tr>
+          <tr><td>Count set bits</td><td><code>bin(n).count('1')</code></td><td><code>n.bit_count()</code> in 3.10+</td></tr>
+          <tr><td>Power of 2 check</td><td><code>n &gt; 0 and not (n & n-1)</code></td><td></td></tr>
+          <tr><td>Lowest set bit</td><td><code>n & (-n)</code></td><td>Used in Fenwick tree</td></tr>
+          <tr><td>Clear lowest set bit</td><td><code>n & (n-1)</code></td><td></td></tr>
+          <tr><td>Sum 1..n</td><td><code>n*(n+1)//2</code></td><td></td></tr>
+          <tr><td>Modular power</td><td><code>pow(b, e, m)</code></td><td>3-arg form, O(log e)</td></tr>
+          <tr><td>Floor to even</td><td><code>n & ~1</code></td><td>Clears bit 0</td></tr>
+          <tr><td>Circular next</td><td><code>(i+1) % n</code></td><td></td></tr>
+          <tr><td>Circular prev</td><td><code>(i-1) % n</code></td><td>Always non-negative in Python</td></tr>
+          <tr><td>2D→1D index</td><td><code>r*cols + c</code></td><td></td></tr>
+          <tr><td>1D→2D row</td><td><code>idx // cols</code></td><td></td></tr>
+          <tr><td>1D→2D col</td><td><code>idx % cols</code></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="nav-footer">
+      <a href="module10.html" class="nav-btn">
+        <span class="nav-dir">← Previous</span>
+        <span class="nav-title">Problem Walkthroughs</span>
+      </a>
+      <a href="module12.html" class="nav-btn next">
+        <span class="nav-dir">Next →</span>
+        <span class="nav-title">More Patterns</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

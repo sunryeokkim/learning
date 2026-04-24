@@ -11,7 +11,7 @@
 </head>
 <body>
   <nav class="sidebar">
-    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 12 Modules</p></div>
     <div class="sidebar-nav">
       <div class="sidebar-section">Course</div>
       <a href="index.html"><span class="num">🏠</span> Home</a>
@@ -26,6 +26,8 @@
       <a href="module8.html"><span class="num">8</span> Trees</a>
       <a href="module9.html"><span class="num">9</span> Standard Library</a>
       <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+      <a href="module11.html"><span class="num">11</span> Expressions &amp; Formulas</a>
+      <a href="module12.html"><span class="num">12</span> More Patterns</a>
     </div>
   </nav>
 
@@ -38,43 +40,97 @@
 
     <!-- ===== REPRESENTATION ===== -->
     <h2>Graph Representations</h2>
+    <p><strong>Recognition signals:</strong> Any problem involving connections, relationships, or reachability between entities is a graph problem. Keywords include "network", "connected", "path", "dependencies", "neighbors", and "grid".</p>
+    <p><strong>Adjacency list vs adjacency matrix:</strong> Use an <em>adjacency list</em> (the default) when the graph is sparse — most real-world graphs have far fewer edges than V². It uses O(V+E) space and iterates only over actual neighbors. Use an <em>adjacency matrix</em> only when you need O(1) edge-existence lookup and the graph is dense (E ≈ V²), or when V is small enough that the V² space is acceptable. For interview problems, adjacency list is almost always the right choice.</p>
+    <p><strong>Grids as implicit graphs:</strong> A 2-D grid is a graph where each cell is a node and edges connect adjacent cells. You never need to build an explicit adjacency list — just compute the four (or eight) neighbors on the fly with direction arrays. This saves both memory and construction time. The "implicit graph" insight is the key to all grid BFS/DFS problems: treat the grid cells as nodes and the direction arrays as the edge-generation function.</p>
+    <p><strong>Time/space tradeoffs:</strong> Adjacency list — O(V+E) space, O(degree) neighbor iteration. Adjacency matrix — O(V²) space, O(1) edge lookup, O(V) neighbor iteration. For a grid of R×C cells, the implicit approach is O(1) extra space per neighbor query versus O(R²C²) for an explicit matrix.</p>
     <pre><code class="language-python">from collections import defaultdict
 
 # ── Adjacency list (most common) ───
+# defaultdict(list) avoids KeyError for missing nodes — no need to pre-initialize
 graph = defaultdict(list)
 edges = [(0,1), (0,2), (1,3), (2,3), (3,4)]
 
-# Directed graph
+# Directed graph — edge u→v only; order matters (u depends on v, or u leads to v)
 for u, v in edges:
     graph[u].append(v)
 
-# Undirected graph — add both directions
+# Undirected graph — add both directions so graph[v] also contains u
+# WHY: if you only add u→v, traversal from v will never reach u
 for u, v in edges:
     graph[u].append(v)
     graph[v].append(u)
 
 # Weighted graph — store (neighbor, weight) tuples
+# WHY tuples: keeps neighbor and weight together; heap operations compare on first element
 weighted = defaultdict(list)
 weighted_edges = [(0, 1, 5), (0, 2, 3), (1, 3, 2)]
 for u, v, w in weighted_edges:
     weighted[u].append((v, w))
-    weighted[v].append((u, w))
+    weighted[v].append((u, w))   # both directions for undirected
 
 # ── Grid as implicit graph ───
-# No need to build explicit adjacency list for grids
-# Just compute neighbors on the fly
-dirs_4 = [(0,1),(0,-1),(1,0),(-1,0)]          # 4-directional
-dirs_8 = [(0,1),(0,-1),(1,0),(-1,0),(1,1),(1,-1),(-1,1),(-1,-1)]  # 8-directional
+# WHY implicit: building explicit edges for an R×C grid costs O(R*C) time and space.
+# Instead, compute neighbors on the fly — the direction array IS the edge definition.
+dirs_4 = [(0,1),(0,-1),(1,0),(-1,0)]          # 4-directional (up/down/left/right only)
+dirs_8 = [(0,1),(0,-1),(1,0),(-1,0),(1,1),(1,-1),(-1,1),(-1,-1)]  # 8-directional (diagonals too)
 
 def get_neighbors(r, c, rows, cols):
     for dr, dc in dirs_4:
         nr, nc = r + dr, c + dc
-        if 0 <= nr < rows and 0 <= nc < cols:
-            yield nr, nc   # using generator — no list allocation</code></pre>
+        if 0 <= nr < rows and 0 <= nc < cols:   # bounds check replaces adjacency list lookup
+            yield nr, nc   # generator — avoids allocating a list when caller may short-circuit</code></pre>
 
     <!-- ===== BFS ===== -->
     <h2>Breadth-First Search (BFS)</h2>
     <p>BFS explores nodes <strong>level by level</strong> — all nodes at distance 1 first, then distance 2, etc. It finds the <strong>shortest path</strong> in unweighted graphs because it reaches any node via the fewest possible edges.</p>
+    <p><strong>Recognition signals:</strong> "Shortest path" or "minimum number of steps/moves" in an unweighted graph or grid, "all nodes reachable from source", "connected components", "minimum jumps to reach target", or any problem where you want the <em>fewest hops</em> rather than the cheapest total weight.</p>
+    <p><strong>Key insight — why FIFO gives shortest path:</strong> A queue processes nodes in the exact order they were discovered. Because all edges are treated as weight-1, nodes discovered earlier are closer to the source. When BFS first reaches a node, it has taken the minimum number of hops — that distance is final and will never improve. This is the FIFO guarantee: you will never find a shorter path to a node after you have already processed all nodes at the previous distance level.</p>
+    <p><strong>Critical pitfall — visited before enqueue, not after dequeue:</strong> Marking a node as visited when it is <em>dequeued</em> allows the same node to be enqueued multiple times before it is ever processed. In a dense graph this can inflate the queue to O(E) entries instead of O(V), turning an O(V+E) algorithm into an O(E) enqueue storm. Always add a node to the visited set <em>before</em> (or at the same time as) enqueuing it. This ensures each node enters the queue at most once.</p>
+    <p><strong>Multi-source BFS:</strong> When you need the distance from each node to the nearest of several sources (e.g., "nearest 0 in a matrix", "nearest gate in a building"), initialize the queue with all sources simultaneously and set their distance to 0. BFS then fans out from all sources in parallel, naturally computing the nearest-source distance for every cell in one pass — no need to run BFS separately from each source.</p>
+
+    <div class="fig">
+      <div class="arr-wrap">
+        <div class="step-label">BFS from node 0 — graph: 0–1, 0–2, 1–3, 2–3 — queue contents at each step</div>
+
+        <div class="arr-step">
+          <div class="step-label" style="color:var(--muted)">Init — enqueue source; queue = [0]</div>
+          <div class="arr-row">
+            <span style="font-size:0.7rem;color:var(--muted);min-width:56px;align-self:center">queue →</span>
+            <div class="c"><div class="cv lo">0</div><div class="ci">d=0</div></div>
+          </div>
+        </div>
+
+        <div class="arr-step">
+          <div class="step-label" style="color:var(--muted)">Pop 0 → push neighbors 1, 2 (distance 1); queue = [1, 2]</div>
+          <div class="arr-row">
+            <span style="font-size:0.7rem;color:var(--muted);min-width:56px;align-self:center">queue →</span>
+            <div class="c"><div class="cv win">1</div><div class="ci">d=1</div></div>
+            <div class="c"><div class="cv win">2</div><div class="ci">d=1</div></div>
+          </div>
+        </div>
+
+        <div class="arr-step">
+          <div class="step-label" style="color:var(--muted)">Pop 1 → push 3 (d=2); pop 2 → 3 already visited (skip); queue = [3]</div>
+          <div class="arr-row">
+            <span style="font-size:0.7rem;color:var(--muted);min-width:56px;align-self:center">queue →</span>
+            <div class="c"><div class="cv win">3</div><div class="ci">d=2</div></div>
+          </div>
+        </div>
+
+        <div class="arr-step">
+          <div class="step-label" style="color:var(--muted)">Pop 3 → no new neighbors → queue empty → final shortest distances:</div>
+          <div class="arr-row">
+            <span style="font-size:0.7rem;color:var(--muted);min-width:56px;align-self:center">dist →</span>
+            <div class="c"><div class="cv ans">0</div><div class="ci">node 0</div></div>
+            <div class="c"><div class="cv ans">1</div><div class="ci">node 1</div></div>
+            <div class="c"><div class="cv ans">1</div><div class="ci">node 2</div></div>
+            <div class="c"><div class="cv ans">2</div><div class="ci">node 3</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="fig-caption">BFS processes nodes level by level. The visited set ensures each node is enqueued at most once. The first time a node leaves the queue, its distance is final — O(V+E) total.</div>
+    </div>
 
     <div class="visual-box">
       <div class="label">BFS traversal order from node 0</div>
@@ -96,89 +152,100 @@ Shortest distances from 0: {0:0, 1:1, 2:1, 3:2}
 
 # ── BFS: connected components / reachability ───
 def bfs(graph, start):
-    visited = {start}
-    queue = deque([start])
+    visited = {start}          # add to visited BEFORE enqueue — prevents duplicate queue entries
+    queue = deque([start])     # deque for O(1) popleft; list.pop(0) would be O(n) per operation
     order = []
     while queue:
-        node = queue.popleft()
+        node = queue.popleft() # FIFO — processes nodes level by level, nearest first
         order.append(node)
         for neighbor in graph[node]:
-            if neighbor not in visited:
-                visited.add(neighbor)
-                queue.append(neighbor)
-    return order
+            if neighbor not in visited:   # only enqueue nodes we haven't seen yet
+                visited.add(neighbor)     # mark HERE (before enqueue), not when dequeued —
+                queue.append(neighbor)    # if marked at dequeue, same node enters queue multiple
+    return order               # times from different parents, causing redundant work
 
 # ── BFS: shortest path (unweighted) ───
 def shortest_path(graph, start, end):
     if start == end: return 0
     visited = {start}
-    queue = deque([(start, 0)])
+    queue = deque([(start, 0)])    # track (node, distance) — dist increases by 1 per hop
     while queue:
         node, dist = queue.popleft()
         for neighbor in graph[node]:
             if neighbor == end:
-                return dist + 1
+                return dist + 1    # early termination — FIFO guarantees this is the shortest path
             if neighbor not in visited:
                 visited.add(neighbor)
                 queue.append((neighbor, dist + 1))
-    return -1   # unreachable
+    return -1   # unreachable — end not found in any connected component of start
 
 # ── BFS on a grid ───
 def bfs_grid(grid, start_r, start_c, target_r, target_c):
     rows, cols = len(grid), len(grid[0])
-    visited = {(start_r, start_c)}
-    queue = deque([(start_r, start_c, 0)])
+    visited = {(start_r, start_c)}         # tuples as hashable keys in the visited set
+    queue = deque([(start_r, start_c, 0)]) # (row, col, distance)
     while queue:
         r, c, dist = queue.popleft()
         if r == target_r and c == target_c:
-            return dist
+            return dist                     # first time we reach target = shortest path (FIFO)
         for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
             nr, nc = r + dr, c + dc
-            if (0 <= nr < rows and 0 <= nc < cols
-                    and grid[nr][nc] != '#'        # not a wall
+            if (0 <= nr < rows and 0 <= nc < cols   # bounds check replaces adjacency list
+                    and grid[nr][nc] != '#'          # obstacle check — problem-specific filter
                     and (nr, nc) not in visited):
-                visited.add((nr, nc))
+                visited.add((nr, nc))               # mark before enqueue to avoid duplicates
                 queue.append((nr, nc, dist + 1))
     return -1
 
 # ── Multi-source BFS ───
-# Start BFS from multiple sources simultaneously
+# WHY multi-source: instead of running BFS from each source separately (O(S * V+E)),
+# seed the queue with ALL sources at distance 0 and let BFS fan out simultaneously.
+# Each cell is naturally updated with its distance to the nearest source — one O(V+E) pass.
 # Use case: "01 Matrix" — distance from each cell to nearest 0
 def update_matrix(mat):
     rows, cols = len(mat), len(mat[0])
     dist = [[float('inf')] * cols for _ in range(rows)]
     queue = deque()
 
-    # Add all 0s as sources
+    # Seed queue with all 0-cells at distance 0 — these are the multi-sources
     for r in range(rows):
         for c in range(cols):
             if mat[r][c] == 0:
                 dist[r][c] = 0
-                queue.append((r, c))
+                queue.append((r, c))   # all sources start together at "level 0"
 
-    # BFS from all sources simultaneously
+    # BFS propagates outward from all sources simultaneously
+    # Queue invariant: entries are ordered by non-decreasing distance (FIFO preserves this)
     while queue:
         r, c = queue.popleft()
         for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
             nr, nc = r + dr, c + dc
             if 0 <= nr < rows and 0 <= nc < cols:
-                if dist[r][c] + 1 < dist[nr][nc]:
+                if dist[r][c] + 1 < dist[nr][nc]:   # only update if we found a shorter path
                     dist[nr][nc] = dist[r][c] + 1
-                    queue.append((nr, nc))
+                    queue.append((nr, nc))            # enqueue for further propagation
     return dist</code></pre>
 
     <!-- ===== DFS ===== -->
     <h2>Depth-First Search (DFS)</h2>
     <p>DFS goes as deep as possible before backtracking. It uses a stack (explicitly or via recursion). DFS is better than BFS for: finding connected components, cycle detection, topological sort, and exploring all paths.</p>
+    <p><strong>Recognition signals:</strong> "Find all paths", "detect a cycle", "topological ordering", "connected components" where you don't care about order, "can we reach target via any path", flood fill, or any problem that requires exhaustive exploration rather than shortest-distance guarantees.</p>
+    <p><strong>Stack vs queue — the only difference between DFS and BFS:</strong> Replace the queue with a stack (LIFO) and BFS becomes DFS. A stack always expands the most recently discovered node, diving deep before broadening. This is why DFS is natural for recursion — the call stack <em>is</em> the explicit stack.</p>
+    <p><strong>When DFS beats BFS:</strong> (1) Finding <em>all</em> paths — BFS can find them too but DFS's backtracking structure makes path reconstruction easier. (2) Cycle detection — DFS coloring naturally identifies back edges (edges to an ancestor in the current path). (3) Topological sort — DFS post-order gives a valid topological ordering with no extra bookkeeping. (4) Memory — DFS uses O(depth) memory on the call stack versus BFS's O(width) queue, which matters for very wide shallow graphs.</p>
+    <p><strong>Pitfall — Python recursion limit:</strong> Python's default recursion limit is 1000. For graphs or grids with depth greater than ~900 nodes, recursive DFS will raise <code>RecursionError</code>. Use iterative DFS with an explicit stack for deep graphs, or call <code>sys.setrecursionlimit()</code> only if you know the maximum depth in advance. Iterative DFS is always safe; recursive DFS is convenient for shallow graphs.</p>
 
     <pre><code class="language-python"># ── Recursive DFS ───
+# Natural for shallow graphs; Python call stack acts as the implicit DFS stack.
+# Limit: Python default recursion limit is 1000 — risky for graphs with depth > ~900.
 def dfs(node, visited, graph):
-    visited.add(node)
+    visited.add(node)           # mark before recursing to prevent infinite loops on cycles
     for neighbor in graph[node]:
         if neighbor not in visited:
-            dfs(neighbor, visited, graph)
+            dfs(neighbor, visited, graph)   # recurse — goes as deep as possible before backtracking
 
 # Count connected components
+# WHY: each unvisited node is the start of a new component.
+# DFS floods the entire component, so all nodes in it become visited.
 def count_components(n, edges):
     graph = defaultdict(list)
     for u, v in edges:
@@ -189,24 +256,27 @@ def count_components(n, edges):
     count = 0
     for node in range(n):
         if node not in visited:
-            dfs(node, visited, graph)
-            count += 1
+            dfs(node, visited, graph)   # floods the whole component
+            count += 1                  # we only get here for component roots
     return count
 
 # ── Iterative DFS (avoids recursion limit) ───
+# Replaces call stack with an explicit stack — safe for arbitrarily deep graphs.
+# NOTE: visited is checked AFTER popping (not before pushing) because the same node
+# can be pushed multiple times before being popped.
 def dfs_iterative(graph, start):
     visited = set()
-    stack = [start]
+    stack = [start]     # LIFO — last pushed = first explored (deepens before widening)
     order = []
     while stack:
         node = stack.pop()
-        if node in visited:
+        if node in visited:   # skip stale entries (node was pushed multiple times)
             continue
         visited.add(node)
         order.append(node)
         for neighbor in graph[node]:
             if neighbor not in visited:
-                stack.append(neighbor)
+                stack.append(neighbor)   # push all neighbors; LIFO will expand the last one first
     return order
 
 # ── DFS on grid: Number of Islands ───
@@ -215,69 +285,81 @@ def num_islands(grid):
     rows, cols = len(grid), len(grid[0])
 
     def dfs(r, c):
+        # Base case: out of bounds or water — stop recursion (no edge to follow)
         if r < 0 or r >= rows or c < 0 or c >= cols or grid[r][c] != '1':
             return
-        grid[r][c] = '0'    # mark visited by mutating (or use a separate visited set)
+        grid[r][c] = '0'    # mark visited by mutating in place — avoids a separate visited set
+        # Recursively flood all 4 neighbors of this land cell
         dfs(r+1, c); dfs(r-1, c); dfs(r, c+1); dfs(r, c-1)
 
     count = 0
     for r in range(rows):
         for c in range(cols):
             if grid[r][c] == '1':
-                dfs(r, c)
-                count += 1
+                dfs(r, c)   # DFS floods the entire island, marking all its cells as '0'
+                count += 1  # after flooding, we know we just processed one complete island
     return count
 
 # ── Cycle detection in directed graph (DFS coloring) ───
-# Color: 0=unvisited, 1=in_current_path, 2=fully_processed
+# WHY 3 colors: 2-color (visited/unvisited) can't distinguish "currently on path"
+# from "fully processed". A back edge to a fully-processed node is NOT a cycle.
+# Color: 0=unvisited, 1=in_current_DFS_path (gray), 2=fully_processed (black)
 def has_cycle(graph, n):
     color = [0] * n
 
     def dfs(node):
-        color[node] = 1   # visiting
+        color[node] = 1   # gray: currently being explored — on the active DFS path
         for neighbor in graph[node]:
-            if color[neighbor] == 1:    # back edge → cycle
+            if color[neighbor] == 1:    # back edge → found a node already on current path → cycle
                 return True
-            if color[neighbor] == 0 and dfs(neighbor):
+            if color[neighbor] == 0 and dfs(neighbor):   # white: recurse into unexplored node
                 return True
-        color[node] = 2   # fully processed
+        color[node] = 2   # black: all descendants explored, this node is safe (no cycle through it)
         return False
 
+    # Run DFS from each unvisited node to handle disconnected graphs
     return any(color[i] == 0 and dfs(i) for i in range(n))</code></pre>
 
     <!-- ===== TOPOLOGICAL SORT ===== -->
     <h2>Topological Sort</h2>
     <p>Orders nodes in a DAG (Directed Acyclic Graph) so that for every edge u→v, u comes before v in the ordering. Used for dependency resolution, course prerequisites, task scheduling.</p>
+    <p><strong>What is a DAG and why cycles break topological sort:</strong> A Directed Acyclic Graph is a directed graph with no cycles. Topological sort requires a DAG because if there is a cycle (A→B→C→A), then A must come before B, B before C, and C before A — a contradiction. There is no valid linear ordering when circular dependencies exist. This is why "can you finish all courses?" problems reduce to cycle detection: if a cycle exists, no topological order exists and the answer is "no".</p>
+    <p><strong>Core insight — in-degree 0 means no remaining dependencies:</strong> In Kahn's algorithm, a node with in-degree 0 has no remaining prerequisites. It is safe to schedule it next. When we schedule it, we remove its outgoing edges, potentially reducing neighbors' in-degrees to 0 — making them schedulable. The algorithm is a simulation of "process the next thing that has no blockers".</p>
+    <p><strong>Cycle detection via output length:</strong> Kahn's algorithm produces a topological order only if it processes all n nodes. If the output length is less than n, some nodes were never enqueued (their in-degree never reached 0), which means they are part of a cycle that kept their in-degrees above 0 forever. This gives you cycle detection for free with no extra code.</p>
 
     <pre><code class="language-python"># ── Kahn's Algorithm (BFS-based) — detects cycles ───
+# Queue invariant: always contains nodes whose in-degree has reached 0
+# (i.e., all their prerequisites have been scheduled already)
 def topological_sort_kahn(n, prerequisites):
     graph = defaultdict(list)
     indegree = [0] * n
 
     for course, prereq in prerequisites:
-        graph[prereq].append(course)
-        indegree[course] += 1
+        graph[prereq].append(course)   # prereq must come before course (prereq → course)
+        indegree[course] += 1          # course has one more prerequisite to satisfy
 
-    # Start with all nodes that have no prerequisites
+    # Seed queue with all nodes that have no prerequisites — they can be taken immediately
     queue = deque([i for i in range(n) if indegree[i] == 0])
     order = []
 
     while queue:
         node = queue.popleft()
-        order.append(node)
+        order.append(node)             # this node is scheduled — all its prereqs are done
         for neighbor in graph[node]:
-            indegree[neighbor] -= 1
+            indegree[neighbor] -= 1    # remove this edge — one fewer prereq for neighbor
             if indegree[neighbor] == 0:
-                queue.append(neighbor)
+                queue.append(neighbor) # neighbor now has no remaining prereqs — safe to schedule
 
-    # If not all nodes processed → cycle exists → impossible
+    # Cycle detection: if output < n, some nodes were stuck in a cycle (in-degree never hit 0)
     return order if len(order) == n else []
 
 # ── DFS-based topological sort ───
+# WHY reverse post-order: a node is appended only after ALL nodes reachable from it are done.
+# That means it naturally comes before all its descendants in the final reversed list.
 def topological_sort_dfs(n, edges):
     graph = defaultdict(list)
     for u, v in edges:
-        graph[u].append(v)
+        graph[u].append(v)   # directed: u must come before v
 
     visited = set()
     result = []
@@ -286,18 +368,22 @@ def topological_sort_dfs(n, edges):
         visited.add(node)
         for neighbor in graph[node]:
             if neighbor not in visited:
-                dfs(neighbor)
-        result.append(node)      # append AFTER processing all neighbors
+                dfs(neighbor)         # recurse: go as deep as possible first
+        result.append(node)           # append AFTER all reachable descendants are done (post-order)
 
     for i in range(n):
         if i not in visited:
-            dfs(i)
+            dfs(i)   # handle disconnected components — each unvisited node starts a new DFS tree
 
-    return result[::-1]   # reverse to get topological order</code></pre>
+    return result[::-1]   # reverse post-order = topological order (deepest nodes come last → first)</code></pre>
 
     <!-- ===== DIJKSTRA ===== -->
     <h2>Dijkstra's Algorithm</h2>
     <p>Finds the shortest path from a source to all other nodes in a graph with <strong>non-negative edge weights</strong>. Uses a min-heap to always expand the cheapest known node.</p>
+    <p><strong>Recognition signals:</strong> "Shortest path" with weighted edges, "minimum cost to reach", "cheapest flight", "network delay time", or any problem where edges have non-negative costs and you want the minimum total cost path.</p>
+    <p><strong>Why negative weights break Dijkstra:</strong> Dijkstra is a greedy algorithm that makes a permanent decision when a node is first popped from the heap: "this is the shortest distance to this node." This assumption holds because all edge weights are non-negative — you can never find a shorter path by going through more edges when each edge only adds cost. With negative weights, a later path through a negative edge could undercut a path already finalized, violating the greedy invariant. Use Bellman-Ford for graphs with negative weights.</p>
+    <p><strong>The "stale entry" problem and why the guard fixes it:</strong> Python's <code>heapq</code> has no decrease-key operation, so when we find a better distance to a node, we push a new entry <code>(new_dist, node)</code> onto the heap instead of updating the existing one. The old entry remains and will eventually be popped. The guard <code>if d &gt; dist[node]: continue</code> detects stale entries — if the popped distance is greater than our current best known distance, we already found a better path and can skip this entry entirely. Without this guard, we would re-process nodes and potentially push redundant heap entries, inflating runtime.</p>
+    <p><strong>Why a heap instead of a linear scan:</strong> Each iteration we need the unvisited node with the smallest known distance. A linear scan costs O(V) per extraction for O(V²) total. A min-heap costs O(log V) per extraction for O((V+E) log V) total — much better for sparse graphs. For dense graphs (E ≈ V²), an indexed priority queue or even an array can be faster, but heap-based Dijkstra is the standard interview answer.</p>
 
     <div class="visual-box">
       <div class="label">Dijkstra trace — graph with weights</div>
@@ -317,25 +403,65 @@ Pop (5,3): done
 Final shortest distances: [0, 4, 2, 5]
     </div>
 
+    <div class="fig">
+      <div class="arr-wrap">
+        <div class="step-label">Dijkstra — dist array evolution — graph: 0→1(4), 0→2(2), 1→3(1), 2→3(3)</div>
+        <div style="overflow-x:auto;margin:8px 0">
+          <div class="dp-fig" style="display:inline-block;margin:0">
+            <table>
+              <thead>
+                <tr><th>heap pop</th><th>dist[0]</th><th>dist[1]</th><th>dist[2]</th><th>dist[3]</th><th>action</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="dim">start</td>
+                  <td class="mat">0</td><td>∞</td><td>∞</td><td>∞</td>
+                  <td class="dim" style="font-size:0.7rem">initialize</td></tr>
+                <tr><td style="color:var(--yellow);font-weight:700">(d=0, n=0)</td>
+                  <td>0</td><td class="cur">4</td><td class="cur">2</td><td>∞</td>
+                  <td class="dim" style="font-size:0.7rem">relax nodes 1, 2</td></tr>
+                <tr><td style="color:var(--yellow);font-weight:700">(d=2, n=2)</td>
+                  <td>0</td><td>4</td><td>2</td><td class="cur">5</td>
+                  <td class="dim" style="font-size:0.7rem">2+3=5, relax node 3</td></tr>
+                <tr><td style="color:var(--yellow);font-weight:700">(d=4, n=1)</td>
+                  <td>0</td><td>4</td><td>2</td><td class="dim">5</td>
+                  <td class="dim" style="font-size:0.7rem">4+1=5, no improvement</td></tr>
+                <tr><td style="color:var(--green);font-weight:700">(d=5, n=3)</td>
+                  <td class="mat">0</td><td class="mat">4</td><td class="mat">2</td><td class="mat">5</td>
+                  <td class="dim" style="font-size:0.7rem">all distances final</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(251,191,36,0.3);border:1px solid var(--yellow)"></div>updated this step</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(52,211,153,0.2);border:1px solid var(--green)"></div>final distances</div>
+        </div>
+      </div>
+      <div class="fig-caption">The min-heap always pops the cheapest unprocessed path. Once a node is popped, its distance is finalized. Stale heap entries (where d &gt; dist[node]) are skipped with one if-check — no need to remove them explicitly.</div>
+    </div>
+
     <pre><code class="language-python">import heapq
 
 def dijkstra(graph, start, n):
-    dist = [float('inf')] * n
+    dist = [float('inf')] * n   # all distances unknown initially
     dist[start] = 0
-    heap = [(0, start)]     # (distance, node)
+    heap = [(0, start)]         # min-heap: (distance, node) — heap orders by first element
 
+    # Heap invariant: heap[0] is always the unprocessed (node, distance) pair
+    # with the globally minimum known distance — the next best candidate to finalize.
     while heap:
-        d, node = heapq.heappop(heap)
+        d, node = heapq.heappop(heap)   # O(log V) — always extract the cheapest known path
 
-        # Skip stale entries — we may have added a node multiple times
+        # Stale entry guard: if a shorter path to 'node' was found after this entry was pushed,
+        # 'dist[node]' will already be less than 'd'. Skip to avoid redundant processing.
         if d > dist[node]:
             continue
 
         for neighbor, weight in graph[node]:
-            new_dist = dist[node] + weight
-            if new_dist < dist[neighbor]:
-                dist[neighbor] = new_dist
-                heapq.heappush(heap, (new_dist, neighbor))
+            new_dist = dist[node] + weight   # tentative distance through 'node'
+            if new_dist < dist[neighbor]:    # only push if we found a strictly better path
+                dist[neighbor] = new_dist    # update best known distance
+                heapq.heappush(heap, (new_dist, neighbor))   # old entry stays (lazy deletion)
 
     return dist
 
@@ -343,105 +469,141 @@ def dijkstra(graph, start, n):
 graph = defaultdict(list)
 for u, v, w in edges:
     graph[u].append((v, w))
-    graph[v].append((u, w))   # undirected
+    graph[v].append((u, w))   # undirected — add both directions
 
 distances = dijkstra(graph, source=0, n=n)
 
 # ── Dijkstra with path reconstruction ───
 def dijkstra_with_path(graph, start, end, n):
     dist = [float('inf')] * n
-    prev = [-1] * n
+    prev = [-1] * n             # prev[v] = the node before v on the shortest path to v
     dist[start] = 0
     heap = [(0, start)]
 
     while heap:
         d, node = heapq.heappop(heap)
-        if d > dist[node]: continue
-        if node == end: break
+        if d > dist[node]: continue          # stale entry — skip
+        if node == end: break                # early termination — shortest path to 'end' is final
         for neighbor, weight in graph[node]:
             new_dist = dist[node] + weight
             if new_dist < dist[neighbor]:
                 dist[neighbor] = new_dist
-                prev[neighbor] = node
+                prev[neighbor] = node        # record which node we came from to reach neighbor
                 heapq.heappush(heap, (new_dist, neighbor))
 
-    # Reconstruct path
+    # Reconstruct path by following prev pointers backwards from end to start
     path = []
     cur = end
-    while cur != -1:
+    while cur != -1:       # -1 is the sentinel "no predecessor" (set for start node)
         path.append(cur)
         cur = prev[cur]
-    return dist[end], path[::-1]</code></pre>
+    return dist[end], path[::-1]   # reverse because we walked end→start, want start→end</code></pre>
 
     <!-- ===== UNION FIND ===== -->
     <h2>Union-Find (Disjoint Set Union)</h2>
     <p>Efficiently tracks which elements belong to the same set and supports two operations: <strong>find</strong> (which set does this element belong to?) and <strong>union</strong> (merge two sets). Nearly O(1) per operation with path compression + union by rank.</p>
+    <p><strong>Recognition signals:</strong> "Are these two nodes connected?", "number of connected components after adding edges incrementally", "detect cycle in undirected graph", "minimum spanning tree" (Kruskal's), or any problem involving dynamic connectivity where edges are added one at a time.</p>
+    <p><strong>Why "nearly O(1)" — the inverse Ackermann function:</strong> With both path compression and union by rank, the amortized cost per operation is O(α(n)), where α is the inverse Ackermann function. α(n) is less than 5 for any input size that can exist in the physical universe (α(2^65536) = 5). In practice, this means every find and union is effectively constant time — faster than the O(log n) you'd get from union by rank alone.</p>
+    <p><strong>Why union by rank prevents tall trees:</strong> Without it, repeated unions could create a chain of length n (like a linked list), making find O(n). Union by rank always attaches the shorter tree under the taller one, keeping tree height bounded at O(log n). Path compression then further flattens this to near-constant height over multiple operations.</p>
+    <p><strong>When to prefer Union-Find over BFS/DFS:</strong> Use Union-Find when edges are added <em>incrementally</em> and you need to answer connectivity queries after each addition — BFS/DFS would need to restart from scratch each time. Use BFS/DFS when the graph is static and you need additional information like shortest paths, topological order, or you need to visit nodes in a specific order. Union-Find is also simpler to implement for cycle detection in undirected graphs: if both endpoints are already in the same component, adding the edge creates a cycle.</p>
+
+    <div class="fig">
+      <div class="visual-box">
+        <div class="label">Union-Find path compression — before and after find(5) on a chain 0←1←3←4←5</div>
+Before find(5):              After find(5):
+                             (path visited: 5→4→3→1→0)
+       0 (root)                      0 (root)
+      / \                        / / | \ \
+     1   2          →           1  2  3   4  5
+     |
+     3                       All nodes on the 5→root path
+     |                       now point directly to root.
+     4                       Next find(5) = O(1) lookup.
+     |
+     5
+
+parent: [0, 0, 0, 1, 3, 4]   parent: [0, 0, 0, 0, 0, 0]
+indices: 0  1  2  3  4  5     indices:  0  1  2  3  4  5
+                                                  ↑  ↑  ↑
+                                         now all point to root 0
+      </div>
+      <div class="fig-caption">Path compression is applied lazily during find(). It flattens the entire chain to the root, making future finds near-instant. Combined with union-by-rank, the amortized cost per operation is α(n) — effectively constant for any practical input size.</div>
+    </div>
 
     <pre><code class="language-python">class UnionFind:
     def __init__(self, n):
-        self.parent = list(range(n))   # each node is its own parent initially
-        self.rank   = [0] * n          # used for union by rank
-        self.size   = [1] * n          # size of each component
-        self.components = n            # number of distinct components
+        self.parent = list(range(n))   # each node is initially its own root (singleton component)
+        self.rank   = [0] * n          # rank ≈ upper bound on tree height, used for union decisions
+        self.size   = [1] * n          # size of component rooted at each node
+        self.components = n            # total number of distinct components (decreases on each union)
 
     def find(self, x):
-        # Path compression: make every node on the path point directly to root
+        # Path compression: recursively find root, then repoint every node on the path directly to it.
+        # WHY: flattens the tree lazily — future find() calls on these nodes skip intermediate nodes.
+        # WHY recursive (not iterative): the recursive form is concise; Python's recursion depth is
+        # bounded by the tree height, which union-by-rank keeps at O(log n) — safe in practice.
         if self.parent[x] != x:
-            self.parent[x] = self.find(self.parent[x])
+            self.parent[x] = self.find(self.parent[x])   # compress: x now points directly to root
         return self.parent[x]
 
     def union(self, x, y):
-        px, py = self.find(x), self.find(y)
+        px, py = self.find(x), self.find(y)   # find roots of both components
         if px == py:
-            return False   # already in same component
+            return False   # already in same component — adding this edge would create a cycle
 
-        # Union by rank: attach smaller tree under larger tree
+        # Union by rank: attach the shorter tree under the taller tree.
+        # WHY: keeps the overall tree height bounded at O(log n).
+        # If we always attached taller under shorter, chains could form, making find O(n).
         if self.rank[px] < self.rank[py]:
-            px, py = py, px    # ensure px is the larger tree
+            px, py = py, px    # ensure px is the taller (or equal) tree — it becomes the new root
 
-        self.parent[py] = px
+        self.parent[py] = px          # attach shorter tree (py) under taller tree (px)
         self.size[px] += self.size[py]
         if self.rank[px] == self.rank[py]:
-            self.rank[px] += 1
+            self.rank[px] += 1        # only increase rank when merging two equally-tall trees
 
         self.components -= 1
-        return True   # successfully merged
+        return True   # successfully merged two distinct components
 
     def connected(self, x, y):
-        return self.find(x) == self.find(y)
+        return self.find(x) == self.find(y)   # same root = same component
 
     def component_size(self, x):
-        return self.size[self.find(x)]
+        return self.size[self.find(x)]   # size is tracked at the root, so find first
 
 # ── Applications ───
 
-# Count connected components
+# Count connected components — simplest Union-Find use case
 uf = UnionFind(n)
 for u, v in edges:
     uf.union(u, v)
-print(uf.components)
+print(uf.components)   # decremented once per successful union — final value is component count
 
 # Detect cycle in undirected graph
+# WHY simpler than DFS: union() returns False if u and v are already connected.
+# Adding an edge between two already-connected nodes = cycle.
 def has_cycle_undirected(n, edges):
     uf = UnionFind(n)
     for u, v in edges:
-        if not uf.union(u, v):   # union returns False if already connected
-            return True           # → adding this edge creates a cycle
+        if not uf.union(u, v):   # union returns False → u and v were already in same component
+            return True           # → this edge closes a cycle
     return False
 
 # Minimum Spanning Tree (Kruskal's algorithm)
+# WHY sort by weight: greedy — always add the cheapest edge that connects two different components.
+# Union-Find answers "does this edge connect two different components?" in near-O(1).
 def kruskal(n, edges):
-    edges.sort(key=lambda e: e[2])   # sort by weight
+    edges.sort(key=lambda e: e[2])   # sort ascending by weight — process cheapest edges first
     uf = UnionFind(n)
     mst_cost = 0
     mst_edges = []
 
     for u, v, w in edges:
-        if uf.union(u, v):        # only add if it connects different components
+        if uf.union(u, v):           # only include edge if it joins two separate components
             mst_cost += w
             mst_edges.append((u, v, w))
             if len(mst_edges) == n - 1:
-                break             # MST complete
+                break                # MST has exactly n-1 edges — no need to process remaining
 
     return mst_cost, mst_edges</code></pre>
 

@@ -11,7 +11,7 @@
 </head>
 <body>
   <nav class="sidebar">
-    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 12 Modules</p></div>
     <div class="sidebar-nav">
       <div class="sidebar-section">Course</div>
       <a href="index.html"><span class="num">🏠</span> Home</a>
@@ -26,6 +26,8 @@
       <a href="module8.html" class="active"><span class="num">8</span> Trees</a>
       <a href="module9.html"><span class="num">9</span> Standard Library</a>
       <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+      <a href="module11.html"><span class="num">11</span> Expressions &amp; Formulas</a>
+      <a href="module12.html"><span class="num">12</span> More Patterns</a>
     </div>
   </nav>
 
@@ -83,40 +85,45 @@ Level-order:                   4, 2, 6, 1, 3, 5, 7  ← BFS
 
     <pre><code class="language-python"># ── Recursive traversals ───
 def inorder(root):
-    if not root: return []
+    if not root: return []          # WHY: base case — None is a valid "empty subtree", not an error
     return inorder(root.left) + [root.val] + inorder(root.right)
+    # WHY order: left subtree values < root.val < right subtree values → produces sorted output for BST
 
 def preorder(root):
-    if not root: return []
+    if not root: return []          # WHY: recursion bottoms out at leaf children (None)
     return [root.val] + preorder(root.left) + preorder(root.right)
+    # WHY root first: lets you reconstruct the tree — the first element is always the root
 
 def postorder(root):
-    if not root: return []
+    if not root: return []          # WHY: same base case — every leaf has two None children
     return postorder(root.left) + postorder(root.right) + [root.val]
+    # WHY root last: subtrees fully resolved before their parent; needed for delete/free operations
 
 # ── Iterative inorder (avoids recursion limit) ───
 def inorder_iterative(root):
     result, stack = [], []
     curr = root
-    while curr or stack:
-        while curr:            # go as far left as possible
-            stack.append(curr)
+    while curr or stack:            # WHY both conditions: curr drives descent, stack drives backtrack
+        while curr:                 # go as far left as possible
+            stack.append(curr)      # WHY save: we must process this node after its left subtree
             curr = curr.left
-        curr = stack.pop()     # process node
+        # invariant: curr is None; stack top is the leftmost unvisited node
+        curr = stack.pop()          # process node — its entire left subtree is already in result
         result.append(curr.val)
-        curr = curr.right      # move to right subtree
+        curr = curr.right           # move to right subtree; if None, loop will backtrack via stack
     return result
 
 # ── Level-order (BFS) — returns list of levels ───
 from collections import deque
 
 def level_order(root):
-    if not root: return []
+    if not root: return []          # WHY: deque([None]) would enqueue None's children and crash
     result = []
     queue = deque([root])
     while queue:
         level = []
-        for _ in range(len(queue)):    # process exactly one level per iteration
+        for _ in range(len(queue)):     # WHY snapshot len: queue grows during iteration; len() here
+                                        # captures exactly how many nodes belong to the current level
             node = queue.popleft()
             level.append(node.val)
             if node.left:  queue.append(node.left)
@@ -132,12 +139,14 @@ def zigzag_level_order(root):
     left_to_right = True
     while queue:
         level = []
-        for _ in range(len(queue)):
+        for _ in range(len(queue)):     # WHY snapshot len: same as level_order — freeze level boundary
             node = queue.popleft()
             level.append(node.val)
             if node.left:  queue.append(node.left)
             if node.right: queue.append(node.right)
         result.append(level if left_to_right else level[::-1])
+        # WHY collect then reverse: nodes are always enqueued left-to-right for correct child ordering;
+        # reversal is cosmetic and applied only to the collected list, not the queue
         left_to_right = not left_to_right
     return result</code></pre>
 
@@ -147,34 +156,40 @@ def zigzag_level_order(root):
     <h3>Height and Depth</h3>
     <pre><code class="language-python"># Height = max depth = number of edges on longest root-to-leaf path
 def height(root):
-    if not root: return 0
+    if not root: return 0           # WHY 0: a missing node contributes no edges; lets parent add 1 cleanly
     return 1 + max(height(root.left), height(root.right))
+    # WHY max: we want the longest path, so we take the taller child
 
 # Maximum depth = same as height
 def max_depth(root):
-    if not root: return 0
+    if not root: return 0           # WHY 0: base case returns 0 so the +1 at the parent counts the edge
     return 1 + max(max_depth(root.left), max_depth(root.right))
 
 # Minimum depth = shortest root-to-leaf path
 def min_depth(root):
-    if not root: return 0
-    if not root.left:  return 1 + min_depth(root.right)   # only right child
-    if not root.right: return 1 + min_depth(root.left)    # only left child
-    return 1 + min(min_depth(root.left), min_depth(root.right))</code></pre>
+    if not root: return 0           # WHY 0 not infinity: a None child should never count as a valid leaf
+    if not root.left:  return 1 + min_depth(root.right)   # WHY: node with one child is NOT a leaf;
+    if not root.right: return 1 + min_depth(root.left)    # a leaf must have NO children — skip the
+                                                           # missing side to avoid treating it as depth 0
+    return 1 + min(min_depth(root.left), min_depth(root.right))
+    # WHY min only when both children exist: both paths lead to actual leaves; take the shorter one</code></pre>
 
     <h3>Diameter — Longest Path Between Any Two Nodes</h3>
     <pre><code class="language-python"># Key insight: the diameter THROUGH a node = left_depth + right_depth
 # The overall diameter = max over all nodes
 
 def diameter_of_binary_tree(root):
-    best = [0]   # use list to allow modification inside nested function
+    best = [0]   # WHY list not int: Python closures can read but not rebind enclosing-scope scalars;
+                 # a mutable container lets the inner function update the value without `nonlocal`
 
     def depth(node):
-        if not node: return 0
+        if not node: return 0       # WHY 0: None contributes no edges; parent adds 1 for the edge to itself
         left  = depth(node.left)
         right = depth(node.right)
-        best[0] = max(best[0], left + right)   # path through this node
-        return 1 + max(left, right)             # return depth to parent
+        # invariant on entry: left/right hold the longest arm length from each child subtree
+        best[0] = max(best[0], left + right)   # candidate diameter passing through this node as the bend
+        return 1 + max(left, right)            # WHY max not sum: we can only extend the path in ONE
+                                               # direction upward — returning both would create a fork
 
     depth(root)
     return best[0]</code></pre>
@@ -182,23 +197,25 @@ def diameter_of_binary_tree(root):
     <h3>Path Sum Problems</h3>
     <pre><code class="language-python"># Has any root-to-leaf path with given sum?
 def has_path_sum(root, target):
-    if not root: return False
-    if not root.left and not root.right:      # leaf node
-        return root.val == target
+    if not root: return False       # WHY False not True: a None path never satisfies a sum requirement
+    if not root.left and not root.right:    # leaf check — only leaves terminate valid paths
+        return root.val == target   # WHY check here not after recursing: recursing on None would return
+                                    # False for a single-node tree with target==root.val
     remaining = target - root.val
     return has_path_sum(root.left, remaining) or has_path_sum(root.right, remaining)
+    # WHY or: one valid path is enough; short-circuits once found
 
 # Maximum path sum (any path, not necessarily root-to-leaf)
 def max_path_sum(root):
-    best = [float('-inf')]
+    best = [float('-inf')]          # WHY -inf not 0: tree may be all-negative; 0 would be wrong answer
 
     def max_gain(node):
-        if not node: return 0
-        left_gain  = max(max_gain(node.left), 0)    # don't take if negative
-        right_gain = max(max_gain(node.right), 0)
-        # Path through this node: left → node → right
+        if not node: return 0       # WHY 0: a missing branch contributes nothing; clamped below anyway
+        left_gain  = max(max_gain(node.left), 0)    # WHY clamp to 0: a negative subtree hurts the sum;
+        right_gain = max(max_gain(node.right), 0)   # discarding it is always better
+        # Path through this node: left → node → right (uses node as the "peak")
         best[0] = max(best[0], node.val + left_gain + right_gain)
-        # Return to parent: can only extend in ONE direction
+        # Return to parent: can only extend in ONE direction — a path cannot fork upward
         return node.val + max(left_gain, right_gain)
 
     max_gain(root)
@@ -206,39 +223,73 @@ def max_path_sum(root):
 
 # All root-to-leaf paths as strings
 def binary_tree_paths(root):
-    if not root: return []
+    if not root: return []          # WHY []: no node, no paths — caller can safely concatenate
     if not root.left and not root.right:
-        return [str(root.val)]
+        return [str(root.val)]      # WHY leaf returns list of one: lets parent prepend its value uniformly
     result = []
     for path in binary_tree_paths(root.left) + binary_tree_paths(root.right):
         result.append(str(root.val) + "->" + path)
+        # WHY prepend root to every child path: each returned path is already a complete suffix;
+        # prepending root grows it upward toward the actual root
     return result</code></pre>
 
     <h3>Lowest Common Ancestor (LCA)</h3>
+
+    <div class="fig">
+      <div class="visual-box">
+        <div class="label">LCA — two scenarios — same tree, different split points</div>
+        6
+       / \
+      2   8       LCA(3, 5) = 4  ← split inside left subtree
+     / \            (both 3 and 5 are descendants of 4)
+    0   4
+       / \
+      3   5       LCA(3, 8) = 6  ← split at root
+                    (3 in left subtree, 8 in right subtree)
+
+Recursion trace for LCA(root=6, p=3, q=5):
+  lca(6) → recurse left and right
+    lca(2) → recurse right
+      lca(4):
+        left  = lca(3) → node.val==p → return node 3   (found!)
+        right = lca(5) → node.val==q → return node 5   (found!)
+        BOTH sides non-null → current node IS the LCA → return 4 ★
+    lca(2): right=4 → propagate 4 upward
+    lca(8): neither 3 nor 5 found → return None
+  lca(6): left=4, right=None → return left (4)
+      </div>
+      <div class="fig-caption">The split point is recognized when both recursive calls return non-null. If only one side finds a result, both target nodes must be in that subtree — propagate upward without change.</div>
+    </div>
+
     <pre><code class="language-python"># LCA of p and q = deepest node that has both p and q as descendants
 # Key insight: if left subtree contains one and right subtree contains the other,
 # current node IS the LCA.
 
 def lowest_common_ancestor(root, p, q):
     if not root or root == p or root == q:
-        return root   # found p or q, or reached null
+        return root   # WHY return root (not None/True): propagates the found node up the call stack
+                      # so callers can distinguish "found p" from "found nothing"
 
     left  = lowest_common_ancestor(root.left, p, q)
     right = lowest_common_ancestor(root.right, p, q)
+    # invariant after both calls: left is non-None iff p or q (or their LCA) is in left subtree
 
     if left and right:
-        return root    # p in left subtree, q in right subtree → LCA is root
-    return left or right   # one side has both, or neither
+        return root    # WHY current node: only the split point sees both sides non-None simultaneously;
+                       # this is the deepest such node, so it is the LCA by definition
+    return left or right   # WHY `or`: if one side is None, both targets are in the non-None side;
+                           # return that side's result (already the correct LCA) without changing it
 
 # LCA in BST — exploit sorted property
 def lca_bst(root, p, q):
-    while root:
+    while root:                     # WHY loop not recursion: tail-recursive; iteration avoids stack frames
         if p.val < root.val and q.val < root.val:
-            root = root.left     # both in left subtree
+            root = root.left        # both targets smaller → LCA must be in left subtree
         elif p.val > root.val and q.val > root.val:
-            root = root.right    # both in right subtree
+            root = root.right       # both targets larger → LCA must be in right subtree
         else:
-            return root          # split point → LCA</code></pre>
+            return root             # WHY else covers split AND equality: if one equals root, root IS the LCA
+                                    # (it's an ancestor of the other by BST property)</code></pre>
 
     <h3>BST Operations</h3>
     <pre><code class="language-python"># BST property: for every node, all left descendants < node.val < all right descendants
@@ -246,86 +297,120 @@ def lca_bst(root, p, q):
 # Search BST — O(h) where h is height, O(log n) for balanced tree
 def search_bst(root, val):
     if not root or root.val == val:
-        return root
+        return root             # WHY return root (not True/False): caller may need the node object
     if val < root.val:
-        return search_bst(root.left, val)
+        return search_bst(root.left, val)   # WHY left only: BST property rules out right subtree entirely
     return search_bst(root.right, val)
 
 # Insert into BST
 def insert_bst(root, val):
     if not root:
-        return TreeNode(val)
+        return TreeNode(val)    # WHY base case creates node: recursion found the correct empty slot;
+                                # returning it lets the parent assignment (root.left/right =) wire it in
     if val < root.val:
-        root.left = insert_bst(root.left, val)
-    elif val > root.val:
+        root.left = insert_bst(root.left, val)   # WHY reassign: if root.left was None, this attaches
+    elif val > root.val:                          # the new node; if not, it's a no-op (returns same node)
         root.right = insert_bst(root.right, val)
-    return root
+    # WHY no else: duplicate values are silently ignored (common BST convention)
+    return root                 # WHY always return root: lets callers chain without holding a ref
 
 # Delete from BST — three cases:
 # 1. No children: just remove
 # 2. One child: replace with that child
 # 3. Two children: replace with inorder successor (smallest in right subtree)
 def delete_bst(root, key):
-    if not root: return root
+    if not root: return root    # WHY return root (None): signals "nothing here" to parent's reassignment
     if key < root.val:
         root.left = delete_bst(root.left, key)
     elif key > root.val:
         root.right = delete_bst(root.right, key)
     else:
-        if not root.left: return root.right
-        if not root.right: return root.left
+        if not root.left: return root.right     # WHY return child directly: skips the deleted node;
+        if not root.right: return root.left     # parent reassignment splices it out of the tree
         # Find inorder successor (min of right subtree)
         successor = root.right
-        while successor.left:
-            successor = successor.left
-        root.val = successor.val         # copy successor value
-        root.right = delete_bst(root.right, successor.val)  # delete successor
+        while successor.left:   # WHY go left: leftmost node in right subtree is the smallest value
+            successor = successor.left  # greater than root — the only valid BST replacement
+        root.val = successor.val         # WHY copy value not swap nodes: avoids relinking pointers
+        root.right = delete_bst(root.right, successor.val)  # remove successor from where it lived
     return root
 
-# Validate BST — pass valid range down
+</code></pre>
+
+    <div class="fig">
+      <div class="visual-box">
+        <div class="label">BST valid range — valid constraint narrows as we recurse down</div>
+is_valid_bst(root, −∞, +∞):
+
+      5   range: (−∞, +∞) ✓
+     / \
+    3   8   left: (−∞, 5)   right: (5, +∞)
+   / \   \
+  2   4   9   2:(−∞,3)✓  4:(3,5)✓  9:(8,+∞)✓
+
+── Invalid BST: node 6 violates ancestor's upper bound ─────────────
+
+      5   range: (−∞, +∞) ✓
+     / \
+    3   8   left: (−∞, 5)
+   / \
+  2   6   right of 3 → range: (3, 5) → 6 ≥ 5 → INVALID ✗
+              ↑ locally 3 < 6 looks fine, but 5 was set by ancestor!
+      </div>
+      <div class="fig-caption">Going left at value v sets max_val=v; going right sets min_val=v. The range narrows at every level. A node looks locally valid but may violate a constraint from its ancestors — carrying min/max down is the only way to catch this.</div>
+    </div>
+
+    <pre><code class="language-python"># Validate BST — pass valid range down
 def is_valid_bst(root, min_val=float('-inf'), max_val=float('inf')):
-    if not root: return True
-    if not (min_val < root.val < max_val):
+    # WHY float('-inf')/float('inf'): any integer is a valid root; sentinel avoids special-casing the root
+    if not root: return True        # WHY True: an empty subtree never violates BST constraints
+    if not (min_val < root.val < max_val):  # WHY strict <: BST requires STRICT inequality (no duplicates)
         return False
-    return (is_valid_bst(root.left, min_val, root.val) and
-            is_valid_bst(root.right, root.val, max_val))
+    return (is_valid_bst(root.left,  min_val, root.val) and   # WHY root.val as new max: left children
+            is_valid_bst(root.right, root.val, max_val))       # must be strictly less than current node;
+                                                               # right children strictly greater
 
 # Kth smallest in BST — inorder gives sorted order
 def kth_smallest(root, k):
     stack, curr = [], root
-    while curr or stack:
+    while curr or stack:            # WHY both conditions: same as inorder_iterative — see traversals above
         while curr:
-            stack.append(curr)
+            stack.append(curr)      # WHY push before moving: we need to revisit this node after its left subtree
             curr = curr.left
+        # invariant: curr is None; stack top is the next smallest unvisited node
         curr = stack.pop()
-        k -= 1
-        if k == 0: return curr.val
-        curr = curr.right</code></pre>
+        k -= 1                      # WHY decrement after pop: each pop is one inorder step (one rank)
+        if k == 0: return curr.val  # WHY early return: no need to traverse remaining nodes
+        curr = curr.right           # move to right subtree; None causes outer loop to backtrack via stack</code></pre>
 
     <h3>Tree Construction</h3>
     <pre><code class="language-python"># Build tree from preorder + inorder traversal
 def build_tree(preorder, inorder):
-    if not preorder: return None
-    root_val = preorder[0]
+    if not preorder: return None    # WHY: empty slice means no nodes left; this subtree is done
+    root_val = preorder[0]          # WHY index 0: preorder always starts with the subtree's root
     root = TreeNode(root_val)
-    mid = inorder.index(root_val)      # O(n) — use dict for O(1)
+    mid = inorder.index(root_val)   # WHY inorder: root splits it into left ([:mid]) and right ([mid+1:])
+                                    # O(n) — use dict for O(1)
     root.left  = build_tree(preorder[1:mid+1], inorder[:mid])
+    # WHY preorder[1:mid+1]: there are exactly `mid` nodes in left subtree (mid = left subtree size)
     root.right = build_tree(preorder[mid+1:],  inorder[mid+1:])
     return root
 
 # Optimized with index map
 def build_tree_opt(preorder, inorder):
-    idx_map = {v: i for i, v in enumerate(inorder)}
-    pre_idx = [0]  # use list for mutability in closure
+    idx_map = {v: i for i, v in enumerate(inorder)}  # WHY: O(1) lookup of root position in inorder
+    pre_idx = [0]  # WHY list: same closure mutability reason as diameter/max_path — avoids `nonlocal`
 
     def helper(left, right):
-        if left > right: return None
+        if left > right: return None    # WHY >: when left==right that is a single valid node;
+                                        # left > right means the inorder range is empty — no nodes here
         root_val = preorder[pre_idx[0]]
-        pre_idx[0] += 1
+        pre_idx[0] += 1                 # WHY increment here: preorder is consumed left-to-right in the
+                                        # same order that helper recurses (left subtree before right)
         root = TreeNode(root_val)
-        mid  = idx_map[root_val]
-        root.left  = helper(left, mid - 1)
-        root.right = helper(mid + 1, right)
+        mid  = idx_map[root_val]        # O(1) thanks to idx_map; mid is the absolute inorder index
+        root.left  = helper(left, mid - 1)   # WHY mid-1: exclude root itself from left subtree range
+        root.right = helper(mid + 1, right)  # WHY mid+1: exclude root itself from right subtree range
         return root
 
     return helper(0, len(inorder) - 1)</code></pre>

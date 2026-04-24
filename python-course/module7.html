@@ -11,7 +11,7 @@
 </head>
 <body>
   <nav class="sidebar">
-    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 12 Modules</p></div>
     <div class="sidebar-nav">
       <div class="sidebar-section">Course</div>
       <a href="index.html"><span class="num">🏠</span> Home</a>
@@ -26,6 +26,8 @@
       <a href="module8.html"><span class="num">8</span> Trees</a>
       <a href="module9.html"><span class="num">9</span> Standard Library</a>
       <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+      <a href="module11.html"><span class="num">11</span> Expressions &amp; Formulas</a>
+      <a href="module12.html"><span class="num">12</span> More Patterns</a>
     </div>
   </nav>
 
@@ -43,6 +45,10 @@
       <li><strong>Overlapping subproblems</strong> — the same subproblem is solved multiple times (memoization helps)</li>
       <li><strong>Optimal substructure</strong> — the optimal solution to the full problem can be built from optimal solutions to subproblems</li>
     </ul>
+
+    <p><strong>Recognition signal — the overlapping subproblems test:</strong> Draw the recursion tree for a small input. If you see the same node appearing more than once (e.g., <code>fib(3)</code> computed twice when computing <code>fib(5)</code>), the problem has overlapping subproblems. Pure divide-and-conquer (merge sort, binary search) never revisits a subproblem — its tree is a clean, non-repeating binary tree. DP's tree has duplicate subtrees, and that duplication is exactly what memoization eliminates.</p>
+
+    <p><strong>Top-down memoization and bottom-up tabulation are the same algorithm.</strong> They compute identical values in identical dependency order — memoization just does it lazily (only the subproblems actually reached by recursion), while tabulation does it eagerly (all subproblems, in a fixed loop order). The recurrence relation is identical in both. Choosing between them is purely an engineering decision about readability and memory layout.</p>
 
     <p>Every DP solution has three components:</p>
 
@@ -62,21 +68,31 @@
     </div>
 
     <h3>Top-Down vs Bottom-Up</h3>
+
+    <p><strong>Top-down (memoization) is almost always easier to write first.</strong> You express the recurrence exactly as you'd think about it recursively, slap <code>@cache</code> on it, and Python handles the rest. The recursion naturally visits only the subproblems that are actually reachable from your starting state — useful when many subproblems are unreachable and filling a full table would be wasteful.</p>
+
+    <p><strong>Bottom-up (tabulation) unlocks space optimization.</strong> Because you control the fill order explicitly, you can observe that each row only depends on the previous row (or the previous one or two values) and reduce an O(n²) table to O(n) or even O(1) space using a rolling array. This is impossible to do cleanly with memoization. Prefer bottom-up when: (1) you need to pass a coding interview where the interviewer expects iterative code, (2) Python's default recursion limit (~1000) is a concern, or (3) space is constrained and the rolling array trick applies.</p>
+
     <pre><code class="language-python"># ── Top-Down (Memoization) — add @cache to recursion ───
 from functools import cache
 
 @cache
 def dp(i, j):
-    # base cases
+    # Base case: when one dimension is exhausted, answer is known without recursion.
+    # Defining this prevents infinite recursion and anchors the recurrence.
     if i == 0: return base_value
-    # transition
+    # Transition: delegate to strictly smaller subproblems (i-1 or j-1).
+    # @cache ensures each (i, j) pair is computed exactly once, not re-entered.
     return min(dp(i-1, j), dp(i, j-1)) + cost[i][j]
 
 # ── Bottom-Up (Tabulation) — fill a table iteratively ───
+# dp[i][j] stores the answer for the subproblem covering the first i rows and j cols.
 dp = [[float('inf')] * (n+1) for _ in range(m+1)]
-# base cases
+# Base cases: first row initialized explicitly.
+# float('inf') as default ensures we don't accidentally use uninitialized cells.
 for j in range(n+1): dp[0][j] = base_value
-# fill table in dependency order
+# Fill in dependency order: dp[i][j] only reads dp[i-1][...] and dp[...][j-1],
+# which are already filled by the time we reach row i, column j.
 for i in range(1, m+1):
     for j in range(1, n+1):
         dp[i][j] = min(dp[i-1][j], dp[i][j-1]) + cost[i-1][j-1]</code></pre>
@@ -92,127 +108,252 @@ for i in range(1, m+1):
     <!-- ===== 1D DP ===== -->
     <h2>1D DP Patterns</h2>
 
+    <p><strong>The single-state intuition:</strong> Problems with a single varying dimension — position in an array, a running total, a step count — map naturally onto a 1D dp array where <code>dp[i]</code> is the answer for "the first i elements" or "reaching position i". The recurrence only looks back a constant number of positions, which means the table can almost always be reduced to O(1) space by keeping only those few values as variables. This is the <em>rolling variable</em> or <em>rolling array</em> trick: instead of an array you carry <code>prev1</code>, <code>prev2</code>, etc.</p>
+
+    <p><strong>When space reduction works:</strong> It works whenever <code>dp[i]</code> depends only on <code>dp[i-1]</code> (reduce to one variable) or <code>dp[i-1]</code> and <code>dp[i-2]</code> (reduce to two variables). It does NOT work when you need to backtrack and reconstruct the actual solution path — in that case you must keep the full array so you can trace back through decisions.</p>
+
     <h3>Fibonacci-Style (depends on previous 1–2 states)</h3>
+
+    <p><strong>Why only the previous 1–2 states are needed:</strong> The recurrence <code>dp[i] = dp[i-1] + dp[i-2]</code> means each answer depends on at most two predecessors. There is no reason to store the entire history — once you've moved past index <code>i</code>, <code>dp[i-2]</code> is never read again. The rolling variable trick formalizes this: overwrite <code>prev2</code> with <code>prev1</code>, and <code>prev1</code> with the new value, at each step. The key is to update them simultaneously (Python tuple assignment does this) so neither overwrites the other prematurely.</p>
+
     <pre><code class="language-python"># ── Climbing Stairs ───
 # Ways to climb n stairs taking 1 or 2 steps at a time
-# State: dp[i] = ways to reach step i
+# State: dp[i] = number of distinct ways to reach step i
+# WHY this state: to know ways to reach i, you only need to know
+#   how many ways reach i-1 (take 1 step) and i-2 (take 2 steps).
 # Transition: dp[i] = dp[i-1] + dp[i-2]   (came from i-1 or i-2)
-# Base: dp[0]=1, dp[1]=1
+# Base: dp[0]=1 (one way to "reach" the ground: do nothing),
+#       dp[1]=1 (only one way: take a single step)
+# WHY dp[0]=1 not 0: if dp[0] were 0, dp[2] = dp[1] + dp[0] = 1+0 = 1,
+#   but there are actually 2 ways to reach step 2 (1+1 or 2). dp[0]=1 anchors it.
 
 def climb_stairs(n):
     if n <= 2: return n
-    prev2, prev1 = 1, 2
+    prev2, prev1 = 1, 2         # prev2 = dp[i-2], prev1 = dp[i-1]
     for i in range(3, n+1):
+        # Tuple assignment updates both simultaneously — critical!
+        # If we wrote prev2 = prev1 first, then prev1 = prev1 + prev2
+        # would use the NEW prev2, giving a wrong answer.
         prev2, prev1 = prev1, prev1 + prev2   # space-optimized: only need last 2
     return prev1
 
 # ── House Robber ───
 # Maximize sum of non-adjacent elements
-# State: dp[i] = max money from first i+1 houses
+# State: dp[i] = maximum money achievable from houses 0..i
+# WHY this state: at house i, the decision is binary — rob it or skip it.
+#   If we rob it, we cannot rob i-1, so we fall back to dp[i-2] + nums[i].
+#   If we skip it, the best we can do is dp[i-1].
 # Transition: dp[i] = max(dp[i-1], dp[i-2] + nums[i])
-# (either skip house i, or rob it and skip i-1)
+# Base: dp[0] = nums[0] (only one house, rob it),
+#       dp[1] = max(nums[0], nums[1]) (rob whichever is larger)
+# WHY base dp[1] = max not nums[1]: you can't rob both 0 and 1,
+#   so the best you can do with the first two houses is the larger of the two.
 
 def rob(nums):
     if not nums: return 0
     if len(nums) == 1: return nums[0]
     prev2, prev1 = nums[0], max(nums[0], nums[1])
     for i in range(2, len(nums)):
+        # Rolling variable trick: prev2 holds dp[i-2], prev1 holds dp[i-1]
         prev2, prev1 = prev1, max(prev1, prev2 + nums[i])
     return prev1</code></pre>
 
     <h3>Longest Increasing Subsequence (LIS)</h3>
-    <pre><code class="language-python"># State: dp[i] = length of LIS ending at index i
+
+    <p><strong>O(n²) intuition:</strong> <code>dp[i]</code> is the length of the longest increasing subsequence that ends specifically at index <code>i</code>. Every element starts as a subsequence of length 1 (itself), so <code>dp[i] = 1</code> is the correct base case. For each element, we scan left looking for any smaller predecessor — if we find one, we can extend its subsequence.</p>
+
+    <p><strong>O(n log n) — the patience sorting analogy:</strong> Imagine playing the card game "patience" (solitaire). Deal cards left to right, placing each card on the leftmost pile whose top card is greater-or-equal (or starting a new pile if none qualifies). The number of piles at the end equals the LIS length. The <code>tails</code> array is a compressed representation of these pile tops, kept sorted so binary search can find the right pile in O(log n).</p>
+
+    <p><strong>Critical pitfall — what <code>tails[]</code> actually is:</strong> The <code>tails</code> array is NOT the actual LIS. It is a patience-sort artifact whose length is correct, but whose contents are overwritten in-place as better (smaller) tail elements are found. The entries can come from different positions in the original array and do not form a valid subsequence. To reconstruct the actual LIS sequence (not just its length), you need a separate <code>parent[]</code> array tracking which predecessor each element extends from, then backtrack from the final element.</p>
+
+    <pre><code class="language-python"># State: dp[i] = length of the longest increasing subsequence ending at index i
+# WHY "ending at i": we need a fixed right endpoint to build the recurrence.
+#   Without it, "best LIS in first i elements" has no clean transition.
+# Base: dp[i] = 1 — every single element is an IS of length 1 by itself.
 # Transition: dp[i] = max(dp[j]+1 for j<i if nums[j]<nums[i])
+#   Meaning: for every j to the left that is smaller, we could extend that
+#   subsequence by appending nums[i]. Take the best such extension.
+# Iteration: left-to-right — dp[i] only reads dp[j] for j < i, already computed.
 # Time: O(n²)
 def lis_n2(nums):
     n = len(nums)
-    dp = [1] * n
+    dp = [1] * n          # every element alone is a subsequence of length 1
     for i in range(n):
         for j in range(i):
             if nums[j] < nums[i]:
                 dp[i] = max(dp[i], dp[j] + 1)
-    return max(dp)
+    return max(dp)        # answer is the best ending position, not necessarily dp[n-1]
 
 # ── O(n log n) LIS with patience sorting ───
-# tails[i] = smallest tail element of all IS of length i+1
+# tails[k] = the smallest possible tail value of any IS of length k+1 seen so far.
+# WHY smallest tail: a smaller tail is strictly better for future extensions —
+#   more elements can be appended after a small tail than a large one.
 import bisect
 
 def lis_nlogn(nums):
     tails = []
     for x in nums:
+        # Binary search: find leftmost position where tails[pos] >= x
         pos = bisect.bisect_left(tails, x)
         if pos == len(tails):
-            tails.append(x)       # extends LIS length
+            # x is larger than all current tails → extends the longest IS found so far
+            tails.append(x)
         else:
-            tails[pos] = x        # replaces with smaller tail (better for future)
-    return len(tails)   # length of LIS
-
-# Note: tails array itself is NOT the LIS, just its length is correct</code></pre>
+            # Replace tails[pos] with x: same IS length, but now with a smaller tail.
+            # This doesn't invalidate shorter ISes — it only improves the future.
+            tails[pos] = x
+    # IMPORTANT: tails is NOT the actual LIS — its length is correct,
+    # but its elements come from different positions and are not a valid subsequence.
+    # To recover the actual sequence, maintain a parent[] array and backtrack.
+    return len(tails)   # length of LIS</code></pre>
 
     <!-- ===== 2D DP ===== -->
     <h2>2D DP Patterns</h2>
 
+    <p><strong>When a second dimension is needed:</strong> A 1D state becomes insufficient when a subproblem cannot be described by a single variable. Two common triggers: (1) <em>two sequences</em> — LCS, edit distance, interleaving strings — where the subproblem "first i chars of s against first j chars of t" requires both i and j, and (2) <em>two constraints</em> — knapsack with weight and volume limits, or problems where you track both position and a running constraint (like a budget or remaining capacity). If fixing one index still leaves the subproblem underspecified, add a dimension.</p>
+
+    <p><strong>The 2D table mental model:</strong> Draw a grid where rows index one sequence (or one constraint) and columns index the other. Cell (i, j) is the answer for the subproblem involving only the first i rows and j columns worth of input. Base cases populate the zeroth row and zeroth column (empty prefixes). Each interior cell is filled using only cells to its left, above, or diagonally above-left — all of which are already computed when you fill row by row, left to right.</p>
+
     <h3>Longest Common Subsequence (LCS)</h3>
+
+    <p><strong>Diagonal = match, max(up, left) = skip:</strong> When <code>s[i-1] == t[j-1]</code>, you take the diagonal value <code>dp[i-1][j-1]</code> and add 1. The diagonal represents "both sequences consume one character each." When they don't match, you skip one character from either sequence: <code>dp[i-1][j]</code> (skip from s) or <code>dp[i][j-1]</code> (skip from t), and take the better result. The 0s along the top row and left column are the base case: the LCS of any string with an empty string is 0.</p>
+
+    <p><strong>Reconstructing the actual LCS string:</strong> After filling the table, start at <code>dp[m][n]</code> and trace backward. At cell (i, j): if <code>s[i-1] == t[j-1]</code>, this character is in the LCS — record it and move diagonally to (i-1, j-1). If <code>dp[i-1][j] &gt; dp[i][j-1]</code>, move up to (i-1, j). Otherwise move left to (i, j-1). Reverse the recorded characters at the end. This backtracking is only possible if you kept the full 2D table — the space-optimized one-row version loses the path.</p>
+
+    <div class="fig">
+      <div class="arr-wrap">
+        <div class="step-label">LCS("ace", "abcde") = 3 — dp table fill — matched characters highlighted</div>
+        <div style="overflow-x:auto;margin:8px 0">
+          <div class="dp-fig" style="display:inline-block;margin:0">
+            <table>
+              <thead>
+                <tr><th></th><th>""</th><th>a</th><th>b</th><th>c</th><th>d</th><th>e</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>""</th>
+                  <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>
+                </tr>
+                <tr>
+                  <th>a</th>
+                  <td>0</td><td class="mat">1</td><td class="dep">1</td><td>1</td><td>1</td><td>1</td>
+                </tr>
+                <tr>
+                  <th>c</th>
+                  <td>0</td><td>1</td><td>1</td><td class="mat">2</td><td class="dep">2</td><td>2</td>
+                </tr>
+                <tr>
+                  <th>e</th>
+                  <td>0</td><td>1</td><td>1</td><td>2</td><td>2</td><td class="hi">3</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(52,211,153,0.2);border:1px solid var(--green)"></div>match: s[i-1]==t[j-1] → dp[i-1][j-1]+1</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(96,165,250,0.2);border:1px solid var(--blue)"></div>diagonal predecessor used in next match</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(124,106,247,0.2);border:1px solid var(--accent)"></div>final answer</div>
+        </div>
+      </div>
+      <div class="fig-caption">When s[i-1]==t[j-1] (matched), take the diagonal (↖ +1). Otherwise inherit max of up (↑) or left (←). Each green cell uses the blue cell diagonally above-left as its +1 base — tracing "a"→"ac"→"ace".</div>
+    </div>
+
     <pre><code class="language-python"># LCS of strings s and t
-# State: dp[i][j] = LCS length of s[0:i] and t[0:j]
-# Transition:
-#   if s[i-1] == t[j-1]: dp[i][j] = dp[i-1][j-1] + 1
-#   else:                 dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+# State: dp[i][j] = length of LCS of s[0:i] and t[0:j]
+# WHY this state: the subproblem is fully described by how much of each
+#   string we've consumed. Both prefixes are needed; one alone is ambiguous.
 # Base: dp[0][j] = dp[i][0] = 0
+#   WHY 0: the LCS of anything with an empty string is empty (length 0).
+#   The 0-filled border eliminates special-casing in the inner loop.
+# Transition (plain English):
+#   Match: if s[i-1] == t[j-1], both characters are in the LCS — extend
+#     the LCS of the shorter prefixes by 1. This reads from the diagonal (↖).
+#   Skip: if they differ, we must skip one character from either s or t.
+#     Take the max of "skip from s" (move up ↑) or "skip from t" (move left ←).
+# Iteration: row-by-row, left-to-right — every cell reads only ↖, ↑, ←,
+#   all already filled by the time we reach (i, j).
 
 def lcs(s, t):
     m, n = len(s), len(t)
+    # +1 in each dimension to accommodate the empty-prefix base cases at row 0 / col 0
     dp = [[0] * (n + 1) for _ in range(m + 1)]
     for i in range(1, m + 1):
         for j in range(1, n + 1):
             if s[i-1] == t[j-1]:
-                dp[i][j] = dp[i-1][j-1] + 1
+                dp[i][j] = dp[i-1][j-1] + 1   # diagonal + 1 (matched character)
             else:
-                dp[i][j] = max(dp[i-1][j], dp[i][j-1])
-    return dp[m][n]
+                dp[i][j] = max(dp[i-1][j],     # skip s[i-1]: move up ↑
+                               dp[i][j-1])     # skip t[j-1]: move left ←
+    return dp[m][n]   # bottom-right cell = LCS of full strings
 
 # ── Edit Distance ───
 # Minimum operations (insert, delete, replace) to convert s to t
-# State: dp[i][j] = edit distance between s[0:i] and t[0:j]
+# State: dp[i][j] = minimum edit distance between s[0:i] and t[0:j]
+# Base: dp[i][0] = i — to convert s[0:i] to empty string, delete all i chars.
+#       dp[0][j] = j — to convert empty string to t[0:j], insert all j chars.
+#   WHY these specific values: they represent the cost of the only possible
+#   operations when one string is empty — you have no choice but to delete or insert.
 # Transition:
-#   if s[i-1] == t[j-1]: dp[i][j] = dp[i-1][j-1]
-#   else: dp[i][j] = 1 + min(dp[i-1][j],   # delete from s
-#                             dp[i][j-1],   # insert into s
-#                             dp[i-1][j-1]) # replace
+#   if s[i-1] == t[j-1]: characters match, no operation needed — inherit diagonal.
+#   else: try all three operations and add 1 (cost of the operation itself):
+#     dp[i-1][j]   = delete s[i-1] (shrink s, keep t position)
+#     dp[i][j-1]   = insert t[j-1] into s (advance t, keep s position)
+#     dp[i-1][j-1] = replace s[i-1] with t[j-1] (advance both)
 
 def edit_distance(s, t):
     m, n = len(s), len(t)
     dp = [[0]*(n+1) for _ in range(m+1)]
-    for i in range(m+1): dp[i][0] = i   # delete all of s
-    for j in range(n+1): dp[0][j] = j   # insert all of t
+    for i in range(m+1): dp[i][0] = i   # delete all i characters from s[0:i]
+    for j in range(n+1): dp[0][j] = j   # insert all j characters to reach t[0:j]
     for i in range(1, m+1):
         for j in range(1, n+1):
             if s[i-1] == t[j-1]:
-                dp[i][j] = dp[i-1][j-1]
+                dp[i][j] = dp[i-1][j-1]   # free: characters already match
             else:
-                dp[i][j] = 1 + min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])
+                dp[i][j] = 1 + min(dp[i-1][j],    # delete from s
+                                   dp[i][j-1],    # insert into s
+                                   dp[i-1][j-1])  # replace s[i-1] with t[j-1]
     return dp[m][n]
 
 # ── Unique Paths ───
-# Count paths from top-left to bottom-right of grid (only right/down)
+# Count paths from top-left to bottom-right of grid (only right/down moves)
+# State: dp[i][j] = number of distinct paths to reach cell (i, j)
+# Base: first row and first column are all 1 — there's exactly one way to
+#   reach any cell in the top row (keep going right) or left column (keep going down).
 def unique_paths(m, n):
     dp = [[1]*n for _ in range(m)]   # base: first row and col are all 1
     for i in range(1, m):
         for j in range(1, n):
+            # Paths to (i,j) = paths arriving from above + paths arriving from the left
             dp[i][j] = dp[i-1][j] + dp[i][j-1]
     return dp[m-1][n-1]
 
-# Space-optimized: only need one row
+# Space-optimized: only need one row at a time.
+# WHY: dp[i][j] only reads dp[i-1][j] (same column, row above) and dp[i][j-1]
+#   (same row, column to the left). After processing row i, row i-1 is never
+#   read again, so we can reuse a single array.
+# In the 1D array, dp[j] before update = dp[i-1][j] (last row's value for this col)
+# and dp[j-1] after update = dp[i][j-1] (current row, column to the left).
 def unique_paths_opt(m, n):
-    dp = [1] * n
+    dp = [1] * n          # initialize as the first row (all 1s)
     for _ in range(1, m):
         for j in range(1, n):
-            dp[j] += dp[j-1]
+            dp[j] += dp[j-1]   # dp[j] was dp[i-1][j]; add dp[i][j-1] = dp[j-1]
     return dp[n-1]</code></pre>
 
     <!-- ===== KNAPSACK ===== -->
     <h2>Knapsack Patterns</h2>
     <p>Knapsack problems: you have items with weights and values, and a capacity. Choose items to maximize value without exceeding capacity.</p>
+
+    <p><strong>Recognition signals:</strong> "Maximum/minimum value subject to a constraint", "can we achieve exactly X?", "count ways to make X". The key tell: the answer to a subproblem (best value for capacity c) is reused when solving a larger problem (capacity c+k). Variants include boolean knapsack (can we reach the target?), counting knapsack (how many ways?), and unbounded knapsack (items can be reused).</p>
+
+    <p><strong>Key insight — the single rule that covers all variants:</strong> The only structural difference between 0/1 knapsack and unbounded knapsack is the direction of the inner loop.</p>
+    <ul>
+      <li><strong>0/1 knapsack → iterate backward</strong> (from <code>capacity</code> down to <code>w</code>). When we update <code>dp[cap]</code>, <code>dp[cap - w]</code> has not yet been touched in this item's pass, so it still reflects the state <em>without</em> this item. This guarantees each item is counted at most once.</li>
+      <li><strong>Unbounded knapsack → iterate forward</strong> (from <code>w</code> up to <code>capacity</code>). When we update <code>dp[cap]</code>, <code>dp[cap - w]</code> has already been updated in this pass, meaning it may already include this item. That is exactly what allows reuse — coin change, for example, uses the same coin multiple times.</li>
+    </ul>
+    <p>Memorize this single rule and you can derive every knapsack variant on the fly.</p>
 
     <h3>0/1 Knapsack — Each Item Used At Most Once</h3>
     <div class="visual-box">
@@ -228,36 +369,134 @@ No items:  [0, 0, 0, 0, 0, 0]
 Answer: 7 (take items 1 and 2, weight=5)
     </div>
 
-    <pre><code class="language-python"># 0/1 Knapsack — iterate backwards to prevent reuse
+    <pre><code class="language-python"># 0/1 Knapsack — each item used at most once
+# State: dp[c] = maximum value achievable using items seen so far with total weight ≤ c
+# WHY 1D instead of 2D: we can compress the "items seen so far" dimension
+#   by processing items one at a time and updating dp[] in-place.
+#   The backward iteration preserves correctness (see below).
+# Base: dp[c] = 0 for all c — with no items, value is 0 regardless of capacity.
 def knapsack_01(weights, values, capacity):
     dp = [0] * (capacity + 1)
     for w, v in zip(weights, values):
-        # Iterate BACKWARDS so each item is used at most once
+        # Iterate BACKWARD: ensures each item is considered at most once.
+        # If we iterated forward, dp[cap-w] might already include this item
+        # (updated earlier in the same pass), causing it to be "used" multiple
+        # times — that would be unbounded knapsack behavior, not 0/1.
         for cap in range(capacity, w - 1, -1):
+            # Decision: skip this item (dp[cap] unchanged) OR take it.
+            # Taking it costs weight w and yields value v on top of dp[cap-w],
+            # which — because we're iterating backward — still reflects the
+            # state BEFORE this item was considered.
             dp[cap] = max(dp[cap], dp[cap - w] + v)
     return dp[capacity]
 
-# ── Coin Change (minimum coins) ── unbounded knapsack variant
+</code></pre>
+
+    <div class="fig">
+      <div class="arr-wrap">
+        <div class="step-label">Coin change — dp array evolution — coins=[1,3,5], amount=6 — minimum coins at each step</div>
+
+        <div class="arr-step">
+          <div class="step-label" style="color:var(--muted)">Init — dp[0]=0, all others = ∞</div>
+          <div class="arr-row">
+            <div class="c"><div class="cv ans">0</div><div class="ci">a=0</div></div>
+            <div class="c"><div class="cv drop">∞</div><div class="ci">a=1</div></div>
+            <div class="c"><div class="cv drop">∞</div><div class="ci">a=2</div></div>
+            <div class="c"><div class="cv drop">∞</div><div class="ci">a=3</div></div>
+            <div class="c"><div class="cv drop">∞</div><div class="ci">a=4</div></div>
+            <div class="c"><div class="cv drop">∞</div><div class="ci">a=5</div></div>
+            <div class="c"><div class="cv drop">∞</div><div class="ci">a=6</div></div>
+          </div>
+        </div>
+
+        <div class="arr-step">
+          <div class="step-label" style="color:var(--muted)">After coin=1 — dp[a] = a for all a (one coin of 1 each)</div>
+          <div class="arr-row">
+            <div class="c"><div class="cv ans">0</div><div class="ci">a=0</div></div>
+            <div class="c"><div class="cv ok">1</div><div class="ci">a=1</div></div>
+            <div class="c"><div class="cv ok">2</div><div class="ci">a=2</div></div>
+            <div class="c"><div class="cv ok">3</div><div class="ci">a=3</div></div>
+            <div class="c"><div class="cv ok">4</div><div class="ci">a=4</div></div>
+            <div class="c"><div class="cv ok">5</div><div class="ci">a=5</div></div>
+            <div class="c"><div class="cv ok">6</div><div class="ci">a=6</div></div>
+          </div>
+        </div>
+
+        <div class="arr-step">
+          <div class="step-label" style="color:var(--muted)">After coin=3 — dp[6] = min(6, dp[3]+1) = min(6, 1+1) = 2 ← key update (dp[3] already improved to 1)</div>
+          <div class="arr-row">
+            <div class="c"><div class="cv ans">0</div><div class="ci">a=0</div></div>
+            <div class="c"><div class="cv win">1</div><div class="ci">a=1</div></div>
+            <div class="c"><div class="cv win">2</div><div class="ci">a=2</div></div>
+            <div class="c"><div class="cv cur">1</div><div class="ci">a=3</div><div class="cp m">dep</div></div>
+            <div class="c"><div class="cv mat">2</div><div class="ci">a=4</div></div>
+            <div class="c"><div class="cv mat">3</div><div class="ci">a=5</div></div>
+            <div class="c"><div class="cv mat">2</div><div class="ci">a=6</div><div class="cp w">better!</div></div>
+          </div>
+        </div>
+
+        <div class="arr-step">
+          <div class="step-label" style="color:var(--muted)">After coin=5 — dp[5] = min(3, dp[0]+1) = 1 → final: dp[6]=2</div>
+          <div class="arr-row">
+            <div class="c"><div class="cv ans">0</div><div class="ci">a=0</div></div>
+            <div class="c"><div class="cv win">1</div><div class="ci">a=1</div></div>
+            <div class="c"><div class="cv win">2</div><div class="ci">a=2</div></div>
+            <div class="c"><div class="cv win">1</div><div class="ci">a=3</div></div>
+            <div class="c"><div class="cv win">2</div><div class="ci">a=4</div></div>
+            <div class="c"><div class="cv mat">1</div><div class="ci">a=5</div></div>
+            <div class="c"><div class="cv ans">2</div><div class="ci">a=6</div><div class="cp w">answer</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="fig-caption">Forward iteration allows reusing the same coin. dp[6]=2 is achievable as 3+3 or 1+5. The yellow "dep" cell shows how dp[6] borrows from dp[3] (itself improved earlier in the same pass by coin 3).</div>
+    </div>
+
+    <pre><code class="language-python"># ── Coin Change (minimum coins) ── unbounded knapsack variant
+# State: dp[a] = minimum number of coins to make amount a
+# Base: dp[0] = 0 — zero coins needed to make amount 0 (use nothing).
+#       dp[a] = inf for a > 0 — signals "impossible" until proven otherwise.
+#   WHY inf not 0: if we initialized with 0, taking the min would never improve
+#   anything — every update would find 0 as the existing value and stop.
+# Transition: dp[a] = min(dp[a], dp[a - coin] + 1)
+#   Plain English: to make amount a using this coin, make (a - coin) optimally
+#   and add one more coin. Try all denominations and keep the best.
 def coin_change(coins, amount):
     dp = [float('inf')] * (amount + 1)
     dp[0] = 0   # base: 0 coins needed for amount 0
     for coin in coins:
-        # Iterate FORWARDS — allows reusing each coin
+        # Iterate FORWARD — unbounded knapsack (reuse same coin as many times as needed).
+        # dp[a - coin] may already reflect this coin from earlier in this pass,
+        # which is exactly what allows using the same denomination multiple times.
         for a in range(coin, amount + 1):
             dp[a] = min(dp[a], dp[a - coin] + 1)
     return dp[amount] if dp[amount] != float('inf') else -1
 
 # ── Coin Change II (count ways) ── unbounded knapsack, count variant
+# State: dp[a] = number of distinct combinations of coins that sum to a
+# Base: dp[0] = 1 — there is exactly one way to make 0: use no coins.
+#   WHY 1 not 0: if dp[0] = 0, no combination could ever "start" — every
+#   subsequence must ultimately bottom out at dp[0] to count as a valid way.
+# Transition: dp[a] += dp[a - coin] — each time we can place this coin,
+#   we inherit all the ways to make the remainder.
+# OUTER loop = coins, INNER loop = amounts: this counts combinations (order-independent).
+#   Swapping loops would count permutations (3+1 and 1+3 counted separately).
 def coin_change_ways(coins, amount):
     dp = [0] * (amount + 1)
     dp[0] = 1   # base: 1 way to make amount 0 (use no coins)
     for coin in coins:
         for a in range(coin, amount + 1):
-            dp[a] += dp[a - coin]
+            dp[a] += dp[a - coin]   # add ways to make (a - coin) using coins so far
     return dp[amount]
 
-# ── Partition Equal Subset Sum ── 0/1 knapsack, boolean
+# ── Partition Equal Subset Sum ── 0/1 knapsack, boolean variant
 # Can we split nums into two subsets with equal sums?
+# Reduction: if total is odd, impossible. Otherwise, find a subset summing to total//2.
+# State: dp[c] = True if some subset of items seen so far sums exactly to c
+# Base: dp[0] = True — the empty subset sums to 0.
+#       dp[c] = False for c > 0 — assume impossible until we find a subset.
+# Transition: dp[cap] = dp[cap] OR dp[cap - x]
+#   Either we already could reach cap (skip x), or we could reach (cap-x) before
+#   and now include x to reach cap.
 def can_partition(nums):
     total = sum(nums)
     if total % 2 != 0: return False
@@ -267,7 +506,10 @@ def can_partition(nums):
     dp[0] = True   # base: empty subset sums to 0
 
     for x in nums:
-        for cap in range(target, x - 1, -1):   # backwards!
+        # Iterate BACKWARD: 0/1 knapsack — each number used at most once.
+        # Forward iteration would allow the same number to be "used" multiple times
+        # within a single pass, violating the problem constraint.
+        for cap in range(target, x - 1, -1):
             dp[cap] = dp[cap] or dp[cap - x]
 
     return dp[target]</code></pre>
@@ -275,33 +517,58 @@ def can_partition(nums):
     <!-- ===== INTERVAL DP ===== -->
     <h2>Interval DP</h2>
     <p>Solve problems on contiguous segments by considering all possible "split points" within each interval.</p>
+
+    <p><strong>Why iterate by length, not by left endpoint:</strong> In interval DP, <code>dp[i][j]</code> depends on <code>dp[i][k]</code> and <code>dp[k+1][j]</code> — smaller intervals strictly contained within [i, j]. If you iterated by left endpoint (outer loop over i), you'd reach (i, j) before (i+1, j) was computed, leaving a dependency unsatisfied. Iterating by length guarantees all shorter intervals are computed before any longer interval that contains them. All length-1 intervals are trivial base cases; length-2 uses length-1; and so on up to length n.</p>
+
+    <p><strong>The "last operation" split-point trick:</strong> Many interval DP problems become tractable by thinking about which operation happens <em>last</em> rather than first. "What is the last matrix multiplication?" or "which balloon is the last to burst in this range?" — this framing cleanly separates the subproblems. When you burst balloon k last in range [left, right], the left and right boundaries are still intact (not yet burst), so the coin formula <code>nums[left] * nums[k] * nums[right]</code> is well-defined. The subproblems [left, k] and [k, right] are independent because k hasn't been burst yet when they're solved. This "last to go" framing is the key to Burst Balloons and Matrix Chain alike.</p>
+
     <pre><code class="language-python"># ── Matrix Chain Multiplication ───
-# Minimum cost to multiply chain of matrices
-# State: dp[i][j] = min cost to multiply matrices i..j
-# Transition: dp[i][j] = min over all split points k: dp[i][k]+dp[k+1][j]+cost(i,k,j)
+# Minimum scalar multiplications to compute the product of a chain of matrices.
+# State: dp[i][j] = minimum cost (scalar multiplications) to compute product of matrices i..j
+# WHY this state: the cost depends on which matrices are in the subchain, not
+#   on what came before or after — so the interval [i, j] fully defines the subproblem.
+# Base: dp[i][i] = 0 — a single matrix needs no multiplication.
+# Transition: try every split point k in [i, j-1]. Matrix i..k has dims[i]×dims[k+1]
+#   and matrix k+1..j has dims[k+1]×dims[j+1]. Multiplying them costs dims[i]*dims[k+1]*dims[j+1].
+# Recurrence in plain English: "split the chain at k; pay to compute the left half,
+#   the right half, and the final multiplication of the two resulting matrices."
+# Iteration: MUST be by length (short intervals before long), because dp[i][j]
+#   reads dp[i][k] and dp[k+1][j] — both strictly shorter intervals.
 
 def matrix_chain(dims):
-    n = len(dims) - 1   # number of matrices
-    dp = [[0]*n for _ in range(n)]
-    for length in range(2, n+1):       # iterate by interval length
+    n = len(dims) - 1   # number of matrices (dims has n+1 entries: one per boundary)
+    dp = [[0]*n for _ in range(n)]   # dp[i][i] = 0 by default (single matrix)
+    for length in range(2, n+1):          # start from length 2 (at least one split)
         for i in range(n - length + 1):
             j = i + length - 1
             dp[i][j] = float('inf')
-            for k in range(i, j):     # try every split point
+            for k in range(i, j):         # k is the LAST split point in this interval
                 cost = dp[i][k] + dp[k+1][j] + dims[i]*dims[k+1]*dims[j+1]
                 dp[i][j] = min(dp[i][j], cost)
     return dp[0][n-1]
 
 # ── Burst Balloons ───
-# nums[i] * nums[left] * nums[right] when balloon i is last burst in range
+# Burst all balloons to collect maximum coins. Coins = nums[left]*nums[k]*nums[right]
+# when balloon k is burst while left and right are its current neighbors.
+# KEY TRICK: think about which balloon is burst LAST in range (left, right),
+#   not first. When k is last, left and right boundaries are still intact,
+#   so the formula is well-defined and subproblems [left,k] and [k,right] are
+#   independent (k hasn't been removed yet when they're solved).
+# State: dp[left][right] = max coins from bursting all balloons strictly inside (left, right)
+#   (left and right are "virtual" boundaries — they are NOT burst in this subproblem)
+# Base: dp[left][right] = 0 when no balloons are strictly inside (right == left+1)
+# Padding with 1s: adds virtual boundary balloons so edge cases are handled uniformly.
 def max_coins(nums):
-    nums = [1] + nums + [1]   # padding
+    nums = [1] + nums + [1]   # padding: virtual boundary balloons with value 1
     n = len(nums)
-    dp = [[0]*n for _ in range(n)]
-    for length in range(2, n):
+    dp = [[0]*n for _ in range(n)]   # dp[i][i+1] = 0: no balloons between adjacent boundaries
+    for length in range(2, n):            # length of the open interval (right - left)
         for left in range(0, n - length):
             right = left + length
-            for k in range(left+1, right):   # k is the LAST balloon to burst
+            for k in range(left+1, right):   # k is the LAST balloon burst inside (left, right)
+                # When k is last: left and right still exist, giving the multipliers.
+                # dp[left][k] = coins from bursting everything strictly inside (left, k) first.
+                # dp[k][right] = coins from bursting everything strictly inside (k, right) first.
                 coins = nums[left]*nums[k]*nums[right]
                 dp[left][right] = max(dp[left][right],
                                       dp[left][k] + dp[k][right] + coins)

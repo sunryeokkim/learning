@@ -11,7 +11,7 @@
 </head>
 <body>
   <nav class="sidebar">
-    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 12 Modules</p></div>
     <div class="sidebar-nav">
       <div class="sidebar-section">Course</div>
       <a href="index.html"><span class="num">🏠</span> Home</a>
@@ -26,6 +26,8 @@
       <a href="module8.html"><span class="num">8</span> Trees</a>
       <a href="module9.html" class="active"><span class="num">9</span> Standard Library</a>
       <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+      <a href="module11.html"><span class="num">11</span> Expressions &amp; Formulas</a>
+      <a href="module12.html"><span class="num">12</span> More Patterns</a>
     </div>
   </nav>
 
@@ -46,29 +48,32 @@ c = Counter("mississippi")
 
 c.most_common(2)      # [('i', 4), ('s', 4)]
 c['i']                # 4
-c['z']                # 0 (no KeyError!)
+c['z']                # 0  # WHY: Counter subclasses dict with __missing__ returning 0, so absent keys never raise
 sum(c.values())       # 11 (total count)
 list(c.elements())    # ['m','i','i','i','i','s','s','s','s','p','p']
+# WHY: elements() skips keys with count <= 0, so subtracted counters stay clean
 
 # Arithmetic between counters
 c1 = Counter(a=3, b=1)
 c2 = Counter(a=1, b=2)
 c1 + c2   # Counter({'a': 4, 'b': 3})
-c1 - c2   # Counter({'a': 2})           — drops negatives
-c1 & c2   # Counter({'a': 1, 'b': 1})   — min
-c1 | c2   # Counter({'a': 3, 'b': 2})   — max</code></pre>
+c1 - c2   # Counter({'a': 2})           # WHY: subtraction drops non-positive results — use c1.subtract(c2) to keep negatives
+c1 & c2   # Counter({'a': 1, 'b': 1})   # WHY: & takes the min per key — models set intersection by frequency
+c1 | c2   # Counter({'a': 3, 'b': 2})   # WHY: | takes the max per key — models set union by frequency</code></pre>
 
     <h3>defaultdict</h3>
     <pre><code class="language-python">from collections import defaultdict
 
-graph = defaultdict(list)
-graph['a'].append('b')   # no KeyError
+graph = defaultdict(list)      # WHY: list is the factory callable — called with no args to produce []
+graph['a'].append('b')         # no KeyError; missing key auto-creates []
 
-count = defaultdict(int)
+count = defaultdict(int)       # WHY: int() returns 0, so every unseen key starts at 0
 for c in "hello":
-    count[c] += 1        # no initialization needed
+    count[c] += 1              # no initialization needed; reads 0 then writes 1 on first hit
 
 # Nested defaultdict
+# WHY: must use a lambda — defaultdict(defaultdict(int)) would call defaultdict(int) once
+# and share that single inner dict across ALL missing keys
 matrix = defaultdict(lambda: defaultdict(int))
 matrix['row1']['col1'] += 1</code></pre>
 
@@ -76,14 +81,18 @@ matrix['row1']['col1'] += 1</code></pre>
     <pre><code class="language-python">from collections import deque
 
 q = deque([1, 2, 3], maxlen=3)   # bounded deque (auto-drops oldest)
-q.append(4)     # deque([2, 3, 4]) — 1 was dropped
-q.appendleft(1) # deque([1, 2, 3]) — 4 was dropped
-q.rotate(1)     # deque([3, 1, 2])</code></pre>
+# WHY: use deque over list when you need O(1) popleft — list.pop(0) is O(n)
+q.append(4)     # deque([2, 3, 4]) — 1 was dropped from the left (oldest end)
+q.appendleft(1) # deque([1, 2, 3]) — 4 was dropped from the right
+# WHY: maxlen enforces the bound automatically; no manual length checks needed
+q.rotate(1)     # deque([3, 1, 2])  # WHY: positive rotates right (tail→head); negative rotates left</code></pre>
 
     <h3>OrderedDict</h3>
     <pre><code class="language-python">from collections import OrderedDict
 
 # LRU Cache implementation using OrderedDict
+# WHY OrderedDict: it remembers insertion order AND provides O(1) move_to_end,
+# making recency tracking possible without a separate linked list
 class LRUCache:
     def __init__(self, capacity):
         self.cap = capacity
@@ -91,26 +100,27 @@ class LRUCache:
 
     def get(self, key):
         if key not in self.cache: return -1
-        self.cache.move_to_end(key)   # mark as recently used
+        self.cache.move_to_end(key)   # mark as recently used — moves to tail (last=True by default)
         return self.cache[key]
 
     def put(self, key, value):
         if key in self.cache:
-            self.cache.move_to_end(key)
+            self.cache.move_to_end(key)   # WHY: refresh recency before overwriting the value
         self.cache[key] = value
         if len(self.cache) > self.cap:
-            self.cache.popitem(last=False)   # evict least recently used</code></pre>
+            self.cache.popitem(last=False)   # evict least recently used — last=False pops from head (oldest)</code></pre>
 
     <h3>namedtuple</h3>
     <pre><code class="language-python">from collections import namedtuple
 
 Point = namedtuple('Point', ['x', 'y'])
+# WHY: namedtuple is immutable like a regular tuple, so it's hashable and usable as a dict key
 p = Point(3, 4)
 p.x      # 3
 p.y      # 4
-p[0]     # 3 — still indexable
-p._asdict()   # {'x': 3, 'y': 4}
-p._replace(x=10)   # Point(x=10, y=4)</code></pre>
+p[0]     # 3 — still indexable; namedtuple IS a tuple subclass, not a wrapper
+p._asdict()        # {'x': 3, 'y': 4}  — leading underscore avoids clashing with field names
+p._replace(x=10)   # Point(x=10, y=4)  # WHY: returns a new instance; original p is unchanged (immutable)</code></pre>
 
     <!-- ===== ITERTOOLS ===== -->
     <h2>itertools</h2>
@@ -124,67 +134,83 @@ p._replace(x=10)   # Point(x=10, y=4)</code></pre>
 # ── Combinatorics ───
 list(combinations([1,2,3], 2))
 # [(1,2), (1,3), (2,3)]
+# WHY: combinations treats input as ordered by position and never repeats a position,
+# so (1,2) appears but (2,1) does not — use permutations if order matters
 
 list(permutations([1,2,3], 2))
 # [(1,2),(1,3),(2,1),(2,3),(3,1),(3,2)]
+# WHY: permutations considers every ordering, so count = P(n,r) = n!/(n-r)!
 
 list(product([0,1], repeat=3))
 # all 8 binary strings of length 3
+# WHY: repeat=3 is shorthand for product([0,1],[0,1],[0,1]) — Cartesian product with itself
 
 list(combinations_with_replacement([1,2,3], 2))
 # [(1,1),(1,2),(1,3),(2,2),(2,3),(3,3)]
+# WHY: unlike combinations, the same element can appear multiple times in a tuple
 
 # ── accumulate — running aggregates ───
-list(accumulate([1,2,3,4,5]))          # [1,3,6,10,15]  — running sum
-list(accumulate([1,2,3,4,5], max))     # [1,2,3,4,5]  — running max
+list(accumulate([1,2,3,4,5]))          # [1,3,6,10,15]  — running sum (default operator is addition)
+list(accumulate([1,2,3,4,5], max))     # [1,2,3,4,5]  — running max; result[i] = max(input[0..i])
 list(accumulate([1,2,3,4,5], lambda a,b: a*b))  # [1,2,6,24,120] — running product
 
 # ── chain — flatten iterables ───
-list(chain([1,2], [3,4], [5]))     # [1,2,3,4,5]
-list(chain.from_iterable([[1,2],[3,4]]))  # same
+list(chain([1,2], [3,4], [5]))             # [1,2,3,4,5]
+list(chain.from_iterable([[1,2],[3,4]]))   # same
+# WHY: chain.from_iterable is preferred when you have a single iterable-of-iterables;
+# avoids unpacking with * which fails on generators
 
 # ── groupby — group consecutive equal elements ───
 # NOTE: input must be SORTED by the key first!
+# WHY: groupby only groups ADJACENT equal keys — unsorted input produces duplicate groups
 data = [("a",1),("a",2),("b",1),("b",3),("c",2)]
 for key, group in groupby(data, key=lambda x: x[0]):
     print(key, list(group))
+    # WHY: must call list(group) before the next iteration — the group iterator is consumed
+    # when groupby advances to the next key
 # a [('a',1),('a',2)]
 # b [('b',1),('b',3)]
 # c [('c',2)]
 
 # ── Infinite iterators ───
-list(islice(count(10), 5))   # [10,11,12,13,14] — first 5 from count starting at 10
-list(islice(cycle([1,2,3]), 7))  # [1,2,3,1,2,3,1] — cycle 7 times
-list(islice(repeat(5, 3), 3))  # [5,5,5]</code></pre>
+# WHY: all three are infinite — always wrap with islice() or a termination condition
+list(islice(count(10), 5))       # [10,11,12,13,14] — first 5 from count starting at 10
+list(islice(cycle([1,2,3]), 7))  # [1,2,3,1,2,3,1] — cycle repeats indefinitely; islice stops it
+list(islice(repeat(5, 3), 3))   # [5,5,5]  # WHY: repeat(5,3) already has a fixed count of 3; islice redundant here but harmless</code></pre>
 
     <!-- ===== FUNCTOOLS ===== -->
     <h2>functools</h2>
     <pre><code class="language-python">from functools import cache, lru_cache, reduce, cmp_to_key, partial
 
 # ── cache / lru_cache ───
-@cache                          # Python 3.9+ — unbounded
+@cache                          # Python 3.9+ — unbounded memoization
 def fib(n):
-    if n <= 1: return n
-    return fib(n-1) + fib(n-2)
+    if n <= 1: return n         # WHY base case: fib(0)=0, fib(1)=1; without this,
+                                # the recursion has no floor and stack-overflows
+    return fib(n-1) + fib(n-2) # WHY cache matters: naive recursion is O(2^n); cache makes it O(n)
 
-@lru_cache(maxsize=None)       # equivalent to @cache
+@lru_cache(maxsize=None)       # equivalent to @cache — maxsize=None disables the LRU eviction logic
 def fib(n): ...
 
-@lru_cache(maxsize=128)        # bounded — keeps 128 most recent results
+@lru_cache(maxsize=128)        # bounded — keeps 128 most recent results; older entries evicted
 def expensive(n): ...
+# WHY bounded: prevents unbounded memory growth when input domain is large or infinite
 
 # ── reduce ───
 from functools import reduce
-reduce(lambda a,b: a*b, [1,2,3,4,5])   # 120 (factorial)
+reduce(lambda a,b: a*b, [1,2,3,4,5])         # 120 (factorial)
+# WHY: reduce folds left — ((((1*2)*3)*4)*5) — order matters for non-commutative ops
 reduce(lambda a,b: a|b, [{1,2},{2,3},{3,4}])  # {1,2,3,4} — union of sets
 
 # ── cmp_to_key — use old comparison function with sort ───
+# WHY: Python 3 sort() only accepts a key function; cmp_to_key wraps a two-arg comparator
+# so you can express "a before b" logic that can't be reduced to a simple key value
 import functools
 
 def cmp(a, b):
-    if a < b: return -1
-    if a > b: return 1
-    return 0
+    if a < b: return -1   # WHY negative: signals "a sorts before b" to the sort algorithm
+    if a > b: return 1    # WHY positive: signals "b sorts before a"
+    return 0              # WHY zero: signals equal — relative order is stable (not swapped)
 
 nums.sort(key=functools.cmp_to_key(cmp))
 
@@ -192,17 +218,19 @@ nums.sort(key=functools.cmp_to_key(cmp))
 def largest_number(nums):
     nums = list(map(str, nums))
     def compare(a, b):
-        if a+b > b+a: return -1   # a should come first
+        # WHY string concatenation comparison: "3"+"30"="330" vs "30"+"3"="303";
+        # comparing concatenations decides which ordering yields the larger number
+        if a+b > b+a: return -1   # a should come first (makes larger combined number)
         if a+b < b+a: return 1
         return 0
     nums.sort(key=functools.cmp_to_key(compare))
-    return str(int("".join(nums)))   # int() removes leading zeros
+    return str(int("".join(nums)))   # WHY int(): removes leading zeros (e.g. "0","0" → "00" → 0 → "0")
 
 # ── partial — freeze some arguments ───
 from functools import partial
 
 def power(base, exp): return base ** exp
-square = partial(power, exp=2)
+square = partial(power, exp=2)   # WHY keyword arg: power's first positional arg stays open for the caller
 cube   = partial(power, exp=3)
 square(5)   # 25
 cube(3)     # 27</code></pre>
@@ -212,10 +240,12 @@ cube(3)     # 27</code></pre>
     <pre><code class="language-python">import bisect
 
 arr = [1, 3, 3, 5, 7, 9]
+# INVARIANT: arr must be sorted ascending — bisect gives wrong results on unsorted input
 
-bisect.bisect_left(arr, 3)    # 1 — leftmost position for 3
-bisect.bisect_right(arr, 3)   # 3 — rightmost position for 3
+bisect.bisect_left(arr, 3)    # 1 — index of first position where 3 could be inserted keeping order
+bisect.bisect_right(arr, 3)   # 3 — index after all existing 3s
 bisect.bisect(arr, 3)         # 3 — alias for bisect_right
+# WHY two variants: bisect_left gives "first occurrence" index; bisect_right gives "one past last occurrence"
 
 # Custom key search (Python 3.10+): bisect_left(a, x, key=f)
 # For older Python: binary search manually or use SortedList from sortedcontainers
@@ -223,15 +253,19 @@ bisect.bisect(arr, 3)         # 3 — alias for bisect_right
 # Find floor and ceiling
 def floor_val(arr, x):
     i = bisect.bisect_right(arr, x) - 1
+    # WHY bisect_right: if x exists in arr, bisect_right points past it, so -1 lands ON x (correct floor)
+    # WHY i >= 0: if x is smaller than every element, i == -1 and arr[-1] would be wrong (Python wraps negative indices)
     return arr[i] if i >= 0 else None
 
 def ceil_val(arr, x):
     i = bisect.bisect_left(arr, x)
+    # WHY bisect_left: if x exists, i points to x itself (exact match is its own ceiling)
+    # WHY i < len(arr): if x is larger than every element, i == len(arr) and arr[i] would be IndexError
     return arr[i] if i < len(arr) else None
 
 # Maintaining sorted list with insert
-bisect.insort_left(arr, 4)    # insert 4 at correct position
-bisect.insort_right(arr, 4)   # (using bisect_right for tie-breaking)</code></pre>
+bisect.insort_left(arr, 4)    # insert 4 at correct position — O(n) due to list shift, not O(log n)
+bisect.insort_right(arr, 4)   # WHY right vs left: only differs when duplicates exist; right keeps new element after existing equals</code></pre>
 
     <!-- ===== MATH ===== -->
     <h2>math</h2>
@@ -244,14 +278,17 @@ math.gcd(12, 8, 6)       # 2   (Python 3.9+ — supports multiple args)
 
 # LCM of a list
 from functools import reduce
+# WHY reduce: LCM of a list = lcm(lcm(a,b), c, ...) — applied pairwise left-to-right
 lcm_list = lambda lst: reduce(math.lcm, lst)
 
 # ── Powers and roots ───
-math.isqrt(17)           # 4   — exact integer square root
+math.isqrt(17)           # 4   — exact integer square root (floors, never rounds)
+# WHY isqrt over int(math.sqrt): sqrt returns a float and can have floating-point error
+# (e.g. math.sqrt(25)==4.999... on some platforms), so isqrt is safer for integer checks
 math.sqrt(16)            # 4.0 — float
-math.pow(2, 10)          # 1024.0 — float version (prefer 2**10)
+math.pow(2, 10)          # 1024.0 — float version (prefer 2**10 to stay in integer domain)
 math.log(1000, 10)       # 3.0
-math.log2(8)             # 3.0
+math.log2(8)             # 3.0   — WHY dedicated log2/log10: more numerically stable than log(x,2)
 math.log10(1000)         # 3.0
 math.ceil(3.2)           # 4
 math.floor(3.9)          # 3
@@ -259,42 +296,47 @@ math.floor(3.9)          # 3
 # ── Constants ───
 math.pi                  # 3.141592653589793
 math.e                   # 2.718281828459045
-math.inf                 # float('inf')
+math.inf                 # float('inf') — WHY: compares greater than every finite float; useful as initial min sentinel
 math.tau                 # 2*pi
 
 # ── Combinatorics ───
 math.comb(10, 3)         # 120 — C(10,3) = 10!/(3!·7!)
+# WHY math.comb over computing manually: handles large n without intermediate factorial overflow in Python's big ints
 math.perm(5, 2)          # 20  — P(5,2) = 5!/3!
 math.factorial(10)       # 3628800
 
 # ── Useful for grid/geometry ───
-math.hypot(3, 4)         # 5.0 — sqrt(3²+4²)
-math.dist((0,0), (3,4))  # 5.0 — Euclidean distance (Python 3.8+)</code></pre>
+math.hypot(3, 4)         # 5.0 — sqrt(3²+4²); WHY not manual: avoids overflow when squaring large coordinates
+math.dist((0,0), (3,4))  # 5.0 — Euclidean distance (Python 3.8+); generalizes to N dimensions</code></pre>
 
     <!-- ===== HEAPQ ===== -->
     <h2>heapq — quick reference</h2>
     <pre><code class="language-python">import heapq
 
+# WHY heapq: Python only provides a min-heap; index 0 is always the smallest element
 # Build
 h = [3,1,4,1,5,9]
-heapq.heapify(h)            # O(n) in-place
+heapq.heapify(h)            # O(n) in-place — WHY O(n) not O(n log n): uses sift-down from middle, not n insertions
 
 # Push / pop
-heapq.heappush(h, 2)        # O(log n)
-heapq.heappop(h)            # O(log n) — returns smallest
-heapq.heappushpop(h, 7)     # push then pop — more efficient than two calls
-heapq.heapreplace(h, 7)     # pop then push — more efficient, raises if empty
+heapq.heappush(h, 2)        # O(log n) — sifts up to restore heap invariant
+heapq.heappop(h)            # O(log n) — returns smallest; swaps root with last element then sifts down
+heapq.heappushpop(h, 7)     # push then pop — WHY faster: if 7 > h[0], just returns 7 without touching the heap
+heapq.heapreplace(h, 7)     # pop then push — WHY faster: one sift-down instead of two; raises IndexError if empty
+# WHY heapreplace vs heappushpop: heapreplace always pops first (old min guaranteed returned); heappushpop may return the pushed value
 
 # Peek
-h[0]                        # O(1) — smallest without removing
+h[0]                        # O(1) — smallest without removing; valid because heap invariant guarantees min at index 0
 
 # Utility
-heapq.nlargest(3, h)        # top 3 largest — O(n + k log n)
-heapq.nsmallest(3, h)       # top 3 smallest
+heapq.nlargest(3, h)        # top 3 largest — O(n + k log n); prefer sorted()[-k:] for small n
+heapq.nsmallest(3, h)       # top 3 smallest — O(n + k log n)
 
 # Max-heap pattern
-heapq.heappush(h, -val)    # negate
--heapq.heappop(h)           # negate back</code></pre>
+# WHY negate: Python has no max-heap; negating values inverts the ordering so the
+# largest original value becomes the smallest negated value and floats to the root
+heapq.heappush(h, -val)    # negate before pushing
+-heapq.heappop(h)           # negate back to recover the original largest value</code></pre>
 
     <!-- ===== STRING / COLLECTIONS ===== -->
     <h2>string constants and random</h2>
@@ -303,16 +345,16 @@ import random
 
 string.ascii_lowercase    # 'abcdefghijklmnopqrstuvwxyz'
 string.ascii_uppercase    # 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-string.ascii_letters      # lower + upper
+string.ascii_letters      # lower + upper — WHY: use this instead of hardcoding 'abcdefghijklmnopqrstuvwxyzABC...'
 string.digits             # '0123456789'
 string.punctuation        # '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
-string.whitespace         # ' \t\n\r\x0b\x0c'
+string.whitespace         # ' \t\n\r\x0b\x0c'  — \x0b is vertical tab, \x0c is form feed
 
 # Generate random test data
-random.randint(0, 100)      # random int [0, 100]
-random.choice([1,2,3])      # random element
-random.shuffle(lst)         # shuffle in place
-random.sample(lst, k)       # k unique elements (no replacement)</code></pre>
+random.randint(0, 100)      # random int [0, 100] — WHY inclusive on both ends (unlike range)
+random.choice([1,2,3])      # random element — raises IndexError on empty sequence
+random.shuffle(lst)         # shuffle in place — WHY in place: returns None; original list is mutated
+random.sample(lst, k)       # k unique elements (no replacement) — WHY sample not choices: guarantees no duplicates</code></pre>
 
     <div class="nav-footer">
       <a href="module8.html" class="nav-btn">

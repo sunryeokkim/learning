@@ -13,7 +13,7 @@
   <nav class="sidebar">
     <div class="sidebar-logo">
       <h1>Python for Coding Problems</h1>
-      <p>Complete Course — 10 Modules</p>
+      <p>Complete Course — 12 Modules</p>
     </div>
     <div class="sidebar-nav">
       <div class="sidebar-section">Course</div>
@@ -29,6 +29,8 @@
       <a href="module8.html"><span class="num">8</span> Trees</a>
       <a href="module9.html"><span class="num">9</span> Standard Library</a>
       <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+      <a href="module11.html"><span class="num">11</span> Expressions &amp; Formulas</a>
+      <a href="module12.html"><span class="num">12</span> More Patterns</a>
     </div>
   </nav>
 
@@ -70,45 +72,74 @@ z.append(5)        →   x is still [1, 2, 3, 4]           ← independent
 x = 2 ** 1000          # works fine (a 302-digit number)
 factorial = 1
 for i in range(1, 100):
+    # WHY: multiply into accumulator rather than call math.factorial —
+    # loop invariant: after iteration i, factorial == i!
     factorial *= i      # 100! has 158 digits — no problem
 
 # Integer division — TWO operators exist, know the difference
 10 / 3      # → 3.3333...  (always returns float, even 10/2 = 5.0)
-10 // 3     # → 3          (floor division — rounds toward -∞)
--7 // 2     # → -4         (floors to -4, not truncates to -3!)
--7 % 2      # → 1          (always non-negative when divisor is positive)
+10 // 3     # → 3          (// floors toward -∞, not toward 0)
+-7 // 2     # → -4         # WHY -4 not -3: floor(-3.5) = -4 (toward -∞)
+-7 % 2      # → 1          # WHY 1 not -1: Python guarantees remainder >= 0 when divisor > 0
 
-# Useful identity: a == (a // b) * b + (a % b)
-divmod(-7, 2)   # → (-4, 1) — quotient and remainder at once, O(1)
+# Useful identity: a == (a // b) * b + (a % b)  — holds for all integers including negatives
+divmod(-7, 2)   # → (-4, 1) — returns both at once; cheaper than computing // and % separately</code></pre>
 
-# Bit operations — useful for DP bitmask problems
-5 & 3       # → 1    AND
-5 | 3       # → 7    OR
-5 ^ 3       # → 6    XOR
-~5          # → -6   NOT (bitwise flip, same as -(n+1))
-1 << 3      # → 8    left shift (multiply by 2^3)
-16 >> 2     # → 4    right shift (divide by 2^2)
-n & (n-1)   # → clears the lowest set bit (check if power of 2: n&(n-1)==0)
-n & (-n)    # → isolates the lowest set bit</code></pre>
+    <div class="fig">
+      <div class="visual-box">
+        <div class="label">Python floor (//) vs C++/Java truncation for negative numbers</div>
+                   Python  <code>-7 // 2</code>          C++ / Java  <code>-7 / 2</code>
+                   ─────────────────────────────────────────────────────
+
+  Number line:  ←────────────────────────────────────────────→
+                    -4      -3.5      -3       -2       -1       0
+                     │        ↑        │
+                     │    exact result │
+                     │    (-7 ÷ 2)     │
+                     │                 └─── truncate toward 0 → <span style="color:#f87171">-3</span>
+                     └───────────────────── floor toward -∞   → <span style="color:#34d399">-4</span>
+
+  Python:  -7 // 2 = <span style="color:#34d399">-4</span>   -7 % 2 = <span style="color:#34d399">1</span>    verify: (-4)×2 + 1 = -7 ✓
+  C++:     -7 /  2 = <span style="color:#f87171">-3</span>   -7 % 2 = <span style="color:#f87171">-1</span>   verify: (-3)×2 + (-1) = -7 ✓
+      </div>
+      <div class="fig-caption">Python floors toward −∞; C++/Java truncate toward 0. The difference only appears for negative numbers.</div>
+    </div>
+
+    <pre><code class="language-python"># Bit operations — useful for DP bitmask problems
+5 & 3       # → 1    AND:  0101 & 0011 = 0001
+5 | 3       # → 7    OR:   0101 | 0011 = 0111
+5 ^ 3       # → 6    XOR:  0101 ^ 0011 = 0110  (bit differs → 1)
+~5          # → -6   # WHY -(n+1): two's-complement flips all bits, so ~n = -(n+1)
+1 << 3      # → 8    # WHY: left-shift by k multiplies by 2^k; faster than ** for powers of 2
+16 >> 2     # → 4    # WHY: right-shift by k is integer divide by 2^k (floors toward -∞ for negatives)
+n & (n-1)   # → clears lowest set bit  # WHY: subtracting 1 flips trailing 0s and the lowest 1; AND masks them off
+            # → if result == 0, n is a power of 2 (exactly one bit was set)
+n & (-n)    # → isolates lowest set bit  # WHY: -n in two's complement flips all bits then +1, leaving only the lowest set bit</code></pre>
 
     <h3>Float — When to Use and When to Avoid</h3>
     <p>Floats use IEEE-754 double precision (64-bit). They have ~15 significant digits of precision, but suffer from rounding errors. In competitive programming, prefer integer arithmetic whenever possible.</p>
     <pre><code class="language-python"># Floating point trap
 0.1 + 0.2           # → 0.30000000000000004  (not 0.3!)
+# WHY: 0.1 and 0.2 have no exact binary representation; IEEE-754 stores nearest approximation
 0.1 + 0.2 == 0.3    # → False  ← never compare floats with ==
 
 # Safe float comparison
+# WHY 1e-9: generous enough to absorb accumulated rounding, tight enough for most problems
 abs(0.1 + 0.2 - 0.3) < 1e-9  # → True  ✓
 
 # Useful float constants
-float('inf')    # positive infinity — works as initial max in comparisons
-float('-inf')   # negative infinity — works as initial min
+float('inf')    # positive infinity — beats any real number; safe initial value for a running minimum
+float('-inf')   # negative infinity — less than any real number; safe initial value for a running maximum
+# WHY use float('inf') instead of a large integer like 10**18?
+# float('inf') participates in comparisons correctly without knowing the input range
 math.inf        # same as float('inf'), requires import math
 
 # Integer square root (avoids float entirely)
 import math
 math.isqrt(17)  # → 4   (floor of √17, exact integer)
 math.isqrt(16)  # → 4
+# WHY prefer isqrt over int(n**0.5): for large n (e.g. n=10**18), float loses precision
+# and int(n**0.5) may return n-1 or n+1 instead of the correct floor
 int(16**0.5)    # → 4   but can fail for large n due to float imprecision!</code></pre>
 
     <div class="callout tip">
@@ -125,6 +156,56 @@ int(16**0.5)    # → 4   but can fail for large n due to float imprecision!</co
 
     <h3>Indexing and Slicing</h3>
     <p>Slicing is one of Python's most powerful features. The syntax is <code>s[start:stop:step]</code> — all three are optional and can be negative.</p>
+
+    <div class="fig">
+      <div class="arr-wrap">
+        <div class="step-label">s = "algorithm" — positive indices (top) and negative indices (bottom)</div>
+        <div class="arr-row">
+          <div style="min-width:44px;font-size:0.62rem;color:var(--muted);font-family:var(--font-mono)">pos →</div>
+          <div class="c"><div class="cv dim">0</div></div>
+          <div class="c"><div class="cv dim">1</div></div>
+          <div class="c"><div class="cv dim">2</div></div>
+          <div class="c"><div class="cv dim">3</div></div>
+          <div class="c"><div class="cv dim">4</div></div>
+          <div class="c"><div class="cv dim">5</div></div>
+          <div class="c"><div class="cv dim">6</div></div>
+          <div class="c"><div class="cv dim">7</div></div>
+          <div class="c"><div class="cv dim">8</div></div>
+        </div>
+        <div class="arr-row" style="margin-top:4px">
+          <div style="min-width:44px;font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);padding-top:10px">s:</div>
+          <div class="c"><div class="cv">a</div></div>
+          <div class="c"><div class="cv">l</div></div>
+          <div class="c"><div class="cv win">g</div></div>
+          <div class="c"><div class="cv win">o</div></div>
+          <div class="c"><div class="cv win">r</div></div>
+          <div class="c"><div class="cv">i</div></div>
+          <div class="c"><div class="cv">t</div></div>
+          <div class="c"><div class="cv">h</div></div>
+          <div class="c"><div class="cv hi">m</div></div>
+        </div>
+        <div class="arr-row">
+          <div style="min-width:44px;font-size:0.62rem;color:var(--muted);font-family:var(--font-mono)">neg →</div>
+          <div class="c"><div class="cv dim">-9</div></div>
+          <div class="c"><div class="cv dim">-8</div></div>
+          <div class="c"><div class="cv dim">-7</div></div>
+          <div class="c"><div class="cv dim">-6</div></div>
+          <div class="c"><div class="cv dim">-5</div></div>
+          <div class="c"><div class="cv dim">-4</div></div>
+          <div class="c"><div class="cv dim">-3</div></div>
+          <div class="c"><div class="cv dim">-2</div></div>
+          <div class="c"><div class="cv dim">-1</div></div>
+        </div>
+        <hr class="arr-sep">
+        <div style="font-family:var(--font-mono);font-size:0.82rem;display:flex;flex-wrap:wrap;gap:18px;color:var(--text)">
+          <span><span style="color:var(--accent2)">s[-1]</span> = <span style="color:var(--accent)">'m'</span> (highlighted blue)</span>
+          <span><span style="color:var(--accent2)">s[2:5]</span> = <span style="color:var(--accent2)">'gor'</span> (highlighted teal — stop 5 is exclusive)</span>
+          <span><span style="color:var(--accent2)">s[::-1]</span> = <span style="color:var(--green)">'mhtirogla'</span></span>
+        </div>
+      </div>
+      <div class="fig-caption">Positive indices grow left→right from 0. Negative indices grow right→left from −1. <code>s[start:stop]</code> — the stop index is always excluded.</div>
+    </div>
+
     <pre><code class="language-python">s = "algorithm"
 #    0123456789   (positive indices)
 #   -9-8-7-6-5    (negative indices from end)
@@ -132,43 +213,49 @@ int(16**0.5)    # → 4   but can fail for large n due to float imprecision!</co
 # Basic access
 s[0]        # 'a'   — first character
 s[-1]       # 'm'   — last character (same as s[len(s)-1])
+# WHY negative indices: -k is equivalent to len(s)-k; avoids computing length explicitly
 s[-2]       # 'h'
 
 # Slicing  [start:stop]  — stop is EXCLUSIVE
+# WHY exclusive stop: s[a:b] has length b-a, and ranges tile cleanly: s[:k] + s[k:] == s
 s[0:4]      # 'algo'   — characters 0,1,2,3
-s[4:]       # 'rithm'  — from index 4 to end
-s[:4]       # 'algo'   — from start to index 3
-s[:]        # 'algorithm' — full copy (useful for lists!)
+s[4:]       # 'rithm'  — from index 4 to end (omitting stop = go to end)
+s[:4]       # 'algo'   — from start to index 3 (omitting start = begin at 0)
+s[:]        # 'algorithm' — shallow copy; on lists, use this to avoid aliasing bugs
 
 # Step slicing  [start:stop:step]
-s[::2]      # 'agrtm'  — every other character
-s[::-1]     # 'mhtirogla' — reverse the string
+s[::2]      # 'agrtm'  — every other character (step skips indices)
+s[::-1]     # 'mhtirogla' — WHY: negative step reverses traversal direction
 s[1:8:3]    # 'lr'   — indices 1, 4, 7
 
 # Slicing never raises IndexError — out-of-range is clamped
+# WHY: Python clamps start/stop to [0, len(s)], so no need for bounds checks around slices
 s[0:100]    # 'algorithm' — same as s[:]</code></pre>
 
     <h3>String Methods — The Complete Reference</h3>
     <pre><code class="language-python">s = "  Hello, World!  "
 
 # ── Whitespace ──────────────────────────────────────────
-s.strip()           # "Hello, World!"    — both ends
+s.strip()           # "Hello, World!"    — both ends; strips spaces, \t, \n
 s.lstrip()          # "Hello, World!  "  — left only
 s.rstrip()          # "  Hello, World!"  — right only
 
 # ── Case ────────────────────────────────────────────────
 s.lower()           # "  hello, world!  "
 s.upper()           # "  HELLO, WORLD!  "
+# WHY capitalize acts on the full string including leading spaces:
+# it lowercases everything then uppercases the very first character (which is a space here)
 s.capitalize()      # "  hello, world!  " → first char upper (after strip in practice)
 s.title()           # "  Hello, World!  "
 s.swapcase()        # swap upper↔lower
 
 # ── Searching ───────────────────────────────────────────
-s.find("World")     # 9 (first index) — returns -1 if not found
+s.find("World")     # 9 (first index) — returns -1 if not found (never raises)
 s.rfind("l")        # 11 (rightmost)  — returns -1 if not found
+# WHY choose index() over find(): use when absence is a bug; saves an explicit -1 check
 s.index("World")    # 9 — like find() but raises ValueError if not found
 s.count("l")        # 3 — non-overlapping occurrences
-"World" in s        # True — use 'in' for boolean check
+"World" in s        # True — prefer 'in' for boolean; cleaner and equally O(n)
 
 # ── Checking ────────────────────────────────────────────
 "123".isdigit()     # True — all chars are digits
@@ -181,19 +268,21 @@ s.count("l")        # 3 — non-overlapping occurrences
 
 # ── Splitting & Joining ─────────────────────────────────
 "a,b,c".split(",")          # ['a', 'b', 'c']
-"hello world".split()       # ['hello', 'world'] — splits on any whitespace
-"hello world".split(" ", 1) # ['hello', 'world'] — max 1 split
-",".join(["a", "b", "c"])   # "a,b,c"
-"".join(["h","i"])           # "hi"
+# WHY split() with no arg differs from split(" "): no-arg collapses consecutive whitespace
+"hello world".split()       # ['hello', 'world'] — splits on any whitespace, strips leading/trailing
+"hello world".split(" ", 1) # ['hello', 'world'] — max 1 split (second part is unsplit remainder)
+",".join(["a", "b", "c"])   # "a,b,c"  — WHY join on str not list: strings own the separator
+"".join(["h","i"])           # "hi"     — use "" as separator for concatenation
 
 # ── Replacement ─────────────────────────────────────────
-"aabbcc".replace("b", "X")      # "aaXXcc" — all occurrences
-"aabbcc".replace("b", "X", 1)   # "aaXbcc" — first occurrence only
+"aabbcc".replace("b", "X")      # "aaXXcc" — all occurrences; returns new string (strings are immutable)
+"aabbcc".replace("b", "X", 1)   # "aaXbcc" — count arg limits replacements; useful to replace only first
 
 # ── Alignment ───────────────────────────────────────────
 "hi".ljust(10)          # "hi        "
 "hi".rjust(10)          # "        hi"
 "hi".center(10)         # "    hi    "
+# WHY zfill not rjust: zfill handles sign correctly ("−42".zfill(5) → "−0042")
 "42".zfill(5)           # "00042"  — zero-pad to width</code></pre>
 
     <h3>String Building — The Performance Trap</h3>
@@ -201,40 +290,44 @@ s.count("l")        # 3 — non-overlapping occurrences
     <pre><code class="language-python"># ❌ SLOW — O(n²) because each += creates a new string
 result = ""
 for char in some_list:
-    result += char          # creates n new string objects
+    # WHY O(n²): strings are immutable, so each += allocates and copies the whole string so far
+    result += char          # creates n new string objects; total bytes copied = 1+2+…+n = O(n²)
 
 # ✓ FAST — O(n) — collect in list, join once
 parts = []
 for char in some_list:
-    parts.append(char)
-result = "".join(parts)
+    parts.append(char)      # list append is amortized O(1)
+result = "".join(parts)     # join pre-allocates exact final size, copies once — O(n) total
 
 # ✓ Even simpler with list comprehension
+# WHY generator expression works here: join consumes it in one pass, no intermediate list needed
 result = "".join(char for char in some_list if some_condition)
 
 # f-strings — preferred for formatting (Python 3.6+)
 name = "Alice"
 score = 99.7
-f"Player {name} scored {score:.1f}"   # "Player Alice scored 99.7"
-f"{1000000:,}"                         # "1,000,000"
-f"{42:08b}"                            # "00101010" — zero-padded binary
-f"{255:02x}"                           # "ff" — hex</code></pre>
+f"Player {name} scored {score:.1f}"   # "Player Alice scored 99.7"  (.1f = 1 decimal place)
+f"{1000000:,}"                         # "1,000,000"  (comma as thousands separator)
+f"{42:08b}"                            # "00101010"   (08 = pad to 8 wide with zeros; b = binary)
+f"{255:02x}"                           # "ff"         (x = lowercase hex; 02 = at least 2 digits)</code></pre>
 
     <h3>Characters and ASCII — Essential for Coding Problems</h3>
     <pre><code class="language-python"># ord() converts char to its Unicode code point (integer)
 # chr() converts integer back to character
 
-ord('a')    # 97
-ord('A')    # 65
-ord('0')    # 48
+ord('a')    # 97   — lowercase letters occupy 97–122
+ord('A')    # 65   — uppercase letters occupy 65–90 (gap of 32 from lowercase)
+ord('0')    # 48   — digit characters occupy 48–57
 chr(97)     # 'a'
 chr(65)     # 'A'
 
 # Map letter to 0-25 index (very common pattern)
+# WHY subtract ord('a'): normalizes 'a'→0, 'b'→1, …, 'z'→25, enabling fixed-size array indexing
 ord('e') - ord('a')   # 4  — 'e' is the 5th letter (0-indexed)
-ord('E') - ord('A')   # 4
+ord('E') - ord('A')   # 4  — same offset works for uppercase because A–Z are also contiguous
 
 # Count letter frequencies using array instead of dict
+# WHY array not dict: O(1) access, O(26) space regardless of input, cache-friendly
 freq = [0] * 26
 for c in "hello":
     freq[ord(c) - ord('a')] += 1
@@ -242,11 +335,15 @@ for c in "hello":
 
 # Check if anagram (same letter counts)
 def is_anagram(s, t):
+    # WHY early length check: two strings of different lengths can't be anagrams;
+    # avoids the all() scan when the answer is already obvious
     if len(s) != len(t):
         return False
     count = [0] * 26
-    for c in s: count[ord(c) - ord('a')] += 1
-    for c in t: count[ord(c) - ord('a')] -= 1
+    for c in s: count[ord(c) - ord('a')] += 1   # increment for every char in s
+    for c in t: count[ord(c) - ord('a')] -= 1   # decrement for every char in t
+    # Loop invariant: after both loops, count[i] == freq_s[i] - freq_t[i]
+    # WHY all(x == 0): if any bucket is nonzero, one string has a surplus letter the other doesn't
     return all(x == 0 for x in count)</code></pre>
 
     <!-- ===== SECTION 4: TRUTHINESS ===== -->
@@ -273,23 +370,31 @@ def is_anagram(s, t):
     <pre><code class="language-python"># Common patterns using truthiness
 nums = [1, 2, 3]
 
-if nums:          # True if list is non-empty (preferred over len(nums) > 0)
+# WHY `if nums` instead of `if len(nums) > 0`: more Pythonic and avoids the len() call;
+# works for any container (list, dict, set, deque) without knowing its type
+if nums:
     process(nums)
 
 node = TreeNode(0)
+# WHY comment: objects are truthy by default (unless __bool__ or __len__ returns falsy)
+# so `if node` catches None but also catches a node with val=0 correctly
 if node:          # True — any TreeNode object is truthy, even with val=0
     ...           # Use `if node is not None:` if you need to distinguish val=0
 
 # Short-circuit evaluation — Python evaluates left-to-right and stops early
 a = None
+# WHY `or` for defaults: `a or default` returns first truthy value, or last value if all falsy
 b = a or "default"    # b = "default" (a is falsy, so evaluates right side)
 c = [1,2] or []       # c = [1,2]  (left is truthy, right is never evaluated)
+# WHY use `and` to guard a call: if the guard is falsy, the expensive call is skipped entirely
 d = [] and process()  # process() is NEVER called ([] is falsy → short-circuit)
 
 # Conditional expression (ternary)
+# WHY Python puts condition in the middle: reads like English "give x if condition, else y"
 result = x if condition else y
 
 # Chained comparisons — Python supports these natively
+# WHY this works: Python evaluates a<b<c as (a<b) and (b<c) but computes b only once
 0 <= i < n        # True if i is a valid index  (equivalent to 0<=i and i<n)
 1 < x < 10        # True if x is strictly between 1 and 10
 a == b == c       # True if all three are equal</code></pre>
@@ -297,24 +402,28 @@ a == b == c       # True if all three are equal</code></pre>
     <!-- ===== SECTION 5: COMPARISON AND IDENTITY ===== -->
     <h2>Equality vs Identity</h2>
     <p>Python has two comparison operators. Mixing them up is a classic bug.</p>
-    <pre><code class="language-python"># == checks VALUE equality
-# is checks IDENTITY (same object in memory)
+    <pre><code class="language-python"># == checks VALUE equality  (calls __eq__)
+# is checks IDENTITY (same object in memory — same id())
 
 a = [1, 2, 3]
 b = [1, 2, 3]
-c = a
+c = a          # WHY: assignment copies the reference, not the list; c and a point to the same object
 
 a == b      # True   — same values
-a is b      # False  — different objects
+a is b      # False  — different objects (two separate list allocations)
 a is c      # True   — c is just another label for the same list
 
 # Small integer caching — CPython caches ints -5 to 256
+# WHY this range: CPython pre-allocates a pool of common small integers at startup to avoid
+# repeated allocation; this is an implementation detail, not guaranteed by the language spec
 x = 256; y = 256
-x is y      # True   (cached)
+x is y      # True   (cached — both names point to the same pre-allocated object)
 x = 257; y = 257
-x is y      # False  (not cached — but x == y is still True)
+x is y      # False  (not cached — two separate int objects were created, but x == y is still True)
 
 # RULE: always use == for value comparison, use `is` only for None/True/False
+# WHY `is None` not `== None`: None is a singleton — there is exactly one None object;
+# `is` is faster (pointer comparison) and avoids accidental __eq__ overrides
 if result is None:      # correct — checking for None
     ...
 if result == None:      # works but style warning — use `is` for singletons</code></pre>

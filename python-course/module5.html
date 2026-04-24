@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 5 – Algorithm Patterns</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Course</div>
+      <a href="index.html"><span class="num">🏠</span> Home</a>
+      <div class="sidebar-section">Modules</div>
+      <a href="module1.html"><span class="num">1</span> Python Fundamentals</a>
+      <a href="module2.html"><span class="num">2</span> Core Data Structures</a>
+      <a href="module3.html"><span class="num">3</span> Control Flow & Functions</a>
+      <a href="module4.html"><span class="num">4</span> Searching & Sorting</a>
+      <a href="module5.html" class="active"><span class="num">5</span> Algorithm Patterns</a>
+      <a href="module6.html"><span class="num">6</span> Graph Algorithms</a>
+      <a href="module7.html"><span class="num">7</span> Dynamic Programming</a>
+      <a href="module8.html"><span class="num">8</span> Trees</a>
+      <a href="module9.html"><span class="num">9</span> Standard Library</a>
+      <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="module-header">
+      <div class="module-number">Module 05</div>
+      <h1>Algorithm Patterns</h1>
+      <p class="subtitle">The four patterns that unlock the majority of array and string problems: two pointers, sliding window, prefix sums, and backtracking.</p>
+    </div>
+
+    <!-- ===== TWO POINTERS ===== -->
+    <h2>Two Pointers</h2>
+    <p>Use two index variables (pointers) that move through the data, usually toward each other or in the same direction. Reduces O(n²) brute force to O(n) by avoiding redundant work.</p>
+
+    <h3>Pattern 1: Opposite Ends (Sorted Array)</h3>
+    <p>Start one pointer at the left, one at the right. Move them inward based on the comparison result.</p>
+    <pre><code class="language-python"># Problem: Two Sum II (sorted array)
+# Given sorted nums, find two indices whose values sum to target
+def two_sum_sorted(nums, target):
+    l, r = 0, len(nums) - 1
+    while l < r:
+        s = nums[l] + nums[r]
+        if s == target:
+            return [l + 1, r + 1]   # 1-indexed
+        elif s < target:
+            l += 1    # sum too small — increase left (smaller + larger)
+        else:
+            r -= 1    # sum too large — decrease right
+
+# WHY this works: For any fixed left pointer l,
+# if nums[l] + nums[r] < target, then nums[l] + nums[r-1] < target too,
+# so we can safely advance l. Symmetric argument for r.
+
+# Problem: Container With Most Water
+def max_area(height):
+    l, r = 0, len(height) - 1
+    best = 0
+    while l < r:
+        area = (r - l) * min(height[l], height[r])
+        best = max(best, area)
+        if height[l] < height[r]:
+            l += 1    # move the shorter side — only way to possibly increase area
+        else:
+            r -= 1
+    return best
+
+# Problem: 3Sum — find all triplets summing to 0
+def three_sum(nums):
+    nums.sort()
+    result = []
+    for i in range(len(nums) - 2):
+        if i > 0 and nums[i] == nums[i-1]:   # skip duplicate first elements
+            continue
+        l, r = i + 1, len(nums) - 1
+        while l < r:
+            s = nums[i] + nums[l] + nums[r]
+            if s == 0:
+                result.append([nums[i], nums[l], nums[r]])
+                while l < r and nums[l] == nums[l+1]: l += 1   # skip dups
+                while l < r and nums[r] == nums[r-1]: r -= 1   # skip dups
+                l += 1; r -= 1
+            elif s < 0:
+                l += 1
+            else:
+                r -= 1
+    return result</code></pre>
+
+    <h3>Pattern 2: Same Direction (Fast and Slow)</h3>
+    <p>Both pointers move in the same direction but at different speeds. Used for in-place array modification and cycle detection.</p>
+    <pre><code class="language-python"># Problem: Remove Duplicates from Sorted Array
+# slow pointer: position to write next unique value
+# fast pointer: scanner that reads through the array
+def remove_duplicates(nums):
+    if not nums: return 0
+    slow = 0
+    for fast in range(1, len(nums)):
+        if nums[fast] != nums[slow]:   # found a new unique value
+            slow += 1
+            nums[slow] = nums[fast]    # write it to the next slow position
+    return slow + 1   # new length
+
+# Problem: Move Zeroes
+# Move all zeroes to end while maintaining relative order of non-zero elements
+def move_zeroes(nums):
+    slow = 0
+    for fast in range(len(nums)):
+        if nums[fast] != 0:
+            nums[slow] = nums[fast]
+            slow += 1
+    while slow < len(nums):
+        nums[slow] = 0
+        slow += 1
+
+# Problem: Floyd's Cycle Detection (Linked List)
+# slow moves 1 step, fast moves 2 steps
+# if cycle exists, they meet inside the cycle
+def has_cycle(head):
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        if slow == fast:
+            return True
+    return False
+
+# Find start of cycle
+def detect_cycle(head):
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        if slow == fast:
+            # Reset one pointer to head, advance both by 1 until they meet
+            slow = head
+            while slow != fast:
+                slow = slow.next
+                fast = fast.next
+            return slow   # start of cycle
+    return None</code></pre>
+
+    <!-- ===== SLIDING WINDOW ===== -->
+    <h2>Sliding Window</h2>
+    <p>Maintain a "window" (contiguous subarray/substring) and slide it through the data. The window expands when we need more elements and shrinks when a constraint is violated. This gives O(n) instead of O(n²).</p>
+
+    <h3>Fixed-Size Window</h3>
+    <div class="visual-box">
+      <div class="label">Fixed window of size 3 sliding through [1, 3, -1, -3, 5, 3, 6]</div>
+Step 1: [1, 3, -1] -3  5  3  6   sum = 3
+Step 2:  1 [3, -1, -3]  5  3  6   sum = -1  ← add 3 (right), remove 1 (left)
+Step 3:  1  3 [-1, -3, 5]  3  6   sum = 1
+Step 4:  1  3  -1 [-3, 5, 3]  6   sum = 5
+Step 5:  1  3  -1  -3 [5, 3, 6]   sum = 14  ← maximum!
+    </div>
+    <pre><code class="language-python"># Maximum sum subarray of size k
+def max_sum_subarray(nums, k):
+    window_sum = sum(nums[:k])   # initial window
+    best = window_sum
+    for i in range(k, len(nums)):
+        window_sum += nums[i]         # add new right element
+        window_sum -= nums[i - k]     # remove leftmost element
+        best = max(best, window_sum)
+    return best
+
+# Average of subarrays of size k
+def find_averages(nums, k):
+    result = []
+    window_sum = sum(nums[:k])
+    result.append(window_sum / k)
+    for i in range(k, len(nums)):
+        window_sum += nums[i] - nums[i - k]
+        result.append(window_sum / k)
+    return result</code></pre>
+
+    <h3>Variable-Size Window</h3>
+    <p>The window grows when the constraint is satisfied and shrinks when it's violated. The right pointer always moves forward; the left pointer moves forward only when needed.</p>
+    <pre><code class="language-python"># General template
+left = 0
+window_state = ...    # could be Counter, int, etc.
+
+for right in range(len(s)):
+    # EXPAND: add s[right] to window
+    window_state = update_add(window_state, s[right])
+
+    # SHRINK: while window violates constraint, remove s[left]
+    while window_is_invalid(window_state):
+        window_state = update_remove(window_state, s[left])
+        left += 1
+
+    # RECORD: at this point window [left, right] is valid
+    best = max(best, right - left + 1)
+
+# ─────────────────────────────────────────────────────────────────
+# Problem: Longest Substring Without Repeating Characters
+def length_of_longest_substring(s):
+    seen = {}       # char → last seen index
+    l = best = 0
+    for r, c in enumerate(s):
+        if c in seen and seen[c] >= l:
+            l = seen[c] + 1     # shrink: move left past the duplicate
+        seen[c] = r
+        best = max(best, r - l + 1)
+    return best
+
+# Problem: Longest Substring with At Most K Distinct Characters
+def longest_k_distinct(s, k):
+    from collections import defaultdict
+    count = defaultdict(int)
+    l = best = 0
+    for r, c in enumerate(s):
+        count[c] += 1
+        while len(count) > k:           # too many distinct chars
+            count[s[l]] -= 1
+            if count[s[l]] == 0:
+                del count[s[l]]
+            l += 1
+        best = max(best, r - l + 1)
+    return best
+
+# Problem: Minimum Window Substring
+# Find smallest window in s containing all chars of t
+def min_window(s, t):
+    from collections import Counter
+    need = Counter(t)
+    have, total = 0, len(need)   # total = distinct chars we need to satisfy
+    l = 0
+    best = (float('inf'), 0, 0)   # (length, left, right)
+    window = {}
+
+    for r, c in enumerate(s):
+        window[c] = window.get(c, 0) + 1
+        if c in need and window[c] == need[c]:
+            have += 1           # satisfied one more distinct char
+
+        while have == total:    # window contains all of t
+            if r - l + 1 < best[0]:
+                best = (r - l + 1, l, r)
+            window[s[l]] -= 1
+            if s[l] in need and window[s[l]] < need[s[l]]:
+                have -= 1
+            l += 1
+
+    return s[best[1]:best[2]+1] if best[0] != float('inf') else ""</code></pre>
+
+    <!-- ===== PREFIX SUMS ===== -->
+    <h2>Prefix Sums</h2>
+    <p>Precompute cumulative sums so that any range sum query is answered in O(1) instead of O(n).</p>
+
+    <div class="visual-box">
+      <div class="label">Prefix sum construction and range query</div>
+nums:   [ 3,  1,  4,  1,  5,  9,  2,  6]
+         idx: 0   1   2   3   4   5   6   7
+
+prefix: [ 0,  3,  4,  8,  9, 14, 23, 25, 31]
+         idx: 0   1   2   3   4   5   6   7   8
+
+prefix[i] = nums[0] + nums[1] + ... + nums[i-1]
+
+Range sum of nums[2..5] (inclusive):
+= prefix[6] - prefix[2]
+= 23 - 4
+= 19   ✓ (4 + 1 + 5 + 9 = 19)
+    </div>
+
+    <pre><code class="language-python"># Build prefix sum — O(n)
+def build_prefix(nums):
+    n = len(nums)
+    prefix = [0] * (n + 1)   # prefix[0] = 0 sentinel makes indexing clean
+    for i in range(n):
+        prefix[i + 1] = prefix[i] + nums[i]
+    return prefix
+
+# Range sum query [l, r] inclusive — O(1)
+def range_sum(prefix, l, r):
+    return prefix[r + 1] - prefix[l]
+
+# Python one-liner using itertools.accumulate
+from itertools import accumulate
+prefix = [0] + list(accumulate(nums))   # same as above
+
+# ─────────────────────────────────────────────────────────────────
+# Problem: Subarray Sum Equals K
+# Count subarrays that sum to k
+
+def subarray_sum(nums, k):
+    from collections import defaultdict
+    # prefix_count[s] = how many times prefix sum s has been seen
+    prefix_count = defaultdict(int)
+    prefix_count[0] = 1   # empty prefix has sum 0
+
+    prefix = result = 0
+    for x in nums:
+        prefix += x
+        # if (prefix - k) was seen before, then the subarray between
+        # that earlier index and current index sums to k
+        result += prefix_count[prefix - k]
+        prefix_count[prefix] += 1
+
+    return result
+
+# Problem: Contiguous Array (equal 0s and 1s)
+# Treat 0 as -1, then find longest subarray with sum 0
+def find_max_length(nums):
+    seen = {0: -1}   # prefix_sum → first index where this sum appeared
+    prefix = best = 0
+    for i, x in enumerate(nums):
+        prefix += 1 if x == 1 else -1
+        if prefix in seen:
+            best = max(best, i - seen[prefix])
+        else:
+            seen[prefix] = i
+    return best
+
+# ─────────────────────────────────────────────────────────────────
+# 2D Prefix Sum
+def build_2d_prefix(grid):
+    m, n = len(grid), len(grid[0])
+    prefix = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            prefix[i][j] = (grid[i-1][j-1]
+                           + prefix[i-1][j]
+                           + prefix[i][j-1]
+                           - prefix[i-1][j-1])
+    return prefix
+
+# Rectangle sum from (r1,c1) to (r2,c2) inclusive — O(1)
+def rect_sum(prefix, r1, c1, r2, c2):
+    return (prefix[r2+1][c2+1]
+           - prefix[r1][c2+1]
+           - prefix[r2+1][c1]
+           + prefix[r1][c1])</code></pre>
+
+    <!-- ===== BACKTRACKING ===== -->
+    <h2>Backtracking</h2>
+    <p>Backtracking builds solutions incrementally and <strong>abandons</strong> (backtracks) a partial solution as soon as it determines the path cannot lead to a valid complete solution. It's a systematic DFS through the solution space.</p>
+
+    <div class="visual-box">
+      <div class="label">Backtracking tree for subsets of [1, 2, 3]</div>
+                   []
+           /        |        \
+         [1]       [2]       [3]
+        /   \        \
+     [1,2] [1,3]   [2,3]
+      /
+  [1,2,3]
+
+All nodes (including intermediate) = subsets:
+[], [1], [1,2], [1,2,3], [1,3], [2], [2,3], [3]  → 2^3 = 8 subsets
+    </div>
+
+    <pre><code class="language-python"># Universal backtracking template
+def backtrack(state, start, choices):
+    # 1. Record solution if complete
+    if is_complete(state):
+        results.append(state[:])   # always copy mutable state!
+        return                     # or: return if we want ALL solutions
+
+    # 2. Try each choice
+    for i in range(start, len(choices)):
+        choice = choices[i]
+
+        # 3. Prune invalid choices early
+        if not is_valid(state, choice):
+            continue
+
+        # 4. Make the choice
+        state.append(choice)
+
+        # 5. Recurse
+        backtrack(state, i + 1, choices)  # i+1 for no-reuse, i for reuse
+
+        # 6. Undo the choice (backtrack)
+        state.pop()
+
+# ─────────────────────────────────────────────────────────────────
+# SUBSETS — collect all subsets of nums (no duplicates in nums)
+def subsets(nums):
+    result = []
+    def bt(start, path):
+        result.append(path[:])     # every partial state is a valid subset
+        for i in range(start, len(nums)):
+            path.append(nums[i])
+            bt(i + 1, path)        # i+1 means we don't reuse elements
+            path.pop()
+    bt(0, [])
+    return result
+
+# SUBSETS with duplicates — sort first, skip duplicate choices at same level
+def subsets_with_dups(nums):
+    nums.sort()
+    result = []
+    def bt(start, path):
+        result.append(path[:])
+        for i in range(start, len(nums)):
+            if i > start and nums[i] == nums[i-1]:   # skip duplicate branch
+                continue
+            path.append(nums[i])
+            bt(i + 1, path)
+            path.pop()
+    bt(0, [])
+    return result
+
+# PERMUTATIONS — all orderings of nums
+def permutations(nums):
+    result = []
+    def bt(path, used):
+        if len(path) == len(nums):
+            result.append(path[:])
+            return
+        for i in range(len(nums)):
+            if used[i]: continue
+            used[i] = True
+            path.append(nums[i])
+            bt(path, used)
+            path.pop()
+            used[i] = False
+    bt([], [False] * len(nums))
+    return result
+
+# COMBINATIONS — choose k from n
+def combinations(n, k):
+    result = []
+    def bt(start, path):
+        if len(path) == k:
+            result.append(path[:])
+            return
+        # Pruning: if remaining elements can't fill k, stop early
+        remaining_needed = k - len(path)
+        for i in range(start, n - remaining_needed + 2):
+            path.append(i)
+            bt(i + 1, path)
+            path.pop()
+    bt(1, [])
+    return result
+
+# COMBINATION SUM — choose numbers (with reuse) that sum to target
+def combination_sum(candidates, target):
+    candidates.sort()
+    result = []
+    def bt(start, path, remaining):
+        if remaining == 0:
+            result.append(path[:])
+            return
+        for i in range(start, len(candidates)):
+            if candidates[i] > remaining:
+                break                   # sorted — all further candidates too large
+            path.append(candidates[i])
+            bt(i, path, remaining - candidates[i])   # i (not i+1) allows reuse
+            path.pop()
+    bt(0, [], target)
+    return result</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <strong>Backtracking Optimization Tips</strong>
+        <ul>
+          <li><strong>Sort first</strong> — enables early termination and duplicate skipping</li>
+          <li><strong>Prune early</strong> — add <code>if remaining &lt; 0: return</code> or <code>if candidates[i] &gt; remaining: break</code></li>
+          <li><strong>Skip duplicates</strong> — <code>if i &gt; start and nums[i] == nums[i-1]: continue</code></li>
+          <li><strong>Always copy state</strong> — <code>result.append(path[:])</code> not <code>result.append(path)</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="nav-footer">
+      <a href="module4.html" class="nav-btn">
+        <span class="nav-dir">← Previous</span>
+        <span class="nav-title">Searching & Sorting</span>
+      </a>
+      <a href="module6.html" class="nav-btn next">
+        <span class="nav-dir">Next →</span>
+        <span class="nav-title">Graph Algorithms</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

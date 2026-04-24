@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 2 – Core Data Structures</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Course</div>
+      <a href="index.html"><span class="num">🏠</span> Home</a>
+      <div class="sidebar-section">Modules</div>
+      <a href="module1.html"><span class="num">1</span> Python Fundamentals</a>
+      <a href="module2.html" class="active"><span class="num">2</span> Core Data Structures</a>
+      <a href="module3.html"><span class="num">3</span> Control Flow & Functions</a>
+      <a href="module4.html"><span class="num">4</span> Searching & Sorting</a>
+      <a href="module5.html"><span class="num">5</span> Algorithm Patterns</a>
+      <a href="module6.html"><span class="num">6</span> Graph Algorithms</a>
+      <a href="module7.html"><span class="num">7</span> Dynamic Programming</a>
+      <a href="module8.html"><span class="num">8</span> Trees</a>
+      <a href="module9.html"><span class="num">9</span> Standard Library</a>
+      <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="module-header">
+      <div class="module-number">Module 02</div>
+      <h1>Core Data Structures</h1>
+      <p class="subtitle">Python's built-in data structures — their internals, every important method, time complexities, and how to pick the right one for a problem.</p>
+    </div>
+
+    <!-- ===== LIST ===== -->
+    <h2>List — The Dynamic Array</h2>
+    <p>A Python list is a <strong>dynamic array</strong> — a contiguous block of memory holding pointers to objects. When it runs out of space, Python allocates a new block ~2× larger and copies everything over. This gives <strong>amortized O(1)</strong> appends.</p>
+
+    <div class="visual-box">
+      <div class="label">List internal layout</div>
+nums = [10, 20, 30, 40]
+
+Memory layout (simplified):
+┌──────────────────────────────────┐
+│ len=4  capacity=8  data ptr──►   │
+└──────────────────────────────────┘
+                         ↓
+                  ┌──┬──┬──┬──┬──┬──┬──┬──┐
+  object ptrs:   │p0│p1│p2│p3│  │  │  │  │  (4 used, 4 reserved)
+                  └──┴──┴──┴──┴──┴──┴──┴──┘
+                   ↓  ↓  ↓  ↓
+                  10 20 30 40  (actual int objects elsewhere in heap)
+    </div>
+
+    <h3>Creating Lists</h3>
+    <pre><code class="language-python"># Literal
+nums = [1, 2, 3, 4, 5]
+
+# List comprehension (fastest)
+squares = [x**2 for x in range(10)]          # [0, 1, 4, 9, ..., 81]
+evens   = [x for x in range(20) if x % 2 == 0]
+
+# From other iterables
+chars = list("hello")          # ['h', 'e', 'l', 'l', 'o']
+from_range = list(range(5))    # [0, 1, 2, 3, 4]
+
+# Fixed-size array initialization
+zeros  = [0] * 10              # [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+# ✓ Correct 2D grid (n rows, m cols)
+grid = [[0] * m for _ in range(n)]   # each row is a SEPARATE list object
+
+# ❌ WRONG 2D grid — all rows are the SAME object
+grid = [[0] * m] * n
+grid[0][0] = 1
+print(grid[1][0])  # also 1! — they share the same inner list</code></pre>
+
+    <h3>All List Operations with Complexities</h3>
+    <pre><code class="language-python">a = [3, 1, 4, 1, 5, 9, 2, 6]
+
+# ── Access ─── O(1)
+a[0]           # 3    — first element
+a[-1]          # 6    — last element
+a[2:5]         # [4, 1, 5] — slice (creates new list, O(k))
+
+# ── Search ─── O(n)
+3 in a         # True  — linear scan
+a.index(4)     # 2     — first index of value (ValueError if missing)
+a.count(1)     # 2     — number of occurrences
+
+# ── Modification at END ─── O(1) amortized
+a.append(7)           # adds 7 at end
+x = a.pop()           # removes & returns last element → 7
+
+# ── Modification at FRONT/MIDDLE ─── O(n) — shifts all elements
+a.insert(0, 99)       # insert 99 at index 0 — O(n) — avoid in tight loops
+a.pop(0)              # remove from front — O(n) — use deque instead!
+a.remove(1)           # remove first occurrence of value 1 — O(n)
+
+# ── Sorting ─── O(n log n)
+a.sort()                       # in-place, stable, Timsort
+a.sort(reverse=True)           # descending
+b = sorted(a)                  # returns new sorted list (a unchanged)
+a.sort(key=lambda x: -x)       # sort by custom key
+a.sort(key=lambda x: (x%2, x)) # sort odds before evens, then by value
+
+# ── Bulk operations ───
+a.reverse()           # in-place reverse — O(n)
+a.clear()             # remove all elements — O(n) (runs destructors)
+a.extend([7, 8, 9])   # append all items from iterable — O(k)
+a + [7, 8, 9]         # concatenation — O(n+k) — creates new list
+a * 3                  # repetition — O(n*k) — creates new list
+a.copy()              # shallow copy (same as a[:])
+
+# ── Aggregates ───
+len(a)                # O(1) — stored separately
+sum(a)                # O(n)
+min(a), max(a)        # O(n)
+min(a, key=abs)       # min by absolute value</code></pre>
+
+    <div class="callout warning">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <strong>Never use list as a queue — use deque</strong>
+        <p><code>list.pop(0)</code> and <code>list.insert(0, x)</code> are O(n) because they shift every element. For any BFS or queue operation, use <code>collections.deque</code> which has O(1) operations at both ends.</p>
+      </div>
+    </div>
+
+    <!-- ===== DICT ===== -->
+    <h2>Dictionary — The Hash Map</h2>
+    <p>A Python dict is a <strong>hash table</strong>. It maps keys to values using a hash function. Since Python 3.7, dicts maintain <strong>insertion order</strong>. Average-case O(1) for lookup, insert, and delete.</p>
+
+    <h3>Creating and Accessing</h3>
+    <pre><code class="language-python"># Literal
+d = {"name": "Alice", "age": 30, "score": 99}
+
+# From list of pairs
+d = dict([("a", 1), ("b", 2)])
+
+# Dict comprehension
+squares = {x: x**2 for x in range(5)}    # {0:0, 1:1, 2:4, 3:9, 4:16}
+filtered = {k: v for k, v in d.items() if v > 1}
+
+# ── Access ─── O(1) average
+d["name"]           # "Alice" — KeyError if key doesn't exist
+d.get("name")       # "Alice"
+d.get("missing")    # None   — no error
+d.get("missing", 0) # 0      — custom default ← use this constantly
+
+# ── Insert/Update ─── O(1) average
+d["city"] = "NYC"          # insert or overwrite
+d.update({"x": 1, "y": 2}) # merge another dict (Python 3.9+: d |= {...})
+
+# ── Delete ─── O(1) average
+del d["age"]               # KeyError if missing
+val = d.pop("score")       # remove and return value (KeyError if missing)
+val = d.pop("score", -1)   # remove and return, or -1 if missing ✓
+d.clear()                  # remove all
+
+# ── Membership ─── O(1) average
+"name" in d        # True  — checks KEYS only
+"Alice" in d       # False — values not checked this way
+"Alice" in d.values()  # True — O(n), checks values
+
+# ── Iteration ───
+for key in d:               # iterate over keys (insertion order, Python 3.7+)
+for key in d.keys():        # same
+for val in d.values():      # iterate over values
+for key, val in d.items():  # iterate over key-value pairs ← most common</code></pre>
+
+    <h3>defaultdict — Remove Boilerplate</h3>
+    <p><code>defaultdict</code> automatically creates a missing key with a default value, eliminating the need to check if a key exists before using it.</p>
+    <pre><code class="language-python">from collections import defaultdict
+
+# Without defaultdict — verbose
+graph = {}
+for u, v in edges:
+    if u not in graph:
+        graph[u] = []
+    graph[u].append(v)
+
+# With defaultdict — clean
+graph = defaultdict(list)     # missing key → empty list
+for u, v in edges:
+    graph[u].append(v)        # no check needed!
+
+# Common factory functions
+count  = defaultdict(int)     # missing key → 0
+graph  = defaultdict(list)    # missing key → []
+nested = defaultdict(dict)    # missing key → {}
+sets   = defaultdict(set)     # missing key → set()
+
+# Example: group words by first letter
+words = ["apple", "ant", "banana", "bear", "cherry"]
+groups = defaultdict(list)
+for w in words:
+    groups[w[0]].append(w)
+# groups = {'a': ['apple','ant'], 'b': ['banana','bear'], 'c': ['cherry']}</code></pre>
+
+    <h3>Counter — Frequency Maps in One Line</h3>
+    <pre><code class="language-python">from collections import Counter
+
+# Count character frequencies
+freq = Counter("banana")
+# Counter({'a': 3, 'n': 2, 'b': 1})
+
+# Count word frequencies
+words = ["cat", "dog", "cat", "bird", "dog", "cat"]
+freq = Counter(words)
+# Counter({'cat': 3, 'dog': 2, 'bird': 1})
+
+# Access like a dict — missing keys return 0 (not KeyError!)
+freq["cat"]       # 3
+freq["elephant"]  # 0 ← no KeyError, unlike regular dict
+
+# Most common
+freq.most_common(2)      # [('cat', 3), ('dog', 2)] — sorted by count desc
+freq.most_common()[:-2]  # everything except the 2 least common
+
+# Arithmetic — very useful for anagram/subset problems
+c1 = Counter("aab")
+c2 = Counter("ab")
+c1 - c2          # Counter({'a': 1}) — subtract counts (drops zeros/negatives)
+c1 + c2          # Counter({'a': 3, 'b': 2}) — add counts
+c1 & c2          # Counter({'a': 1, 'b': 1}) — min of each count (intersection)
+c1 | c2          # Counter({'a': 2, 'b': 1}) — max of each count (union)
+
+# Update counter
+freq.update("cat")        # adds counts
+freq.subtract(["cat"])    # subtracts counts (can go negative, unlike -)
+
+# Total count
+sum(freq.values())        # total number of items counted</code></pre>
+
+    <!-- ===== SET ===== -->
+    <h2>Set — The Hash Set</h2>
+    <p>A set is an <strong>unordered collection of unique hashable objects</strong>. Backed by a hash table, so lookup/insert/delete are O(1) average — dramatically faster than list's O(n) for membership testing.</p>
+
+    <pre><code class="language-python">s = {1, 2, 3, 4, 5}
+
+# ── Membership ─── O(1) average  ← the main reason to use set
+5 in s        # True
+99 in s       # False
+
+# ── Modification ─── O(1) average
+s.add(6)         # add element (no-op if already present)
+s.remove(3)      # remove — raises KeyError if not found
+s.discard(99)    # remove if present — NO error if missing ← prefer this
+s.pop()          # remove and return an arbitrary element
+
+# ── Set operations ─── O(min(len(a),len(b))) to O(len(a)+len(b))
+a = {1, 2, 3, 4}
+b = {3, 4, 5, 6}
+
+a | b     # {1, 2, 3, 4, 5, 6}  — union  (in a OR b)
+a & b     # {3, 4}              — intersection (in both)
+a - b     # {1, 2}              — difference (in a, NOT in b)
+b - a     # {5, 6}              — difference (in b, NOT in a)
+a ^ b     # {1, 2, 5, 6}        — symmetric diff (in one but not both)
+
+# Operator vs method — methods also accept any iterable
+a.union([5, 6, 7])            # same as a | {5, 6, 7}
+a.intersection([3, 4, 99])    # same as a & {3, 4, 99}
+
+# ── Subset / Superset ───
+{1, 2}.issubset({1, 2, 3})    # True — all of {1,2} in {1,2,3}
+{1, 2, 3}.issuperset({1, 2})  # True
+{1, 2}.isdisjoint({3, 4})     # True — no elements in common
+
+# ── Common coding problem patterns ───
+# Deduplicate a list (loses order in Python < 3.7, but list(dict.fromkeys()) preserves order)
+unique = list(set([3, 1, 4, 1, 5, 9, 2, 6, 5]))
+
+# Find elements in one list not in another
+missing = set(expected) - set(actual)
+
+# Track visited nodes in BFS/DFS
+visited = set()
+visited.add(node)
+if node not in visited:  # O(1) vs list's O(n)</code></pre>
+
+    <!-- ===== TUPLE ===== -->
+    <h2>Tuple — Immutable Sequence</h2>
+    <p>Tuples are like lists but <strong>immutable</strong>. Because they can't change, they are <strong>hashable</strong> — which means they can be used as dictionary keys or set elements. Use them for multi-field keys and for returning multiple values from functions.</p>
+
+    <pre><code class="language-python"># Creation
+point = (3, 4)
+triple = (1, "hello", 3.14)   # can mix types
+single = (42,)                 # trailing comma — without it, just parentheses!
+empty  = ()
+
+# Unpacking — works anywhere Python expects a sequence
+x, y = point               # x=3, y=4
+a, b, c = 1, 2, 3          # tuple packing then unpacking
+a, *rest = [1, 2, 3, 4]    # a=1, rest=[2,3,4]
+*init, last = [1, 2, 3, 4] # init=[1,2,3], last=4
+
+# Swap without temp variable
+a, b = b, a   # Python evaluates right side first, then assigns
+
+# As dict key — VERY useful for 2D grid memos, coordinate tracking
+memo = {}
+memo[(row, col)] = value
+visited = set()
+visited.add((row, col))   # tuple in set ✓
+# visited.add([row, col]) # ERROR — list is not hashable ✗
+
+# Named tuple — like a struct, readable field access
+from collections import namedtuple
+Point = namedtuple("Point", ["x", "y"])
+p = Point(3, 4)
+p.x      # 3
+p.y      # 4
+p[0]     # 3 — still indexable like a regular tuple
+
+# Sort stability with tuples — sort by multiple criteria
+events = [("B", 2), ("A", 1), ("A", 3), ("B", 1)]
+events.sort()  # sorts by first element, then second: [('A',1),('A',3),('B',1),('B',2)]</code></pre>
+
+    <!-- ===== DEQUE ===== -->
+    <h2>Deque — Double-Ended Queue</h2>
+    <p>A deque (double-ended queue) supports O(1) append and pop from <strong>both ends</strong>. Use it whenever you need a queue (BFS) or need to efficiently add/remove from the left side of a sequence.</p>
+
+    <pre><code class="language-python">from collections import deque
+
+# Creation
+q = deque()
+q = deque([1, 2, 3])
+q = deque(range(5), maxlen=3)  # maxlen: auto-drops oldest when full (sliding window!)
+
+# ── O(1) operations ───
+q.append(4)        # add to RIGHT end    → deque([1, 2, 3, 4])
+q.appendleft(0)    # add to LEFT end     → deque([0, 1, 2, 3, 4])
+q.pop()            # remove from RIGHT   → returns 4
+q.popleft()        # remove from LEFT    → returns 0 ← BFS queue operation
+
+# ── Other operations ───
+q.rotate(1)        # rotate right by 1 (last element moves to front)
+q.rotate(-2)       # rotate left by 2
+q.extend([5, 6])   # extend right
+q.extendleft([7])  # extend left (note: reverses order of input)
+
+len(q)             # O(1)
+q[0]               # O(1) — left end
+q[-1]              # O(1) — right end
+q[2]               # O(n) — middle access is slow (unlike list)
+
+# BFS template using deque
+def bfs(graph, start, target):
+    from collections import deque
+    queue = deque([(start, 0)])   # (node, distance)
+    visited = {start}
+    while queue:
+        node, dist = queue.popleft()
+        if node == target:
+            return dist
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append((neighbor, dist + 1))
+    return -1
+
+# Sliding window maximum (monotonic deque)
+def max_sliding_window(nums, k):
+    dq = deque()   # stores INDICES, maintains decreasing order of values
+    result = []
+    for i, x in enumerate(nums):
+        while dq and nums[dq[-1]] <= x:  # remove smaller elements from right
+            dq.pop()
+        dq.append(i)
+        if dq[0] < i - k + 1:            # remove elements outside window
+            dq.popleft()
+        if i >= k - 1:
+            result.append(nums[dq[0]])    # max is always at left of deque
+    return result</code></pre>
+
+    <!-- ===== HEAP ===== -->
+    <h2>Heap — Priority Queue</h2>
+    <p>Python's <code>heapq</code> module provides a <strong>min-heap</strong>: the smallest element is always at the top (index 0). A heap is a complete binary tree stored in an array, where every parent ≤ its children.</p>
+
+    <div class="visual-box">
+      <div class="label">Min-heap structure (stored as array)</div>
+Tree view:              Array representation:
+        1               [1, 3, 2, 7, 5, 4, 6]
+       / \               0  1  2  3  4  5  6
+      3   2
+     / \ / \
+    7  5 4  6
+
+Parent of index i  → (i-1) // 2
+Left child of i    → 2*i + 1
+Right child of i   → 2*i + 2
+    </div>
+
+    <pre><code class="language-python">import heapq
+
+# ── Building a heap ───
+heap = []
+heapq.heappush(heap, 5)   # O(log n)
+heapq.heappush(heap, 2)
+heapq.heappush(heap, 8)
+heapq.heappush(heap, 1)
+
+heapq.heappop(heap)    # → 1  (always the minimum)  O(log n)
+heap[0]                # → 2  (peek at minimum without removing)  O(1)
+
+# Build from existing list — O(n), faster than n pushes
+nums = [5, 3, 8, 1, 9, 2]
+heapq.heapify(nums)     # transforms in-place to min-heap
+
+# ── Max-heap trick — negate values ───
+max_heap = []
+for x in [5, 3, 8, 1]:
+    heapq.heappush(max_heap, -x)       # push negated
+
+max_val = -heapq.heappop(max_heap)     # negate back → 8
+
+# ── k-th largest element pattern ───
+def kth_largest(nums, k):
+    # Keep a min-heap of size k
+    # The top of the heap is the k-th largest element
+    heap = []
+    for x in nums:
+        heapq.heappush(heap, x)
+        if len(heap) > k:
+            heapq.heappop(heap)      # remove smallest — keeps k largest
+    return heap[0]                   # k-th largest
+
+# ── Heap with tuples (priority, value) ───
+# Python compares tuples element-by-element
+# So (priority, item) lets you sort by priority first
+task_queue = []
+heapq.heappush(task_queue, (3, "low priority"))
+heapq.heappush(task_queue, (1, "urgent"))
+heapq.heappush(task_queue, (2, "medium"))
+heapq.heappop(task_queue)   # → (1, "urgent")
+
+# Dijkstra pattern
+heapq.heappush(heap, (dist, node))
+dist, node = heapq.heappop(heap)
+
+# ── Convenience functions ───
+heapq.nlargest(3, [5,3,8,1,9,2])   # [9, 8, 5]  — O(n + k log n)
+heapq.nsmallest(3, [5,3,8,1,9,2])  # [1, 2, 3]  — O(n + k log n)
+# (use sorted() if k is close to n)</code></pre>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Structure</th><th>Use when</th><th>Key advantage</th></tr></thead>
+        <tbody>
+          <tr><td><code>list</code></td><td>General sequence, random access</td><td>O(1) index access</td></tr>
+          <tr><td><code>dict</code></td><td>Key-value mapping, counting</td><td>O(1) lookup by key</td></tr>
+          <tr><td><code>set</code></td><td>Membership testing, deduplication</td><td>O(1) contains check</td></tr>
+          <tr><td><code>tuple</code></td><td>Multi-field keys, immutable records</td><td>Hashable → can be dict key</td></tr>
+          <tr><td><code>deque</code></td><td>Queue (BFS), sliding window</td><td>O(1) popleft</td></tr>
+          <tr><td><code>heap</code></td><td>Always-sorted access, k-th element</td><td>O(1) peek min, O(log n) push/pop</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="nav-footer">
+      <a href="module1.html" class="nav-btn">
+        <span class="nav-dir">← Previous</span>
+        <span class="nav-title">Python Fundamentals</span>
+      </a>
+      <a href="module3.html" class="nav-btn next">
+        <span class="nav-dir">Next →</span>
+        <span class="nav-title">Control Flow & Functions</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 1 – Python Fundamentals</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Python for Coding Problems</h1>
+      <p>Complete Course — 10 Modules</p>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Course</div>
+      <a href="index.html"><span class="num">🏠</span> Home</a>
+      <div class="sidebar-section">Modules</div>
+      <a href="module1.html" class="active"><span class="num">1</span> Python Fundamentals</a>
+      <a href="module2.html"><span class="num">2</span> Core Data Structures</a>
+      <a href="module3.html"><span class="num">3</span> Control Flow & Functions</a>
+      <a href="module4.html"><span class="num">4</span> Searching & Sorting</a>
+      <a href="module5.html"><span class="num">5</span> Algorithm Patterns</a>
+      <a href="module6.html"><span class="num">6</span> Graph Algorithms</a>
+      <a href="module7.html"><span class="num">7</span> Dynamic Programming</a>
+      <a href="module8.html"><span class="num">8</span> Trees</a>
+      <a href="module9.html"><span class="num">9</span> Standard Library</a>
+      <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="module-header">
+      <div class="module-number">Module 01</div>
+      <h1>Python Fundamentals</h1>
+      <p class="subtitle">The building blocks of Python — types, numbers, strings, and the Python mental model that makes the language behave differently from C++/Java.</p>
+    </div>
+
+    <!-- ===== SECTION 1: THE PYTHON MENTAL MODEL ===== -->
+    <h2>The Python Mental Model</h2>
+    <p>Before writing a single line, understand this: <strong>everything in Python is an object</strong>. Variables are not boxes that hold values — they are <em>labels</em> that point to objects in memory. This single idea explains most Python "surprises."</p>
+
+    <div class="visual-box">
+      <div class="label">Memory model</div>
+x = [1, 2, 3]      →   x ──────► [ list object @ 0x7f3a ]
+y = x              →   y ──────► [ same list object!    ]
+y.append(4)        →   x is also [1, 2, 3, 4]  ← both labels point to same object
+
+z = x[:]           →   z ──────► [ NEW list @ 0x7f9b ]  ← slice creates a copy
+z.append(5)        →   x is still [1, 2, 3, 4]           ← independent
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <strong>The most common bug in coding problems</strong>
+        <p>When you do <code>result.append(path)</code> inside backtracking, you append a <em>reference</em>. If you later mutate <code>path</code>, <code>result</code> changes too. Always append a <strong>copy</strong>: <code>result.append(path[:])</code> or <code>result.append(list(path))</code>.</p>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 2: NUMERIC TYPES ===== -->
+    <h2>Numeric Types</h2>
+
+    <h3>Integers — Arbitrary Precision</h3>
+    <p>Python integers have <strong>no overflow</strong>. They grow as large as your RAM allows. This is a superpower for combinatorics and cryptography problems — you never need to worry about 64-bit overflow like in C++.</p>
+    <pre><code class="language-python"># Python int is arbitrary precision — no overflow ever
+x = 2 ** 1000          # works fine (a 302-digit number)
+factorial = 1
+for i in range(1, 100):
+    factorial *= i      # 100! has 158 digits — no problem
+
+# Integer division — TWO operators exist, know the difference
+10 / 3      # → 3.3333...  (always returns float, even 10/2 = 5.0)
+10 // 3     # → 3          (floor division — rounds toward -∞)
+-7 // 2     # → -4         (floors to -4, not truncates to -3!)
+-7 % 2      # → 1          (always non-negative when divisor is positive)
+
+# Useful identity: a == (a // b) * b + (a % b)
+divmod(-7, 2)   # → (-4, 1) — quotient and remainder at once, O(1)
+
+# Bit operations — useful for DP bitmask problems
+5 & 3       # → 1    AND
+5 | 3       # → 7    OR
+5 ^ 3       # → 6    XOR
+~5          # → -6   NOT (bitwise flip, same as -(n+1))
+1 << 3      # → 8    left shift (multiply by 2^3)
+16 >> 2     # → 4    right shift (divide by 2^2)
+n & (n-1)   # → clears the lowest set bit (check if power of 2: n&(n-1)==0)
+n & (-n)    # → isolates the lowest set bit</code></pre>
+
+    <h3>Float — When to Use and When to Avoid</h3>
+    <p>Floats use IEEE-754 double precision (64-bit). They have ~15 significant digits of precision, but suffer from rounding errors. In competitive programming, prefer integer arithmetic whenever possible.</p>
+    <pre><code class="language-python"># Floating point trap
+0.1 + 0.2           # → 0.30000000000000004  (not 0.3!)
+0.1 + 0.2 == 0.3    # → False  ← never compare floats with ==
+
+# Safe float comparison
+abs(0.1 + 0.2 - 0.3) < 1e-9  # → True  ✓
+
+# Useful float constants
+float('inf')    # positive infinity — works as initial max in comparisons
+float('-inf')   # negative infinity — works as initial min
+math.inf        # same as float('inf'), requires import math
+
+# Integer square root (avoids float entirely)
+import math
+math.isqrt(17)  # → 4   (floor of √17, exact integer)
+math.isqrt(16)  # → 4
+int(16**0.5)    # → 4   but can fail for large n due to float imprecision!</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <strong>Use <code>math.isqrt()</code> not <code>int(n**0.5)</code></strong>
+        <p>For large values of <code>n</code>, <code>int(n**0.5)</code> can return the wrong answer because the float computation loses precision. <code>math.isqrt()</code> computes the exact integer square root.</p>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 3: STRINGS ===== -->
+    <h2>Strings</h2>
+    <p>Strings in Python are <strong>immutable sequences of Unicode characters</strong>. You cannot change a character in-place — every "modification" creates a new string object. This has big implications for performance.</p>
+
+    <h3>Indexing and Slicing</h3>
+    <p>Slicing is one of Python's most powerful features. The syntax is <code>s[start:stop:step]</code> — all three are optional and can be negative.</p>
+    <pre><code class="language-python">s = "algorithm"
+#    0123456789   (positive indices)
+#   -9-8-7-6-5    (negative indices from end)
+
+# Basic access
+s[0]        # 'a'   — first character
+s[-1]       # 'm'   — last character (same as s[len(s)-1])
+s[-2]       # 'h'
+
+# Slicing  [start:stop]  — stop is EXCLUSIVE
+s[0:4]      # 'algo'   — characters 0,1,2,3
+s[4:]       # 'rithm'  — from index 4 to end
+s[:4]       # 'algo'   — from start to index 3
+s[:]        # 'algorithm' — full copy (useful for lists!)
+
+# Step slicing  [start:stop:step]
+s[::2]      # 'agrtm'  — every other character
+s[::-1]     # 'mhtirogla' — reverse the string
+s[1:8:3]    # 'lr'   — indices 1, 4, 7
+
+# Slicing never raises IndexError — out-of-range is clamped
+s[0:100]    # 'algorithm' — same as s[:]</code></pre>
+
+    <h3>String Methods — The Complete Reference</h3>
+    <pre><code class="language-python">s = "  Hello, World!  "
+
+# ── Whitespace ──────────────────────────────────────────
+s.strip()           # "Hello, World!"    — both ends
+s.lstrip()          # "Hello, World!  "  — left only
+s.rstrip()          # "  Hello, World!"  — right only
+
+# ── Case ────────────────────────────────────────────────
+s.lower()           # "  hello, world!  "
+s.upper()           # "  HELLO, WORLD!  "
+s.capitalize()      # "  hello, world!  " → first char upper (after strip in practice)
+s.title()           # "  Hello, World!  "
+s.swapcase()        # swap upper↔lower
+
+# ── Searching ───────────────────────────────────────────
+s.find("World")     # 9 (first index) — returns -1 if not found
+s.rfind("l")        # 11 (rightmost)  — returns -1 if not found
+s.index("World")    # 9 — like find() but raises ValueError if not found
+s.count("l")        # 3 — non-overlapping occurrences
+"World" in s        # True — use 'in' for boolean check
+
+# ── Checking ────────────────────────────────────────────
+"123".isdigit()     # True — all chars are digits
+"abc".isalpha()     # True — all chars are letters
+"abc123".isalnum()  # True — letters or digits
+"   ".isspace()     # True
+"Hello".istitle()   # True
+"HELLO".isupper()   # True
+"hello".islower()   # True
+
+# ── Splitting & Joining ─────────────────────────────────
+"a,b,c".split(",")          # ['a', 'b', 'c']
+"hello world".split()       # ['hello', 'world'] — splits on any whitespace
+"hello world".split(" ", 1) # ['hello', 'world'] — max 1 split
+",".join(["a", "b", "c"])   # "a,b,c"
+"".join(["h","i"])           # "hi"
+
+# ── Replacement ─────────────────────────────────────────
+"aabbcc".replace("b", "X")      # "aaXXcc" — all occurrences
+"aabbcc".replace("b", "X", 1)   # "aaXbcc" — first occurrence only
+
+# ── Alignment ───────────────────────────────────────────
+"hi".ljust(10)          # "hi        "
+"hi".rjust(10)          # "        hi"
+"hi".center(10)         # "    hi    "
+"42".zfill(5)           # "00042"  — zero-pad to width</code></pre>
+
+    <h3>String Building — The Performance Trap</h3>
+    <p>Strings are immutable. Doing <code>result += char</code> inside a loop creates a <strong>new string every iteration</strong>, making it O(n²) total. Always collect pieces in a list, then join at the end.</p>
+    <pre><code class="language-python"># ❌ SLOW — O(n²) because each += creates a new string
+result = ""
+for char in some_list:
+    result += char          # creates n new string objects
+
+# ✓ FAST — O(n) — collect in list, join once
+parts = []
+for char in some_list:
+    parts.append(char)
+result = "".join(parts)
+
+# ✓ Even simpler with list comprehension
+result = "".join(char for char in some_list if some_condition)
+
+# f-strings — preferred for formatting (Python 3.6+)
+name = "Alice"
+score = 99.7
+f"Player {name} scored {score:.1f}"   # "Player Alice scored 99.7"
+f"{1000000:,}"                         # "1,000,000"
+f"{42:08b}"                            # "00101010" — zero-padded binary
+f"{255:02x}"                           # "ff" — hex</code></pre>
+
+    <h3>Characters and ASCII — Essential for Coding Problems</h3>
+    <pre><code class="language-python"># ord() converts char to its Unicode code point (integer)
+# chr() converts integer back to character
+
+ord('a')    # 97
+ord('A')    # 65
+ord('0')    # 48
+chr(97)     # 'a'
+chr(65)     # 'A'
+
+# Map letter to 0-25 index (very common pattern)
+ord('e') - ord('a')   # 4  — 'e' is the 5th letter (0-indexed)
+ord('E') - ord('A')   # 4
+
+# Count letter frequencies using array instead of dict
+freq = [0] * 26
+for c in "hello":
+    freq[ord(c) - ord('a')] += 1
+# freq[7] == 1 ('h'), freq[4] == 1 ('e'), freq[11] == 2 ('l'), freq[14] == 1 ('o')
+
+# Check if anagram (same letter counts)
+def is_anagram(s, t):
+    if len(s) != len(t):
+        return False
+    count = [0] * 26
+    for c in s: count[ord(c) - ord('a')] += 1
+    for c in t: count[ord(c) - ord('a')] -= 1
+    return all(x == 0 for x in count)</code></pre>
+
+    <!-- ===== SECTION 4: TRUTHINESS ===== -->
+    <h2>Truthiness — Python's Boolean Logic</h2>
+    <p>Python evaluates any object as <code>True</code> or <code>False</code> in boolean context. Knowing what's falsy is essential for writing concise problem solutions.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Value</th><th>Truthy?</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>0</code></td><td>False</td><td>Zero integer</td></tr>
+          <tr><td><code>0.0</code></td><td>False</td><td>Zero float</td></tr>
+          <tr><td><code>""</code></td><td>False</td><td>Empty string</td></tr>
+          <tr><td><code>[]</code></td><td>False</td><td>Empty list</td></tr>
+          <tr><td><code>{}</code></td><td>False</td><td>Empty dict or set</td></tr>
+          <tr><td><code>None</code></td><td>False</td><td>Null value</td></tr>
+          <tr><td><code>1, -5, 0.1</code></td><td>True</td><td>Non-zero numbers</td></tr>
+          <tr><td><code>"x", " "</code></td><td>True</td><td>Non-empty string</td></tr>
+          <tr><td><code>[0], [False]</code></td><td>True</td><td>Non-empty list (even if contents are falsy)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <pre><code class="language-python"># Common patterns using truthiness
+nums = [1, 2, 3]
+
+if nums:          # True if list is non-empty (preferred over len(nums) > 0)
+    process(nums)
+
+node = TreeNode(0)
+if node:          # True — any TreeNode object is truthy, even with val=0
+    ...           # Use `if node is not None:` if you need to distinguish val=0
+
+# Short-circuit evaluation — Python evaluates left-to-right and stops early
+a = None
+b = a or "default"    # b = "default" (a is falsy, so evaluates right side)
+c = [1,2] or []       # c = [1,2]  (left is truthy, right is never evaluated)
+d = [] and process()  # process() is NEVER called ([] is falsy → short-circuit)
+
+# Conditional expression (ternary)
+result = x if condition else y
+
+# Chained comparisons — Python supports these natively
+0 <= i < n        # True if i is a valid index  (equivalent to 0<=i and i<n)
+1 < x < 10        # True if x is strictly between 1 and 10
+a == b == c       # True if all three are equal</code></pre>
+
+    <!-- ===== SECTION 5: COMPARISON AND IDENTITY ===== -->
+    <h2>Equality vs Identity</h2>
+    <p>Python has two comparison operators. Mixing them up is a classic bug.</p>
+    <pre><code class="language-python"># == checks VALUE equality
+# is checks IDENTITY (same object in memory)
+
+a = [1, 2, 3]
+b = [1, 2, 3]
+c = a
+
+a == b      # True   — same values
+a is b      # False  — different objects
+a is c      # True   — c is just another label for the same list
+
+# Small integer caching — CPython caches ints -5 to 256
+x = 256; y = 256
+x is y      # True   (cached)
+x = 257; y = 257
+x is y      # False  (not cached — but x == y is still True)
+
+# RULE: always use == for value comparison, use `is` only for None/True/False
+if result is None:      # correct — checking for None
+    ...
+if result == None:      # works but style warning — use `is` for singletons</code></pre>
+
+    <div class="nav-footer">
+      <a href="index.html" class="nav-btn">
+        <span class="nav-dir">← Back</span>
+        <span class="nav-title">Home</span>
+      </a>
+      <a href="module2.html" class="nav-btn next">
+        <span class="nav-dir">Next →</span>
+        <span class="nav-title">Core Data Structures</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

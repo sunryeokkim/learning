@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 8 – Trees</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Course</div>
+      <a href="index.html"><span class="num">🏠</span> Home</a>
+      <div class="sidebar-section">Modules</div>
+      <a href="module1.html"><span class="num">1</span> Python Fundamentals</a>
+      <a href="module2.html"><span class="num">2</span> Core Data Structures</a>
+      <a href="module3.html"><span class="num">3</span> Control Flow & Functions</a>
+      <a href="module4.html"><span class="num">4</span> Searching & Sorting</a>
+      <a href="module5.html"><span class="num">5</span> Algorithm Patterns</a>
+      <a href="module6.html"><span class="num">6</span> Graph Algorithms</a>
+      <a href="module7.html"><span class="num">7</span> Dynamic Programming</a>
+      <a href="module8.html" class="active"><span class="num">8</span> Trees</a>
+      <a href="module9.html"><span class="num">9</span> Standard Library</a>
+      <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="module-header">
+      <div class="module-number">Module 08</div>
+      <h1>Trees</h1>
+      <p class="subtitle">Binary trees, BST properties, all traversal methods, and the recursive patterns — diameter, LCA, path sum — that appear in nearly every interview.</p>
+    </div>
+
+    <!-- ===== NODE DEF ===== -->
+    <h2>The TreeNode</h2>
+    <pre><code class="language-python">class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val   = val
+        self.left  = left     # left child (TreeNode or None)
+        self.right = right    # right child (TreeNode or None)
+
+# Build a tree manually
+#       4
+#      / \
+#     2   6
+#    / \ / \
+#   1  3 5  7
+
+root = TreeNode(4,
+    TreeNode(2, TreeNode(1), TreeNode(3)),
+    TreeNode(6, TreeNode(5), TreeNode(7))
+)</code></pre>
+
+    <div class="callout info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-body">
+        <strong>The universal tree recursion pattern</strong>
+        <p>Most tree problems follow: <code>if not node: return base_value</code>, then recurse left and right, then combine results. The question is what <em>base_value</em> and <em>combine</em> mean for this specific problem.</p>
+      </div>
+    </div>
+
+    <!-- ===== TRAVERSALS ===== -->
+    <h2>Traversals</h2>
+
+    <div class="visual-box">
+      <div class="label">Tree traversal orders</div>
+        4
+       / \
+      2   6
+     / \ / \
+    1  3 5  7
+
+Inorder   (left, root, right): 1, 2, 3, 4, 5, 6, 7  ← sorted for BST!
+Preorder  (root, left, right): 4, 2, 1, 3, 6, 5, 7  ← root always first
+Postorder (left, right, root): 1, 3, 2, 5, 7, 6, 4  ← root always last
+Level-order:                   4, 2, 6, 1, 3, 5, 7  ← BFS
+    </div>
+
+    <pre><code class="language-python"># ── Recursive traversals ───
+def inorder(root):
+    if not root: return []
+    return inorder(root.left) + [root.val] + inorder(root.right)
+
+def preorder(root):
+    if not root: return []
+    return [root.val] + preorder(root.left) + preorder(root.right)
+
+def postorder(root):
+    if not root: return []
+    return postorder(root.left) + postorder(root.right) + [root.val]
+
+# ── Iterative inorder (avoids recursion limit) ───
+def inorder_iterative(root):
+    result, stack = [], []
+    curr = root
+    while curr or stack:
+        while curr:            # go as far left as possible
+            stack.append(curr)
+            curr = curr.left
+        curr = stack.pop()     # process node
+        result.append(curr.val)
+        curr = curr.right      # move to right subtree
+    return result
+
+# ── Level-order (BFS) — returns list of levels ───
+from collections import deque
+
+def level_order(root):
+    if not root: return []
+    result = []
+    queue = deque([root])
+    while queue:
+        level = []
+        for _ in range(len(queue)):    # process exactly one level per iteration
+            node = queue.popleft()
+            level.append(node.val)
+            if node.left:  queue.append(node.left)
+            if node.right: queue.append(node.right)
+        result.append(level)
+    return result
+
+# ── Zigzag level order ───
+def zigzag_level_order(root):
+    if not root: return []
+    result = []
+    queue = deque([root])
+    left_to_right = True
+    while queue:
+        level = []
+        for _ in range(len(queue)):
+            node = queue.popleft()
+            level.append(node.val)
+            if node.left:  queue.append(node.left)
+            if node.right: queue.append(node.right)
+        result.append(level if left_to_right else level[::-1])
+        left_to_right = not left_to_right
+    return result</code></pre>
+
+    <!-- ===== COMMON PROBLEMS ===== -->
+    <h2>Common Tree Problems</h2>
+
+    <h3>Height and Depth</h3>
+    <pre><code class="language-python"># Height = max depth = number of edges on longest root-to-leaf path
+def height(root):
+    if not root: return 0
+    return 1 + max(height(root.left), height(root.right))
+
+# Maximum depth = same as height
+def max_depth(root):
+    if not root: return 0
+    return 1 + max(max_depth(root.left), max_depth(root.right))
+
+# Minimum depth = shortest root-to-leaf path
+def min_depth(root):
+    if not root: return 0
+    if not root.left:  return 1 + min_depth(root.right)   # only right child
+    if not root.right: return 1 + min_depth(root.left)    # only left child
+    return 1 + min(min_depth(root.left), min_depth(root.right))</code></pre>
+
+    <h3>Diameter — Longest Path Between Any Two Nodes</h3>
+    <pre><code class="language-python"># Key insight: the diameter THROUGH a node = left_depth + right_depth
+# The overall diameter = max over all nodes
+
+def diameter_of_binary_tree(root):
+    best = [0]   # use list to allow modification inside nested function
+
+    def depth(node):
+        if not node: return 0
+        left  = depth(node.left)
+        right = depth(node.right)
+        best[0] = max(best[0], left + right)   # path through this node
+        return 1 + max(left, right)             # return depth to parent
+
+    depth(root)
+    return best[0]</code></pre>
+
+    <h3>Path Sum Problems</h3>
+    <pre><code class="language-python"># Has any root-to-leaf path with given sum?
+def has_path_sum(root, target):
+    if not root: return False
+    if not root.left and not root.right:      # leaf node
+        return root.val == target
+    remaining = target - root.val
+    return has_path_sum(root.left, remaining) or has_path_sum(root.right, remaining)
+
+# Maximum path sum (any path, not necessarily root-to-leaf)
+def max_path_sum(root):
+    best = [float('-inf')]
+
+    def max_gain(node):
+        if not node: return 0
+        left_gain  = max(max_gain(node.left), 0)    # don't take if negative
+        right_gain = max(max_gain(node.right), 0)
+        # Path through this node: left → node → right
+        best[0] = max(best[0], node.val + left_gain + right_gain)
+        # Return to parent: can only extend in ONE direction
+        return node.val + max(left_gain, right_gain)
+
+    max_gain(root)
+    return best[0]
+
+# All root-to-leaf paths as strings
+def binary_tree_paths(root):
+    if not root: return []
+    if not root.left and not root.right:
+        return [str(root.val)]
+    result = []
+    for path in binary_tree_paths(root.left) + binary_tree_paths(root.right):
+        result.append(str(root.val) + "->" + path)
+    return result</code></pre>
+
+    <h3>Lowest Common Ancestor (LCA)</h3>
+    <pre><code class="language-python"># LCA of p and q = deepest node that has both p and q as descendants
+# Key insight: if left subtree contains one and right subtree contains the other,
+# current node IS the LCA.
+
+def lowest_common_ancestor(root, p, q):
+    if not root or root == p or root == q:
+        return root   # found p or q, or reached null
+
+    left  = lowest_common_ancestor(root.left, p, q)
+    right = lowest_common_ancestor(root.right, p, q)
+
+    if left and right:
+        return root    # p in left subtree, q in right subtree → LCA is root
+    return left or right   # one side has both, or neither
+
+# LCA in BST — exploit sorted property
+def lca_bst(root, p, q):
+    while root:
+        if p.val < root.val and q.val < root.val:
+            root = root.left     # both in left subtree
+        elif p.val > root.val and q.val > root.val:
+            root = root.right    # both in right subtree
+        else:
+            return root          # split point → LCA</code></pre>
+
+    <h3>BST Operations</h3>
+    <pre><code class="language-python"># BST property: for every node, all left descendants < node.val < all right descendants
+
+# Search BST — O(h) where h is height, O(log n) for balanced tree
+def search_bst(root, val):
+    if not root or root.val == val:
+        return root
+    if val < root.val:
+        return search_bst(root.left, val)
+    return search_bst(root.right, val)
+
+# Insert into BST
+def insert_bst(root, val):
+    if not root:
+        return TreeNode(val)
+    if val < root.val:
+        root.left = insert_bst(root.left, val)
+    elif val > root.val:
+        root.right = insert_bst(root.right, val)
+    return root
+
+# Delete from BST — three cases:
+# 1. No children: just remove
+# 2. One child: replace with that child
+# 3. Two children: replace with inorder successor (smallest in right subtree)
+def delete_bst(root, key):
+    if not root: return root
+    if key < root.val:
+        root.left = delete_bst(root.left, key)
+    elif key > root.val:
+        root.right = delete_bst(root.right, key)
+    else:
+        if not root.left: return root.right
+        if not root.right: return root.left
+        # Find inorder successor (min of right subtree)
+        successor = root.right
+        while successor.left:
+            successor = successor.left
+        root.val = successor.val         # copy successor value
+        root.right = delete_bst(root.right, successor.val)  # delete successor
+    return root
+
+# Validate BST — pass valid range down
+def is_valid_bst(root, min_val=float('-inf'), max_val=float('inf')):
+    if not root: return True
+    if not (min_val < root.val < max_val):
+        return False
+    return (is_valid_bst(root.left, min_val, root.val) and
+            is_valid_bst(root.right, root.val, max_val))
+
+# Kth smallest in BST — inorder gives sorted order
+def kth_smallest(root, k):
+    stack, curr = [], root
+    while curr or stack:
+        while curr:
+            stack.append(curr)
+            curr = curr.left
+        curr = stack.pop()
+        k -= 1
+        if k == 0: return curr.val
+        curr = curr.right</code></pre>
+
+    <h3>Tree Construction</h3>
+    <pre><code class="language-python"># Build tree from preorder + inorder traversal
+def build_tree(preorder, inorder):
+    if not preorder: return None
+    root_val = preorder[0]
+    root = TreeNode(root_val)
+    mid = inorder.index(root_val)      # O(n) — use dict for O(1)
+    root.left  = build_tree(preorder[1:mid+1], inorder[:mid])
+    root.right = build_tree(preorder[mid+1:],  inorder[mid+1:])
+    return root
+
+# Optimized with index map
+def build_tree_opt(preorder, inorder):
+    idx_map = {v: i for i, v in enumerate(inorder)}
+    pre_idx = [0]  # use list for mutability in closure
+
+    def helper(left, right):
+        if left > right: return None
+        root_val = preorder[pre_idx[0]]
+        pre_idx[0] += 1
+        root = TreeNode(root_val)
+        mid  = idx_map[root_val]
+        root.left  = helper(left, mid - 1)
+        root.right = helper(mid + 1, right)
+        return root
+
+    return helper(0, len(inorder) - 1)</code></pre>
+
+    <div class="nav-footer">
+      <a href="module7.html" class="nav-btn">
+        <span class="nav-dir">← Previous</span>
+        <span class="nav-title">Dynamic Programming</span>
+      </a>
+      <a href="module9.html" class="nav-btn next">
+        <span class="nav-dir">Next →</span>
+        <span class="nav-title">Standard Library</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

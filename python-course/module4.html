@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 4 – Searching & Sorting</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Course</div>
+      <a href="index.html"><span class="num">🏠</span> Home</a>
+      <div class="sidebar-section">Modules</div>
+      <a href="module1.html"><span class="num">1</span> Python Fundamentals</a>
+      <a href="module2.html"><span class="num">2</span> Core Data Structures</a>
+      <a href="module3.html"><span class="num">3</span> Control Flow & Functions</a>
+      <a href="module4.html" class="active"><span class="num">4</span> Searching & Sorting</a>
+      <a href="module5.html"><span class="num">5</span> Algorithm Patterns</a>
+      <a href="module6.html"><span class="num">6</span> Graph Algorithms</a>
+      <a href="module7.html"><span class="num">7</span> Dynamic Programming</a>
+      <a href="module8.html"><span class="num">8</span> Trees</a>
+      <a href="module9.html"><span class="num">9</span> Standard Library</a>
+      <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="module-header">
+      <div class="module-number">Module 04</div>
+      <h1>Searching &amp; Sorting</h1>
+      <p class="subtitle">Binary search in all its forms — including searching on the answer — and Python's sorting tools from built-ins to custom comparators.</p>
+    </div>
+
+    <!-- ===== BINARY SEARCH ===== -->
+    <h2>Binary Search</h2>
+    <p>Binary search finds a target in a <strong>sorted array</strong> in O(log n) time by repeatedly halving the search space. The key insight: after every comparison, you can eliminate half the remaining candidates.</p>
+
+    <div class="visual-box">
+      <div class="label">Binary search trace — finding 7 in [1,3,5,7,9,11,13]</div>
+Array:  [1, 3, 5, 7, 9, 11, 13]
+         0  1  2  3  4   5   6
+
+Step 1: lo=0, hi=6, mid=3, arr[3]=7 == target → FOUND at index 3
+
+Another example — finding 9:
+Step 1: lo=0, hi=6, mid=3, arr[3]=7 < 9  → search right half
+Step 2: lo=4, hi=6, mid=5, arr[5]=11 > 9 → search left half
+Step 3: lo=4, hi=4, mid=4, arr[4]=9 == 9 → FOUND at index 4
+    </div>
+
+    <h3>The Template — Exact Search</h3>
+    <pre><code class="language-python">def binary_search(arr, target):
+    lo, hi = 0, len(arr) - 1
+
+    while lo <= hi:           # <= because single-element ranges are valid
+        mid = (lo + hi) // 2  # no overflow in Python (arbitrary int)
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            lo = mid + 1      # target is in the right half
+        else:
+            hi = mid - 1      # target is in the left half
+
+    return -1   # target not found</code></pre>
+
+    <div class="callout info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-body">
+        <strong>Why <code>mid = (lo + hi) // 2</code>?</strong>
+        <p>In C++/Java this can overflow for large values. In Python integers are arbitrary precision so there's no overflow, but it's still the standard form. Some prefer <code>lo + (hi - lo) // 2</code> out of habit from other languages.</p>
+      </div>
+    </div>
+
+    <h3>Leftmost / Rightmost Insertion — bisect_left and bisect_right</h3>
+    <p>These are the most important binary search variants. They find the leftmost or rightmost position where you could insert <code>target</code> while keeping the array sorted.</p>
+    <pre><code class="language-python">import bisect
+
+arr = [1, 3, 3, 3, 5, 7]
+#      0  1  2  3  4  5
+
+# bisect_left — leftmost position where target could be inserted
+bisect.bisect_left(arr, 3)    # → 1  (insert before first 3)
+bisect.bisect_left(arr, 4)    # → 4  (insert between 3 and 5)
+bisect.bisect_left(arr, 0)    # → 0  (insert before everything)
+bisect.bisect_left(arr, 9)    # → 6  (insert after everything)
+
+# bisect_right — rightmost position (also called bisect())
+bisect.bisect_right(arr, 3)   # → 4  (insert after last 3)
+bisect.bisect_right(arr, 4)   # → 4  (same as left when value absent)
+
+# Common use: check if value exists in sorted array
+def exists(arr, target):
+    i = bisect.bisect_left(arr, target)
+    return i < len(arr) and arr[i] == target
+
+# Count occurrences of value in sorted array — O(log n)
+def count_occurrences(arr, target):
+    left  = bisect.bisect_left(arr, target)
+    right = bisect.bisect_right(arr, target)
+    return right - left   # all indices in [left, right) contain target
+
+# Floor — largest element <= target
+def floor(arr, target):
+    i = bisect.bisect_right(arr, target) - 1
+    return arr[i] if i >= 0 else None
+
+# Ceiling — smallest element >= target
+def ceiling(arr, target):
+    i = bisect.bisect_left(arr, target)
+    return arr[i] if i < len(arr) else None
+
+# Insert while maintaining sorted order
+bisect.insort(arr, 4)   # inserts 4 in the correct position — O(n) due to shift</code></pre>
+
+    <h3>Manual Variants — Find First True</h3>
+    <p>The most powerful binary search template: find the <strong>boundary</strong> where a condition switches from False to True. This solves "find leftmost X", "find first element ≥ k", and "search on the answer" problems.</p>
+
+    <pre><code class="language-python"># Pattern: array looks like [False, False, ..., False, True, True, ..., True]
+# Find the FIRST index where condition is True
+
+def first_true(arr, condition):
+    lo, hi = 0, len(arr)   # hi = len(arr), not len-1!
+    while lo < hi:           # NOT lo <= hi
+        mid = (lo + hi) // 2
+        if condition(arr[mid]):
+            hi = mid         # mid might be the answer, search left half including mid
+        else:
+            lo = mid + 1     # mid is definitely not the answer
+    return lo   # lo == hi == first True position (or len(arr) if all False)
+
+# Example: first index where arr[i] >= target
+arr = [1, 3, 5, 7, 9]
+lo, hi = 0, len(arr)
+while lo < hi:
+    mid = (lo + hi) // 2
+    if arr[mid] >= 6:
+        hi = mid
+    else:
+        lo = mid + 1
+# lo = 3 (arr[3]=7 is first element >= 6)
+
+# Pattern: Find LAST index where condition is True (search from right)
+def last_true(arr, condition):
+    lo, hi = -1, len(arr) - 1
+    while lo < hi:
+        mid = (lo + hi + 1) // 2   # bias mid upward to avoid infinite loop
+        if condition(arr[mid]):
+            lo = mid               # mid could be last true, search right
+        else:
+            hi = mid - 1
+    return lo   # -1 if no True found</code></pre>
+
+    <h3>Binary Search on the Answer — The Most Powerful Pattern</h3>
+    <p>Many optimization problems can be solved by binary searching on the <em>answer value</em> rather than an array index. The key insight: if you can <strong>check</strong> whether a given answer is feasible in O(f(n)), you can find the optimal answer in O(f(n) log(answer_range)).</p>
+
+    <pre><code class="language-python"># Template for "find minimum X such that condition(X) is True"
+# The search space of X must be monotone: False...False, True...True
+
+lo, hi = minimum_possible_answer, maximum_possible_answer
+while lo < hi:
+    mid = (lo + hi) // 2
+    if is_feasible(mid):   # can we achieve answer = mid?
+        hi = mid           # mid works, try smaller
+    else:
+        lo = mid + 1       # mid doesn't work, need larger
+# lo is the minimum feasible answer
+
+# ─────────────────────────────────────────────────────────────────
+# EXAMPLE: "Koko Eating Bananas"
+# piles = [3, 6, 7, 11], h = 8 hours
+# Find minimum eating speed k such that Koko can eat all bananas in h hours
+import math
+
+def min_eating_speed(piles, h):
+    def can_finish(speed):
+        hours = sum(math.ceil(p / speed) for p in piles)
+        return hours <= h
+
+    lo, hi = 1, max(piles)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if can_finish(mid):
+            hi = mid
+        else:
+            lo = mid + 1
+    return lo
+
+# ─────────────────────────────────────────────────────────────────
+# EXAMPLE: "Capacity To Ship Packages Within D Days"
+# Find minimum ship capacity to deliver all packages in D days
+
+def ship_within_days(weights, days):
+    def can_ship(capacity):
+        current_load, day_count = 0, 1
+        for w in weights:
+            if current_load + w > capacity:
+                day_count += 1
+                current_load = 0
+            current_load += w
+        return day_count <= days
+
+    lo = max(weights)       # minimum possible: must fit heaviest package
+    hi = sum(weights)       # maximum possible: ship everything on day 1
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if can_ship(mid):
+            hi = mid
+        else:
+            lo = mid + 1
+    return lo</code></pre>
+
+    <!-- ===== SORTING ===== -->
+    <h2>Sorting</h2>
+
+    <h3>Python's Sort — Timsort</h3>
+    <p>Python uses <strong>Timsort</strong> — a hybrid of merge sort and insertion sort. It's O(n log n) worst case and O(n) on already-sorted data. It is <strong>stable</strong>: equal elements keep their original relative order.</p>
+
+    <pre><code class="language-python"># sort() — in-place, returns None
+nums = [3, 1, 4, 1, 5, 9]
+nums.sort()                    # [1, 1, 3, 4, 5, 9]
+nums.sort(reverse=True)        # [9, 5, 4, 3, 1, 1]
+
+# sorted() — returns new list, original unchanged
+nums = [3, 1, 4, 1, 5, 9]
+asc = sorted(nums)             # [1, 1, 3, 4, 5, 9]  — nums unchanged
+desc = sorted(nums, reverse=True)
+
+# Sort any iterable (not just lists)
+sorted("banana")               # ['a', 'a', 'a', 'b', 'n', 'n']
+sorted({3: 'c', 1: 'a', 2: 'b'})  # [1, 2, 3] — sorts dict keys
+
+# ── The key parameter ─── (accepts any callable → one argument → comparable value)
+words = ["banana", "fig", "cherry", "apple"]
+words.sort(key=len)                      # sort by length
+words.sort(key=lambda w: w[-1])          # sort by last character
+words.sort(key=lambda w: (len(w), w))    # sort by length, then alphabetically
+
+# Sort by multiple criteria — tuple comparison does this naturally
+students = [("Alice", 90), ("Bob", 85), ("Eve", 90)]
+students.sort(key=lambda s: (-s[1], s[0]))  # desc score, then asc name
+# [("Alice", 90), ("Eve", 90), ("Bob", 85)]
+
+# Stability example
+nums = [(1, "b"), (2, "a"), (1, "a")]
+nums.sort(key=lambda x: x[0])
+# [(1, "b"), (1, "a"), (2, "a")]  — equal keys keep original order</code></pre>
+
+    <h3>Sorting Patterns for Coding Problems</h3>
+    <pre><code class="language-python"># ── Interval scheduling (sort by start, then end) ───
+intervals.sort()   # tuples sort lexicographically — (start, end)
+
+# ── Merge intervals ───
+intervals.sort(key=lambda x: x[0])
+merged = [intervals[0]]
+for start, end in intervals[1:]:
+    if start <= merged[-1][1]:         # overlapping
+        merged[-1][1] = max(merged[-1][1], end)
+    else:
+        merged.append([start, end])
+
+# ── Relative sort / custom order ───
+order = ["grape", "apple", "banana"]
+order_map = {v: i for i, v in enumerate(order)}
+items = ["banana", "apple", "grape", "kiwi"]
+items.sort(key=lambda x: order_map.get(x, len(order)))
+
+# ── Sort by frequency, then value ───
+nums = [1, 1, 2, 2, 2, 3]
+freq = Counter(nums)
+nums.sort(key=lambda x: (-freq[x], x))  # desc freq, then asc value
+# [2, 2, 2, 1, 1, 3]
+
+# ── Counting sort — O(n+k) when range is bounded ───
+def counting_sort(arr, max_val=None):
+    if max_val is None:
+        max_val = max(arr)
+    count = [0] * (max_val + 1)
+    for x in arr:
+        count[x] += 1
+    return [x for x, c in enumerate(count) for _ in range(c)]</code></pre>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Algorithm</th><th>Time</th><th>Space</th><th>Use when</th></tr></thead>
+        <tbody>
+          <tr><td>Python sort (Timsort)</td><td>O(n log n)</td><td>O(n)</td><td>General purpose — always start here</td></tr>
+          <tr><td>Counting sort</td><td>O(n + k)</td><td>O(k)</td><td>Values in bounded range [0, k]</td></tr>
+          <tr><td>Binary search</td><td>O(log n)</td><td>O(1)</td><td>Finding in sorted array</td></tr>
+          <tr><td>Binary search on answer</td><td>O(f(n) log R)</td><td>O(1)</td><td>Optimization with feasibility check</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="nav-footer">
+      <a href="module3.html" class="nav-btn">
+        <span class="nav-dir">← Previous</span>
+        <span class="nav-title">Control Flow & Functions</span>
+      </a>
+      <a href="module5.html" class="nav-btn next">
+        <span class="nav-dir">Next →</span>
+        <span class="nav-title">Algorithm Patterns</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

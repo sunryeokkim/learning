@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 10 – Problem Walkthroughs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <style>
+    .problem-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin: 32px 0;
+    }
+    .problem-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .problem-num {
+      width: 40px; height: 40px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .problem-title { font-size: 1.2rem; font-weight: 700; }
+    .problem-meta { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    .badge {
+      padding: 2px 10px;
+      border-radius: 99px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .badge.easy   { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
+    .badge.medium { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+    .badge.hard   { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+    .badge.pattern { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+    .thought-process {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 14px 0;
+      font-size: 0.87rem;
+    }
+    .thought-process .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Course</div>
+      <a href="index.html"><span class="num">🏠</span> Home</a>
+      <div class="sidebar-section">Modules</div>
+      <a href="module1.html"><span class="num">1</span> Python Fundamentals</a>
+      <a href="module2.html"><span class="num">2</span> Core Data Structures</a>
+      <a href="module3.html"><span class="num">3</span> Control Flow & Functions</a>
+      <a href="module4.html"><span class="num">4</span> Searching & Sorting</a>
+      <a href="module5.html"><span class="num">5</span> Algorithm Patterns</a>
+      <a href="module6.html"><span class="num">6</span> Graph Algorithms</a>
+      <a href="module7.html"><span class="num">7</span> Dynamic Programming</a>
+      <a href="module8.html"><span class="num">8</span> Trees</a>
+      <a href="module9.html"><span class="num">9</span> Standard Library</a>
+      <a href="module10.html" class="active"><span class="num">10</span> Problem Walkthroughs</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="module-header">
+      <div class="module-number">Module 10</div>
+      <h1>Full Problem Walkthroughs</h1>
+      <p class="subtitle">10 complete problem solutions — with thought process, brute-force to optimal, visual traces, and full complexity analysis.</p>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-body">
+        <strong>How to use this module</strong>
+        <p>For each problem: read the statement, pause and try to solve it yourself, then read the thought process section, then the solution. Don't skip to the code first — pattern recognition develops from the thinking, not from reading solutions.</p>
+      </div>
+    </div>
+
+    <!-- PROBLEM 1 -->
+    <div class="problem-card">
+      <div class="problem-header">
+        <div class="problem-num">1</div>
+        <div class="problem-title">Two Sum</div>
+      </div>
+      <div class="problem-meta">
+        <span class="badge easy">Easy</span>
+        <span class="badge pattern">Hash Map</span>
+      </div>
+      <p><strong>Problem:</strong> Given an array <code>nums</code> and a target integer, return indices of the two numbers that add up to target. Each input has exactly one solution.</p>
+      <p><strong>Example:</strong> <code>nums=[2,7,11,15], target=9</code> → <code>[0,1]</code> (2+7=9)</p>
+
+      <div class="thought-process">
+        <div class="label">Thought Process</div>
+        <strong>Brute force:</strong> Try every pair (i,j) where i &lt; j. Check if nums[i]+nums[j]==target. O(n²) time.<br><br>
+        <strong>Optimization:</strong> For each number x, we need to find target-x. If we've already seen target-x, we have our answer. Store <em>seen values and their indices</em> in a hash map as we scan. This gives O(n) time.
+      </div>
+
+      <pre><code class="language-python">def two_sum(nums, target):
+    seen = {}                       # value → index
+    for i, x in enumerate(nums):
+        complement = target - x
+        if complement in seen:      # O(1) lookup
+            return [seen[complement], i]
+        seen[x] = i
+    return []
+
+# Time: O(n) | Space: O(n)</code></pre>
+    </div>
+
+    <!-- PROBLEM 2 -->
+    <div class="problem-card">
+      <div class="problem-header">
+        <div class="problem-num">2</div>
+        <div class="problem-title">Longest Substring Without Repeating Characters</div>
+      </div>
+      <div class="problem-meta">
+        <span class="badge medium">Medium</span>
+        <span class="badge pattern">Sliding Window</span>
+      </div>
+      <p><strong>Problem:</strong> Given string <code>s</code>, find the length of the longest substring with no repeating characters.</p>
+      <p><strong>Example:</strong> <code>s="abcabcbb"</code> → <code>3</code> ("abc")</p>
+
+      <div class="thought-process">
+        <div class="label">Thought Process</div>
+        <strong>Key insight:</strong> The answer is some contiguous window of characters. We want the longest window where every character appears at most once.<br><br>
+        <strong>Pattern:</strong> Variable sliding window. Expand right, shrink left when we see a duplicate. Track the last-seen index of each character to jump the left pointer past duplicates in O(1) instead of crawling.
+      </div>
+
+      <pre><code class="language-python">def length_of_longest_substring(s):
+    last_seen = {}   # char → last index where we saw it
+    left = best = 0
+
+    for right, c in enumerate(s):
+        # If c was seen within our current window [left, right], shrink
+        if c in last_seen and last_seen[c] >= left:
+            left = last_seen[c] + 1   # jump left past the previous occurrence
+
+        last_seen[c] = right
+        best = max(best, right - left + 1)
+
+    return best
+
+# Time: O(n) | Space: O(min(n, alphabet_size))</code></pre>
+    </div>
+
+    <!-- PROBLEM 3 -->
+    <div class="problem-card">
+      <div class="problem-header">
+        <div class="problem-num">3</div>
+        <div class="problem-title">Product of Array Except Self</div>
+      </div>
+      <div class="problem-meta">
+        <span class="badge medium">Medium</span>
+        <span class="badge pattern">Prefix / Suffix Product</span>
+      </div>
+      <p><strong>Problem:</strong> Given array <code>nums</code>, return an array where <code>output[i]</code> is the product of all elements except <code>nums[i]</code>. <em>No division allowed. O(n) time, O(1) extra space.</em></p>
+      <p><strong>Example:</strong> <code>[1,2,3,4]</code> → <code>[24,12,8,6]</code></p>
+
+      <div class="thought-process">
+        <div class="label">Thought Process</div>
+        <strong>If division allowed:</strong> total_product / nums[i]. But division is banned and nums might have zeros.<br><br>
+        <strong>Key insight:</strong> output[i] = (product of all elements LEFT of i) × (product of all elements RIGHT of i).<br><br>
+        Two passes: pass 1 fills left products, pass 2 multiplies in right products on-the-fly.
+      </div>
+
+      <div class="visual-box">
+        <div class="label">Two-pass trace for [1, 2, 3, 4]</div>
+       idx:   0   1   2   3
+       nums: [1,  2,  3,  4]
+
+Pass 1 (left products):
+result =  [1,  1,  2,  6]   (result[i] = product of nums[0..i-1])
+
+Pass 2 (multiply in right products, right-to-left):
+right = 1
+i=3: result[3] = 6*1 = 6,  right = 1*4 = 4
+i=2: result[2] = 2*4 = 8,  right = 4*3 = 12
+i=1: result[1] = 1*12 = 12, right = 12*2 = 24
+i=0: result[0] = 1*24 = 24, right = 24*1 = 24
+Final: [24, 12, 8, 6]  ✓
+      </div>
+
+      <pre><code class="language-python">def product_except_self(nums):
+    n = len(nums)
+    result = [1] * n
+
+    # Pass 1: result[i] = product of all elements to the LEFT of i
+    left_product = 1
+    for i in range(n):
+        result[i] = left_product
+        left_product *= nums[i]
+
+    # Pass 2: multiply in product of all elements to the RIGHT of i
+    right_product = 1
+    for i in range(n - 1, -1, -1):
+        result[i] *= right_product
+        right_product *= nums[i]
+
+    return result
+
+# Time: O(n) | Space: O(1) (result array doesn't count)</code></pre>
+    </div>
+
+    <!-- PROBLEM 4 -->
+    <div class="problem-card">
+      <div class="problem-header">
+        <div class="problem-num">4</div>
+        <div class="problem-title">Maximum Subarray (Kadane's Algorithm)</div>
+      </div>
+      <div class="problem-meta">
+        <span class="badge medium">Medium</span>
+        <span class="badge pattern">Greedy / DP</span>
+      </div>
+      <p><strong>Problem:</strong> Find the contiguous subarray with the largest sum.</p>
+      <p><strong>Example:</strong> <code>[-2,1,-3,4,-1,2,1,-5,4]</code> → <code>6</code> (subarray [4,-1,2,1])</p>
+
+      <div class="thought-process">
+        <div class="label">Thought Process</div>
+        <strong>Key decision at each element:</strong> should we extend the previous subarray or start fresh?<br>
+        Extend if <code>current_sum + nums[i] > nums[i]</code>, which simplifies to <code>current_sum > 0</code>.<br><br>
+        If the running sum ever goes negative, it only hurts us — discard it and start fresh.
+      </div>
+
+      <pre><code class="language-python">def max_subarray(nums):
+    current = best = nums[0]
+    for x in nums[1:]:
+        # Either extend previous subarray or start new one at x
+        current = max(x, current + x)
+        best = max(best, current)
+    return best
+
+# DP perspective: dp[i] = max sum ending at index i
+# dp[i] = max(nums[i], dp[i-1] + nums[i])
+# Time: O(n) | Space: O(1)</code></pre>
+    </div>
+
+    <!-- PROBLEM 5 -->
+    <div class="problem-card">
+      <div class="problem-header">
+        <div class="problem-num">5</div>
+        <div class="problem-title">Number of Islands</div>
+      </div>
+      <div class="problem-meta">
+        <span class="badge medium">Medium</span>
+        <span class="badge pattern">DFS / BFS / Union-Find</span>
+      </div>
+      <p><strong>Problem:</strong> Given a 2D grid of '1' (land) and '0' (water), count the number of islands. An island is surrounded by water and formed by connecting adjacent lands horizontally/vertically.</p>
+
+      <div class="thought-process">
+        <div class="label">Thought Process</div>
+        This is exactly "count connected components" on a grid graph. For each unvisited land cell, do a DFS/BFS to mark the entire connected component as visited. Count how many times we start a new DFS.
+      </div>
+
+      <pre><code class="language-python">def num_islands(grid):
+    if not grid: return 0
+    rows, cols = len(grid), len(grid[0])
+
+    def dfs(r, c):
+        # Base cases: out of bounds or water or already visited
+        if r < 0 or r >= rows or c < 0 or c >= cols or grid[r][c] != '1':
+            return
+        grid[r][c] = '0'    # mark as visited (sink the island)
+        dfs(r+1, c); dfs(r-1, c)
+        dfs(r, c+1); dfs(r, c-1)
+
+    islands = 0
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r][c] == '1':
+                dfs(r, c)       # DFS marks entire island as visited
+                islands += 1
+
+    return islands
+
+# Time: O(rows * cols) | Space: O(rows * cols) for recursion stack</code></pre>
+    </div>
+
+    <!-- PROBLEM 6 -->
+    <div class="problem-card">
+      <div class="problem-header">
+        <div class="problem-num">6</div>
+        <div class="problem-title">Word Break</div>
+      </div>
+      <div class="problem-meta">
+        <span class="badge medium">Medium</span>
+        <span class="badge pattern">DP / Memoized DFS</span>
+      </div>
+      <p><strong>Problem:</strong> Given string <code>s</code> and a dictionary <code>wordDict</code>, determine if <code>s</code> can be segmented into a sequence of dictionary words.</p>
+      <p><strong>Example:</strong> <code>s="leetcode", wordDict=["leet","code"]</code> → <code>True</code></p>
+
+      <div class="thought-process">
+        <div class="label">Thought Process</div>
+        <strong>State:</strong> Can we segment <code>s[i:]</code>?<br>
+        <strong>Transition:</strong> For each word in the dictionary, if <code>s[i:i+len(word)] == word</code>, then check if <code>s[i+len(word):]</code> can be segmented.<br>
+        <strong>Base case:</strong> Empty string → True. With memoization, each index is computed once.
+      </div>
+
+      <pre><code class="language-python">def word_break(s, wordDict):
+    word_set = set(wordDict)    # O(1) lookup
+    n = len(s)
+    dp = [False] * (n + 1)
+    dp[0] = True                # empty string can always be segmented
+
+    for i in range(1, n + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in word_set:   # s[0..j-1] ok, and s[j..i-1] is a word
+                dp[i] = True
+                break           # found a valid split — no need to keep looking
+
+    return dp[n]
+
+# Alternatively, with @cache (top-down):
+from functools import cache
+
+def word_break_memo(s, wordDict):
+    word_set = set(wordDict)
+    @cache
+    def can_break(i):
+        if i == len(s): return True
+        for word in word_set:
+            if s[i:i+len(word)] == word and can_break(i + len(word)):
+                return True
+        return False
+    return can_break(0)
+
+# Time: O(n² * max_word_len) | Space: O(n)</code></pre>
+    </div>
+
+    <!-- PROBLEM 7 -->
+    <div class="problem-card">
+      <div class="problem-header">
+        <div class="problem-num">7</div>
+        <div class="problem-title">Merge K Sorted Lists</div>
+      </div>
+      <div class="problem-meta">
+        <span class="badge hard">Hard</span>
+        <span class="badge pattern">Heap</span>
+      </div>
+      <p><strong>Problem:</strong> Merge <code>k</code> sorted linked lists and return the sorted list.</p>
+
+      <div class="thought-process">
+        <div class="label">Thought Process</div>
+        <strong>Naive:</strong> Merge lists two at a time → O(kN) total where N = total nodes.<br><br>
+        <strong>Heap approach:</strong> The next element to add to the merged list is always the smallest among the current heads of all k lists. Use a min-heap to find this in O(log k). Total: O(N log k).<br><br>
+        <strong>Python trap:</strong> Heap compares nodes, but ListNode has no comparison operator. Use <code>(val, tie_breaker, node)</code> to avoid comparisons between ListNode objects.
+      </div>
+
+      <pre><code class="language-python">import heapq
+
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def merge_k_lists(lists):
+    heap = []
+    counter = 0   # tie-breaker — prevents comparing ListNode objects
+
+    for node in lists:
+        if node:
+            heapq.heappush(heap, (node.val, counter, node))
+            counter += 1
+
+    dummy = curr = ListNode(0)
+    while heap:
+        val, _, node = heapq.heappop(heap)
+        curr.next = node
+        curr = curr.next
+        if node.next:
+            heapq.heappush(heap, (node.next.val, counter, node.next))
+            counter += 1
+
+    return dummy.next
+
+# Time: O(N log k) | Space: O(k) — heap holds at most k elements</code></pre>
+    </div>
+
+    <!-- PROBLEM 8 -->
+    <div class="problem-card">
+      <div class="problem-header">
+        <div class="problem-num">8</div>
+        <div class="problem-title">Course Schedule II (Topological Sort)</div>
+      </div>
+      <div class="problem-meta">
+        <span class="badge medium">Medium</span>
+        <span class="badge pattern">Topological Sort / Kahn's</span>
+      </div>
+      <p><strong>Problem:</strong> There are <code>n</code> courses (0 to n-1). <code>prerequisites[i] = [a,b]</code> means you must take course b before a. Return a valid ordering, or empty list if impossible.</p>
+
+      <div class="thought-process">
+        <div class="label">Thought Process</div>
+        This is topological sort on a directed graph where edges point from prerequisite to dependent. If there's a cycle, no ordering exists → return []. Use Kahn's algorithm: process nodes with in-degree 0 first, decrement neighbors' in-degrees, add them when they reach 0.
+      </div>
+
+      <pre><code class="language-python">from collections import defaultdict, deque
+
+def find_order(n, prerequisites):
+    graph = defaultdict(list)
+    indegree = [0] * n
+
+    for course, prereq in prerequisites:
+        graph[prereq].append(course)
+        indegree[course] += 1
+
+    # Start with courses that have no prerequisites
+    queue = deque([i for i in range(n) if indegree[i] == 0])
+    order = []
+
+    while queue:
+        course = queue.popleft()
+        order.append(course)
+        for dependent in graph[course]:
+            indegree[dependent] -= 1
+            if indegree[dependent] == 0:
+                queue.append(dependent)
+
+    # If we processed all courses, a valid order exists; otherwise, cycle
+    return order if len(order) == n else []
+
+# Time: O(V + E) | Space: O(V + E)</code></pre>
+    </div>
+
+    <!-- PROBLEM 9 -->
+    <div class="problem-card">
+      <div class="problem-header">
+        <div class="problem-num">9</div>
+        <div class="problem-title">Trapping Rain Water</div>
+      </div>
+      <div class="problem-meta">
+        <span class="badge hard">Hard</span>
+        <span class="badge pattern">Two Pointers / Prefix Max</span>
+      </div>
+      <p><strong>Problem:</strong> Given an array of bar heights, compute how much water can be trapped between bars after raining.</p>
+      <p><strong>Example:</strong> <code>[0,1,0,2,1,0,1,3,2,1,2,1]</code> → <code>6</code></p>
+
+      <div class="thought-process">
+        <div class="label">Thought Process</div>
+        <strong>Key insight:</strong> Water at position i = min(max_height_left[i], max_height_right[i]) - height[i].<br><br>
+        <strong>Two-pointer optimization:</strong> We don't need to precompute both prefix arrays. Maintain a left_max and right_max. The side with the smaller max is the bottleneck — process it and advance that pointer.
+      </div>
+
+      <div class="visual-box">
+        <div class="label">Why two pointers work</div>
+If left_max &lt; right_max:
+  water[left] = left_max - height[left]  (guaranteed ≥ 0)
+  We know right_max exists ≥ left_max, so left_max is the constraint.
+  We can safely compute water for left and advance left pointer.
+Symmetric for the right side.
+      </div>
+
+      <pre><code class="language-python">def trap(height):
+    if not height: return 0
+    l, r = 0, len(height) - 1
+    left_max = right_max = 0
+    water = 0
+
+    while l < r:
+        if height[l] <= height[r]:          # left side is the bottleneck
+            if height[l] >= left_max:
+                left_max = height[l]         # update max, no water here
+            else:
+                water += left_max - height[l]  # water = max - current height
+            l += 1
+        else:                               # right side is the bottleneck
+            if height[r] >= right_max:
+                right_max = height[r]
+            else:
+                water += right_max - height[r]
+            r -= 1
+
+    return water
+
+# Time: O(n) | Space: O(1)</code></pre>
+    </div>
+
+    <!-- PROBLEM 10 -->
+    <div class="problem-card">
+      <div class="problem-header">
+        <div class="problem-num">10</div>
+        <div class="problem-title">Longest Palindromic Substring</div>
+      </div>
+      <div class="problem-meta">
+        <span class="badge medium">Medium</span>
+        <span class="badge pattern">Expand Around Center</span>
+      </div>
+      <p><strong>Problem:</strong> Find the longest palindromic substring in <code>s</code>.</p>
+      <p><strong>Example:</strong> <code>s="babad"</code> → <code>"bab"</code> or <code>"aba"</code></p>
+
+      <div class="thought-process">
+        <div class="label">Thought Process</div>
+        <strong>Brute force:</strong> Check all O(n²) substrings → O(n³).<br><br>
+        <strong>DP approach:</strong> dp[i][j] = True if s[i..j] is palindrome. O(n²) time and space.<br><br>
+        <strong>Expand around center:</strong> Every palindrome has a center (single char or two equal chars). Expand outward while chars match. O(n²) time, O(1) space — preferred.
+      </div>
+
+      <pre><code class="language-python">def longest_palindrome(s):
+    start = length = 0
+
+    def expand(l, r):
+        nonlocal start, length
+        while l >= 0 and r < len(s) and s[l] == s[r]:
+            if r - l + 1 > length:
+                start = l
+                length = r - l + 1
+            l -= 1
+            r += 1
+
+    for i in range(len(s)):
+        expand(i, i)       # odd-length palindromes (center at i)
+        expand(i, i + 1)   # even-length palindromes (center between i and i+1)
+
+    return s[start:start + length]
+
+# Time: O(n²) | Space: O(1)
+
+# ── Pattern Recognition Summary ──────────────────────────────
+# Here's the decision tree for choosing an approach:
+#
+# Is the array sorted?
+#   → Binary search or two pointers
+# Is the problem about "how many ways" or "minimum/maximum"?
+#   → Dynamic programming
+# Is it about connected components or shortest path?
+#   → Graph algorithms (BFS/DFS/Dijkstra)
+# Is it about contiguous subarrays with a constraint?
+#   → Sliding window or prefix sums
+# Is it about finding all possible combinations/arrangements?
+#   → Backtracking
+# Is the data hierarchical (nested dependencies, recursive structure)?
+#   → Trees / recursion</code></pre>
+    </div>
+
+    <!-- CHEAT SHEET -->
+    <h2>Pattern Recognition Cheat Sheet</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Signal in Problem</th><th>Pattern to Try First</th><th>Time</th></tr></thead>
+        <tbody>
+          <tr><td>"sorted array, find target"</td><td>Binary search</td><td>O(log n)</td></tr>
+          <tr><td>"two numbers that sum to X"</td><td>Hash map or two pointers (sorted)</td><td>O(n)</td></tr>
+          <tr><td>"contiguous subarray" with max/min</td><td>Sliding window (variable or fixed)</td><td>O(n)</td></tr>
+          <tr><td>"range sum queries"</td><td>Prefix sum array</td><td>O(1) query</td></tr>
+          <tr><td>"minimum/maximum value" optimization</td><td>DP or greedy</td><td>O(n) or O(n²)</td></tr>
+          <tr><td>"count ways to…"</td><td>DP (count variant)</td><td>O(n) or O(n²)</td></tr>
+          <tr><td>"shortest path" (unweighted)</td><td>BFS</td><td>O(V+E)</td></tr>
+          <tr><td>"shortest path" (weighted)</td><td>Dijkstra</td><td>O((V+E) log V)</td></tr>
+          <tr><td>"all paths" or "all combinations"</td><td>Backtracking with DFS</td><td>O(2^n) or O(n!)</td></tr>
+          <tr><td>"connected components"</td><td>DFS / BFS / Union-Find</td><td>O(V+E)</td></tr>
+          <tr><td>"dependencies/ordering"</td><td>Topological sort</td><td>O(V+E)</td></tr>
+          <tr><td>"k largest/smallest"</td><td>Heap of size k</td><td>O(n log k)</td></tr>
+          <tr><td>"first/last occurrence"</td><td>Binary search (bisect_left/right)</td><td>O(log n)</td></tr>
+          <tr><td>"can we achieve X capacity?" optimization</td><td>Binary search on answer</td><td>O(n log R)</td></tr>
+          <tr><td>"deduplicate" or "membership"</td><td>Hash set</td><td>O(n)</td></tr>
+          <tr><td>"frequency" of elements</td><td>Counter / hash map</td><td>O(n)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="nav-footer">
+      <a href="module9.html" class="nav-btn">
+        <span class="nav-dir">← Previous</span>
+        <span class="nav-title">Standard Library</span>
+      </a>
+      <a href="index.html" class="nav-btn next">
+        <span class="nav-dir">↩ Back to</span>
+        <span class="nav-title">Course Home</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

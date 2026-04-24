@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Python for Coding Problems</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .hero {
+      padding: 60px 0 40px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 48px;
+    }
+    .hero .badge {
+      display: inline-block;
+      background: rgba(124,106,247,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(124,106,247,0.4);
+      border-radius: 99px;
+      padding: 4px 14px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p { font-size: 1.1rem; color: var(--muted); max-width: 580px; margin-bottom: 28px; }
+    .stats {
+      display: flex;
+      gap: 32px;
+      margin-top: 32px;
+    }
+    .stat { text-align: center; }
+    .stat .n {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.04em;
+    }
+    .stat .l { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .module-list { display: flex; flex-direction: column; gap: 12px; }
+    .module-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      padding: 20px 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .module-card:hover {
+      border-color: var(--accent);
+      background: rgba(124,106,247,0.05);
+      text-decoration: none;
+      transform: translateX(4px);
+    }
+    .module-card .icon {
+      width: 44px; height: 44px;
+      background: var(--surface2);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .module-card .info { flex: 1; }
+    .module-card .info .num {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 3px;
+    }
+    .module-card .info h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 4px;
+    }
+    .module-card .info p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin: 0;
+    }
+    .module-card .arrow {
+      color: var(--muted);
+      font-size: 1.2rem;
+      margin-top: 8px;
+    }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .tag {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 8px;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Python for Coding Problems</h1>
+      <p>Complete Course — 10 Modules</p>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Course</div>
+      <a href="index.html" class="active">
+        <span class="num">🏠</span> Home
+      </a>
+      <div class="sidebar-section">Modules</div>
+      <a href="module1.html"><span class="num">1</span> Python Fundamentals</a>
+      <a href="module2.html"><span class="num">2</span> Core Data Structures</a>
+      <a href="module3.html"><span class="num">3</span> Control Flow & Functions</a>
+      <a href="module4.html"><span class="num">4</span> Searching & Sorting</a>
+      <a href="module5.html"><span class="num">5</span> Algorithm Patterns</a>
+      <a href="module6.html"><span class="num">6</span> Graph Algorithms</a>
+      <a href="module7.html"><span class="num">7</span> Dynamic Programming</a>
+      <a href="module8.html"><span class="num">8</span> Trees</a>
+      <a href="module9.html"><span class="num">9</span> Standard Library</a>
+      <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="hero">
+      <div class="badge">Complete Course</div>
+      <h1>Python for<br><span>Coding Problems</span></h1>
+      <p>A deep-dive course covering every data structure, algorithm pattern, and problem-solving technique you need to ace LeetCode, Codeforces, and technical interviews.</p>
+      <div class="stats">
+        <div class="stat"><div class="n">10</div><div class="l">Modules</div></div>
+        <div class="stat"><div class="n">50+</div><div class="l">Code Examples</div></div>
+        <div class="stat"><div class="n">15+</div><div class="l">Patterns</div></div>
+      </div>
+    </div>
+
+    <div class="module-list">
+      <a href="module1.html" class="module-card">
+        <div class="icon">🐍</div>
+        <div class="info">
+          <div class="num">Module 01</div>
+          <h3>Python Fundamentals</h3>
+          <p>Types, numbers, strings, truthiness, and the Python mental model. Everything that surprises beginners.</p>
+          <div class="tags">
+            <span class="tag">int/float/str</span>
+            <span class="tag">type coercion</span>
+            <span class="tag">slicing</span>
+            <span class="tag">ord/chr</span>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+
+      <a href="module2.html" class="module-card">
+        <div class="icon">📦</div>
+        <div class="info">
+          <div class="num">Module 02</div>
+          <h3>Core Data Structures</h3>
+          <p>List, dict, set, tuple, deque, and heap — internals explained, every method, and when to pick each one.</p>
+          <div class="tags">
+            <span class="tag">list</span>
+            <span class="tag">dict/Counter</span>
+            <span class="tag">set</span>
+            <span class="tag">heap</span>
+            <span class="tag">deque</span>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+
+      <a href="module3.html" class="module-card">
+        <div class="icon">🔁</div>
+        <div class="info">
+          <div class="num">Module 03</div>
+          <h3>Control Flow & Functions</h3>
+          <p>Loops, comprehensions, recursion, closures, and memoization — the building blocks of every algorithm.</p>
+          <div class="tags">
+            <span class="tag">comprehensions</span>
+            <span class="tag">recursion</span>
+            <span class="tag">@cache</span>
+            <span class="tag">lambda</span>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+
+      <a href="module4.html" class="module-card">
+        <div class="icon">🔍</div>
+        <div class="info">
+          <div class="num">Module 04</div>
+          <h3>Searching & Sorting</h3>
+          <p>Binary search in all its forms, Timsort internals, and how to binary-search on the answer.</p>
+          <div class="tags">
+            <span class="tag">binary search</span>
+            <span class="tag">bisect</span>
+            <span class="tag">custom sort</span>
+            <span class="tag">search on answer</span>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+
+      <a href="module5.html" class="module-card">
+        <div class="icon">🪟</div>
+        <div class="info">
+          <div class="num">Module 05</div>
+          <h3>Algorithm Patterns</h3>
+          <p>Two pointers, sliding window, prefix sums, and backtracking — the patterns that unlock 80% of problems.</p>
+          <div class="tags">
+            <span class="tag">two pointers</span>
+            <span class="tag">sliding window</span>
+            <span class="tag">prefix sum</span>
+            <span class="tag">backtracking</span>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+
+      <a href="module6.html" class="module-card">
+        <div class="icon">🕸️</div>
+        <div class="info">
+          <div class="num">Module 06</div>
+          <h3>Graph Algorithms</h3>
+          <p>BFS, DFS, topological sort, Dijkstra, and Union-Find with full visual walkthroughs.</p>
+          <div class="tags">
+            <span class="tag">BFS</span>
+            <span class="tag">DFS</span>
+            <span class="tag">Dijkstra</span>
+            <span class="tag">Union-Find</span>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+
+      <a href="module7.html" class="module-card">
+        <div class="icon">⚡</div>
+        <div class="info">
+          <div class="num">Module 07</div>
+          <h3>Dynamic Programming</h3>
+          <p>The framework for thinking about DP, then every major pattern: 1D, 2D, knapsack, intervals.</p>
+          <div class="tags">
+            <span class="tag">state/transition</span>
+            <span class="tag">knapsack</span>
+            <span class="tag">LCS</span>
+            <span class="tag">LIS</span>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+
+      <a href="module8.html" class="module-card">
+        <div class="icon">🌳</div>
+        <div class="info">
+          <div class="num">Module 08</div>
+          <h3>Trees</h3>
+          <p>Binary trees, BST, traversals, LCA, diameter, and the recursive patterns that appear in every interview.</p>
+          <div class="tags">
+            <span class="tag">traversals</span>
+            <span class="tag">BST</span>
+            <span class="tag">LCA</span>
+            <span class="tag">diameter</span>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+
+      <a href="module9.html" class="module-card">
+        <div class="icon">📚</div>
+        <div class="info">
+          <div class="num">Module 09</div>
+          <h3>Standard Library Toolkit</h3>
+          <p>collections, itertools, functools, bisect, math — the built-ins that make Python fast to write.</p>
+          <div class="tags">
+            <span class="tag">Counter</span>
+            <span class="tag">itertools</span>
+            <span class="tag">functools</span>
+            <span class="tag">math</span>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+
+      <a href="module10.html" class="module-card">
+        <div class="icon">🏆</div>
+        <div class="info">
+          <div class="num">Module 10</div>
+          <h3>Full Problem Walkthroughs</h3>
+          <p>10 complete problem solutions with thought process, brute force → optimal, and complexity analysis.</p>
+          <div class="tags">
+            <span class="tag">problem solving</span>
+            <span class="tag">pattern recognition</span>
+            <span class="tag">optimization</span>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

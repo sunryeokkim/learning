@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 6 – Graph Algorithms</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Course</div>
+      <a href="index.html"><span class="num">🏠</span> Home</a>
+      <div class="sidebar-section">Modules</div>
+      <a href="module1.html"><span class="num">1</span> Python Fundamentals</a>
+      <a href="module2.html"><span class="num">2</span> Core Data Structures</a>
+      <a href="module3.html"><span class="num">3</span> Control Flow & Functions</a>
+      <a href="module4.html"><span class="num">4</span> Searching & Sorting</a>
+      <a href="module5.html"><span class="num">5</span> Algorithm Patterns</a>
+      <a href="module6.html" class="active"><span class="num">6</span> Graph Algorithms</a>
+      <a href="module7.html"><span class="num">7</span> Dynamic Programming</a>
+      <a href="module8.html"><span class="num">8</span> Trees</a>
+      <a href="module9.html"><span class="num">9</span> Standard Library</a>
+      <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="module-header">
+      <div class="module-number">Module 06</div>
+      <h1>Graph Algorithms</h1>
+      <p class="subtitle">BFS, DFS, topological sort, Dijkstra, and Union-Find — the graph toolkit needed for connectivity, shortest path, and scheduling problems.</p>
+    </div>
+
+    <!-- ===== REPRESENTATION ===== -->
+    <h2>Graph Representations</h2>
+    <pre><code class="language-python">from collections import defaultdict
+
+# ── Adjacency list (most common) ───
+graph = defaultdict(list)
+edges = [(0,1), (0,2), (1,3), (2,3), (3,4)]
+
+# Directed graph
+for u, v in edges:
+    graph[u].append(v)
+
+# Undirected graph — add both directions
+for u, v in edges:
+    graph[u].append(v)
+    graph[v].append(u)
+
+# Weighted graph — store (neighbor, weight) tuples
+weighted = defaultdict(list)
+weighted_edges = [(0, 1, 5), (0, 2, 3), (1, 3, 2)]
+for u, v, w in weighted_edges:
+    weighted[u].append((v, w))
+    weighted[v].append((u, w))
+
+# ── Grid as implicit graph ───
+# No need to build explicit adjacency list for grids
+# Just compute neighbors on the fly
+dirs_4 = [(0,1),(0,-1),(1,0),(-1,0)]          # 4-directional
+dirs_8 = [(0,1),(0,-1),(1,0),(-1,0),(1,1),(1,-1),(-1,1),(-1,-1)]  # 8-directional
+
+def get_neighbors(r, c, rows, cols):
+    for dr, dc in dirs_4:
+        nr, nc = r + dr, c + dc
+        if 0 <= nr < rows and 0 <= nc < cols:
+            yield nr, nc   # using generator — no list allocation</code></pre>
+
+    <!-- ===== BFS ===== -->
+    <h2>Breadth-First Search (BFS)</h2>
+    <p>BFS explores nodes <strong>level by level</strong> — all nodes at distance 1 first, then distance 2, etc. It finds the <strong>shortest path</strong> in unweighted graphs because it reaches any node via the fewest possible edges.</p>
+
+    <div class="visual-box">
+      <div class="label">BFS traversal order from node 0</div>
+Graph:   0 ─── 1 ─── 3
+         │         /
+         2 ────────
+
+Queue state:
+Start:     [0]                visited: {0}
+Process 0: [1, 2]             visited: {0,1,2}    dist[1]=1, dist[2]=1
+Process 1: [2, 3]             visited: {0,1,2,3}  dist[3]=2
+Process 2: [3]                3 already visited → skip
+Process 3: []                 done
+
+Shortest distances from 0: {0:0, 1:1, 2:1, 3:2}
+    </div>
+
+    <pre><code class="language-python">from collections import deque
+
+# ── BFS: connected components / reachability ───
+def bfs(graph, start):
+    visited = {start}
+    queue = deque([start])
+    order = []
+    while queue:
+        node = queue.popleft()
+        order.append(node)
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+    return order
+
+# ── BFS: shortest path (unweighted) ───
+def shortest_path(graph, start, end):
+    if start == end: return 0
+    visited = {start}
+    queue = deque([(start, 0)])
+    while queue:
+        node, dist = queue.popleft()
+        for neighbor in graph[node]:
+            if neighbor == end:
+                return dist + 1
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append((neighbor, dist + 1))
+    return -1   # unreachable
+
+# ── BFS on a grid ───
+def bfs_grid(grid, start_r, start_c, target_r, target_c):
+    rows, cols = len(grid), len(grid[0])
+    visited = {(start_r, start_c)}
+    queue = deque([(start_r, start_c, 0)])
+    while queue:
+        r, c, dist = queue.popleft()
+        if r == target_r and c == target_c:
+            return dist
+        for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+            nr, nc = r + dr, c + dc
+            if (0 <= nr < rows and 0 <= nc < cols
+                    and grid[nr][nc] != '#'        # not a wall
+                    and (nr, nc) not in visited):
+                visited.add((nr, nc))
+                queue.append((nr, nc, dist + 1))
+    return -1
+
+# ── Multi-source BFS ───
+# Start BFS from multiple sources simultaneously
+# Use case: "01 Matrix" — distance from each cell to nearest 0
+def update_matrix(mat):
+    rows, cols = len(mat), len(mat[0])
+    dist = [[float('inf')] * cols for _ in range(rows)]
+    queue = deque()
+
+    # Add all 0s as sources
+    for r in range(rows):
+        for c in range(cols):
+            if mat[r][c] == 0:
+                dist[r][c] = 0
+                queue.append((r, c))
+
+    # BFS from all sources simultaneously
+    while queue:
+        r, c = queue.popleft()
+        for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < rows and 0 <= nc < cols:
+                if dist[r][c] + 1 < dist[nr][nc]:
+                    dist[nr][nc] = dist[r][c] + 1
+                    queue.append((nr, nc))
+    return dist</code></pre>
+
+    <!-- ===== DFS ===== -->
+    <h2>Depth-First Search (DFS)</h2>
+    <p>DFS goes as deep as possible before backtracking. It uses a stack (explicitly or via recursion). DFS is better than BFS for: finding connected components, cycle detection, topological sort, and exploring all paths.</p>
+
+    <pre><code class="language-python"># ── Recursive DFS ───
+def dfs(node, visited, graph):
+    visited.add(node)
+    for neighbor in graph[node]:
+        if neighbor not in visited:
+            dfs(neighbor, visited, graph)
+
+# Count connected components
+def count_components(n, edges):
+    graph = defaultdict(list)
+    for u, v in edges:
+        graph[u].append(v)
+        graph[v].append(u)
+
+    visited = set()
+    count = 0
+    for node in range(n):
+        if node not in visited:
+            dfs(node, visited, graph)
+            count += 1
+    return count
+
+# ── Iterative DFS (avoids recursion limit) ───
+def dfs_iterative(graph, start):
+    visited = set()
+    stack = [start]
+    order = []
+    while stack:
+        node = stack.pop()
+        if node in visited:
+            continue
+        visited.add(node)
+        order.append(node)
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                stack.append(neighbor)
+    return order
+
+# ── DFS on grid: Number of Islands ───
+def num_islands(grid):
+    if not grid: return 0
+    rows, cols = len(grid), len(grid[0])
+
+    def dfs(r, c):
+        if r < 0 or r >= rows or c < 0 or c >= cols or grid[r][c] != '1':
+            return
+        grid[r][c] = '0'    # mark visited by mutating (or use a separate visited set)
+        dfs(r+1, c); dfs(r-1, c); dfs(r, c+1); dfs(r, c-1)
+
+    count = 0
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r][c] == '1':
+                dfs(r, c)
+                count += 1
+    return count
+
+# ── Cycle detection in directed graph (DFS coloring) ───
+# Color: 0=unvisited, 1=in_current_path, 2=fully_processed
+def has_cycle(graph, n):
+    color = [0] * n
+
+    def dfs(node):
+        color[node] = 1   # visiting
+        for neighbor in graph[node]:
+            if color[neighbor] == 1:    # back edge → cycle
+                return True
+            if color[neighbor] == 0 and dfs(neighbor):
+                return True
+        color[node] = 2   # fully processed
+        return False
+
+    return any(color[i] == 0 and dfs(i) for i in range(n))</code></pre>
+
+    <!-- ===== TOPOLOGICAL SORT ===== -->
+    <h2>Topological Sort</h2>
+    <p>Orders nodes in a DAG (Directed Acyclic Graph) so that for every edge u→v, u comes before v in the ordering. Used for dependency resolution, course prerequisites, task scheduling.</p>
+
+    <pre><code class="language-python"># ── Kahn's Algorithm (BFS-based) — detects cycles ───
+def topological_sort_kahn(n, prerequisites):
+    graph = defaultdict(list)
+    indegree = [0] * n
+
+    for course, prereq in prerequisites:
+        graph[prereq].append(course)
+        indegree[course] += 1
+
+    # Start with all nodes that have no prerequisites
+    queue = deque([i for i in range(n) if indegree[i] == 0])
+    order = []
+
+    while queue:
+        node = queue.popleft()
+        order.append(node)
+        for neighbor in graph[node]:
+            indegree[neighbor] -= 1
+            if indegree[neighbor] == 0:
+                queue.append(neighbor)
+
+    # If not all nodes processed → cycle exists → impossible
+    return order if len(order) == n else []
+
+# ── DFS-based topological sort ───
+def topological_sort_dfs(n, edges):
+    graph = defaultdict(list)
+    for u, v in edges:
+        graph[u].append(v)
+
+    visited = set()
+    result = []
+
+    def dfs(node):
+        visited.add(node)
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                dfs(neighbor)
+        result.append(node)      # append AFTER processing all neighbors
+
+    for i in range(n):
+        if i not in visited:
+            dfs(i)
+
+    return result[::-1]   # reverse to get topological order</code></pre>
+
+    <!-- ===== DIJKSTRA ===== -->
+    <h2>Dijkstra's Algorithm</h2>
+    <p>Finds the shortest path from a source to all other nodes in a graph with <strong>non-negative edge weights</strong>. Uses a min-heap to always expand the cheapest known node.</p>
+
+    <div class="visual-box">
+      <div class="label">Dijkstra trace — graph with weights</div>
+Graph:  0 ──(4)── 1 ──(1)── 3
+        │                   │
+       (2)                 (5)
+        │                   │
+        2 ──(3)─────────────┘
+
+Start at 0:
+heap = [(0,0)]          dist = [0, inf, inf, inf]
+Pop (0,0): update neighbors → dist=[0,4,2,inf]  heap=[(2,2),(4,1)]
+Pop (2,2): update neighbors → dist=[0,4,2,7]    heap=[(4,1),(7,3)]
+Pop (4,1): update neighbors → dist=[0,4,2,5]    heap=[(5,3),(7,3)]
+Pop (5,3): done
+
+Final shortest distances: [0, 4, 2, 5]
+    </div>
+
+    <pre><code class="language-python">import heapq
+
+def dijkstra(graph, start, n):
+    dist = [float('inf')] * n
+    dist[start] = 0
+    heap = [(0, start)]     # (distance, node)
+
+    while heap:
+        d, node = heapq.heappop(heap)
+
+        # Skip stale entries — we may have added a node multiple times
+        if d > dist[node]:
+            continue
+
+        for neighbor, weight in graph[node]:
+            new_dist = dist[node] + weight
+            if new_dist < dist[neighbor]:
+                dist[neighbor] = new_dist
+                heapq.heappush(heap, (new_dist, neighbor))
+
+    return dist
+
+# Usage
+graph = defaultdict(list)
+for u, v, w in edges:
+    graph[u].append((v, w))
+    graph[v].append((u, w))   # undirected
+
+distances = dijkstra(graph, source=0, n=n)
+
+# ── Dijkstra with path reconstruction ───
+def dijkstra_with_path(graph, start, end, n):
+    dist = [float('inf')] * n
+    prev = [-1] * n
+    dist[start] = 0
+    heap = [(0, start)]
+
+    while heap:
+        d, node = heapq.heappop(heap)
+        if d > dist[node]: continue
+        if node == end: break
+        for neighbor, weight in graph[node]:
+            new_dist = dist[node] + weight
+            if new_dist < dist[neighbor]:
+                dist[neighbor] = new_dist
+                prev[neighbor] = node
+                heapq.heappush(heap, (new_dist, neighbor))
+
+    # Reconstruct path
+    path = []
+    cur = end
+    while cur != -1:
+        path.append(cur)
+        cur = prev[cur]
+    return dist[end], path[::-1]</code></pre>
+
+    <!-- ===== UNION FIND ===== -->
+    <h2>Union-Find (Disjoint Set Union)</h2>
+    <p>Efficiently tracks which elements belong to the same set and supports two operations: <strong>find</strong> (which set does this element belong to?) and <strong>union</strong> (merge two sets). Nearly O(1) per operation with path compression + union by rank.</p>
+
+    <pre><code class="language-python">class UnionFind:
+    def __init__(self, n):
+        self.parent = list(range(n))   # each node is its own parent initially
+        self.rank   = [0] * n          # used for union by rank
+        self.size   = [1] * n          # size of each component
+        self.components = n            # number of distinct components
+
+    def find(self, x):
+        # Path compression: make every node on the path point directly to root
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
+
+    def union(self, x, y):
+        px, py = self.find(x), self.find(y)
+        if px == py:
+            return False   # already in same component
+
+        # Union by rank: attach smaller tree under larger tree
+        if self.rank[px] < self.rank[py]:
+            px, py = py, px    # ensure px is the larger tree
+
+        self.parent[py] = px
+        self.size[px] += self.size[py]
+        if self.rank[px] == self.rank[py]:
+            self.rank[px] += 1
+
+        self.components -= 1
+        return True   # successfully merged
+
+    def connected(self, x, y):
+        return self.find(x) == self.find(y)
+
+    def component_size(self, x):
+        return self.size[self.find(x)]
+
+# ── Applications ───
+
+# Count connected components
+uf = UnionFind(n)
+for u, v in edges:
+    uf.union(u, v)
+print(uf.components)
+
+# Detect cycle in undirected graph
+def has_cycle_undirected(n, edges):
+    uf = UnionFind(n)
+    for u, v in edges:
+        if not uf.union(u, v):   # union returns False if already connected
+            return True           # → adding this edge creates a cycle
+    return False
+
+# Minimum Spanning Tree (Kruskal's algorithm)
+def kruskal(n, edges):
+    edges.sort(key=lambda e: e[2])   # sort by weight
+    uf = UnionFind(n)
+    mst_cost = 0
+    mst_edges = []
+
+    for u, v, w in edges:
+        if uf.union(u, v):        # only add if it connects different components
+            mst_cost += w
+            mst_edges.append((u, v, w))
+            if len(mst_edges) == n - 1:
+                break             # MST complete
+
+    return mst_cost, mst_edges</code></pre>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Algorithm</th><th>Time</th><th>Use for</th></tr></thead>
+        <tbody>
+          <tr><td>BFS</td><td>O(V + E)</td><td>Shortest path (unweighted), level-order, connected components</td></tr>
+          <tr><td>DFS</td><td>O(V + E)</td><td>All paths, cycle detection, topological sort, connected components</td></tr>
+          <tr><td>Topological Sort</td><td>O(V + E)</td><td>Ordering in a DAG, detecting cycles</td></tr>
+          <tr><td>Dijkstra</td><td>O((V+E) log V)</td><td>Shortest path with non-negative weights</td></tr>
+          <tr><td>Union-Find</td><td>O(α(n)) ≈ O(1)</td><td>Dynamic connectivity, MST (Kruskal), cycle detection</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="nav-footer">
+      <a href="module5.html" class="nav-btn">
+        <span class="nav-dir">← Previous</span>
+        <span class="nav-title">Algorithm Patterns</span>
+      </a>
+      <a href="module7.html" class="nav-btn next">
+        <span class="nav-dir">Next →</span>
+        <span class="nav-title">Dynamic Programming</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

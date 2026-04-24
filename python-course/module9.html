@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 9 – Standard Library</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Course</div>
+      <a href="index.html"><span class="num">🏠</span> Home</a>
+      <div class="sidebar-section">Modules</div>
+      <a href="module1.html"><span class="num">1</span> Python Fundamentals</a>
+      <a href="module2.html"><span class="num">2</span> Core Data Structures</a>
+      <a href="module3.html"><span class="num">3</span> Control Flow & Functions</a>
+      <a href="module4.html"><span class="num">4</span> Searching & Sorting</a>
+      <a href="module5.html"><span class="num">5</span> Algorithm Patterns</a>
+      <a href="module6.html"><span class="num">6</span> Graph Algorithms</a>
+      <a href="module7.html"><span class="num">7</span> Dynamic Programming</a>
+      <a href="module8.html"><span class="num">8</span> Trees</a>
+      <a href="module9.html" class="active"><span class="num">9</span> Standard Library</a>
+      <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="module-header">
+      <div class="module-number">Module 09</div>
+      <h1>Standard Library Toolkit</h1>
+      <p class="subtitle">The Python modules that make competitive programming fast: collections, itertools, functools, bisect, math, and heapq — with every useful function shown in context.</p>
+    </div>
+
+    <h2>collections</h2>
+
+    <h3>Counter</h3>
+    <pre><code class="language-python">from collections import Counter
+
+c = Counter("mississippi")
+# Counter({'i': 4, 's': 4, 'p': 2, 'm': 1})
+
+c.most_common(2)      # [('i', 4), ('s', 4)]
+c['i']                # 4
+c['z']                # 0 (no KeyError!)
+sum(c.values())       # 11 (total count)
+list(c.elements())    # ['m','i','i','i','i','s','s','s','s','p','p']
+
+# Arithmetic between counters
+c1 = Counter(a=3, b=1)
+c2 = Counter(a=1, b=2)
+c1 + c2   # Counter({'a': 4, 'b': 3})
+c1 - c2   # Counter({'a': 2})           — drops negatives
+c1 & c2   # Counter({'a': 1, 'b': 1})   — min
+c1 | c2   # Counter({'a': 3, 'b': 2})   — max</code></pre>
+
+    <h3>defaultdict</h3>
+    <pre><code class="language-python">from collections import defaultdict
+
+graph = defaultdict(list)
+graph['a'].append('b')   # no KeyError
+
+count = defaultdict(int)
+for c in "hello":
+    count[c] += 1        # no initialization needed
+
+# Nested defaultdict
+matrix = defaultdict(lambda: defaultdict(int))
+matrix['row1']['col1'] += 1</code></pre>
+
+    <h3>deque</h3>
+    <pre><code class="language-python">from collections import deque
+
+q = deque([1, 2, 3], maxlen=3)   # bounded deque (auto-drops oldest)
+q.append(4)     # deque([2, 3, 4]) — 1 was dropped
+q.appendleft(1) # deque([1, 2, 3]) — 4 was dropped
+q.rotate(1)     # deque([3, 1, 2])</code></pre>
+
+    <h3>OrderedDict</h3>
+    <pre><code class="language-python">from collections import OrderedDict
+
+# LRU Cache implementation using OrderedDict
+class LRUCache:
+    def __init__(self, capacity):
+        self.cap = capacity
+        self.cache = OrderedDict()
+
+    def get(self, key):
+        if key not in self.cache: return -1
+        self.cache.move_to_end(key)   # mark as recently used
+        return self.cache[key]
+
+    def put(self, key, value):
+        if key in self.cache:
+            self.cache.move_to_end(key)
+        self.cache[key] = value
+        if len(self.cache) > self.cap:
+            self.cache.popitem(last=False)   # evict least recently used</code></pre>
+
+    <h3>namedtuple</h3>
+    <pre><code class="language-python">from collections import namedtuple
+
+Point = namedtuple('Point', ['x', 'y'])
+p = Point(3, 4)
+p.x      # 3
+p.y      # 4
+p[0]     # 3 — still indexable
+p._asdict()   # {'x': 3, 'y': 4}
+p._replace(x=10)   # Point(x=10, y=4)</code></pre>
+
+    <!-- ===== ITERTOOLS ===== -->
+    <h2>itertools</h2>
+    <pre><code class="language-python">from itertools import (
+    combinations, permutations, product,
+    combinations_with_replacement,
+    chain, accumulate, groupby,
+    islice, count, cycle, repeat
+)
+
+# ── Combinatorics ───
+list(combinations([1,2,3], 2))
+# [(1,2), (1,3), (2,3)]
+
+list(permutations([1,2,3], 2))
+# [(1,2),(1,3),(2,1),(2,3),(3,1),(3,2)]
+
+list(product([0,1], repeat=3))
+# all 8 binary strings of length 3
+
+list(combinations_with_replacement([1,2,3], 2))
+# [(1,1),(1,2),(1,3),(2,2),(2,3),(3,3)]
+
+# ── accumulate — running aggregates ───
+list(accumulate([1,2,3,4,5]))          # [1,3,6,10,15]  — running sum
+list(accumulate([1,2,3,4,5], max))     # [1,2,3,4,5]  — running max
+list(accumulate([1,2,3,4,5], lambda a,b: a*b))  # [1,2,6,24,120] — running product
+
+# ── chain — flatten iterables ───
+list(chain([1,2], [3,4], [5]))     # [1,2,3,4,5]
+list(chain.from_iterable([[1,2],[3,4]]))  # same
+
+# ── groupby — group consecutive equal elements ───
+# NOTE: input must be SORTED by the key first!
+data = [("a",1),("a",2),("b",1),("b",3),("c",2)]
+for key, group in groupby(data, key=lambda x: x[0]):
+    print(key, list(group))
+# a [('a',1),('a',2)]
+# b [('b',1),('b',3)]
+# c [('c',2)]
+
+# ── Infinite iterators ───
+list(islice(count(10), 5))   # [10,11,12,13,14] — first 5 from count starting at 10
+list(islice(cycle([1,2,3]), 7))  # [1,2,3,1,2,3,1] — cycle 7 times
+list(islice(repeat(5, 3), 3))  # [5,5,5]</code></pre>
+
+    <!-- ===== FUNCTOOLS ===== -->
+    <h2>functools</h2>
+    <pre><code class="language-python">from functools import cache, lru_cache, reduce, cmp_to_key, partial
+
+# ── cache / lru_cache ───
+@cache                          # Python 3.9+ — unbounded
+def fib(n):
+    if n <= 1: return n
+    return fib(n-1) + fib(n-2)
+
+@lru_cache(maxsize=None)       # equivalent to @cache
+def fib(n): ...
+
+@lru_cache(maxsize=128)        # bounded — keeps 128 most recent results
+def expensive(n): ...
+
+# ── reduce ───
+from functools import reduce
+reduce(lambda a,b: a*b, [1,2,3,4,5])   # 120 (factorial)
+reduce(lambda a,b: a|b, [{1,2},{2,3},{3,4}])  # {1,2,3,4} — union of sets
+
+# ── cmp_to_key — use old comparison function with sort ───
+import functools
+
+def cmp(a, b):
+    if a < b: return -1
+    if a > b: return 1
+    return 0
+
+nums.sort(key=functools.cmp_to_key(cmp))
+
+# Custom sort for largest number problem
+def largest_number(nums):
+    nums = list(map(str, nums))
+    def compare(a, b):
+        if a+b > b+a: return -1   # a should come first
+        if a+b < b+a: return 1
+        return 0
+    nums.sort(key=functools.cmp_to_key(compare))
+    return str(int("".join(nums)))   # int() removes leading zeros
+
+# ── partial — freeze some arguments ───
+from functools import partial
+
+def power(base, exp): return base ** exp
+square = partial(power, exp=2)
+cube   = partial(power, exp=3)
+square(5)   # 25
+cube(3)     # 27</code></pre>
+
+    <!-- ===== BISECT ===== -->
+    <h2>bisect</h2>
+    <pre><code class="language-python">import bisect
+
+arr = [1, 3, 3, 5, 7, 9]
+
+bisect.bisect_left(arr, 3)    # 1 — leftmost position for 3
+bisect.bisect_right(arr, 3)   # 3 — rightmost position for 3
+bisect.bisect(arr, 3)         # 3 — alias for bisect_right
+
+# Custom key search (Python 3.10+): bisect_left(a, x, key=f)
+# For older Python: binary search manually or use SortedList from sortedcontainers
+
+# Find floor and ceiling
+def floor_val(arr, x):
+    i = bisect.bisect_right(arr, x) - 1
+    return arr[i] if i >= 0 else None
+
+def ceil_val(arr, x):
+    i = bisect.bisect_left(arr, x)
+    return arr[i] if i < len(arr) else None
+
+# Maintaining sorted list with insert
+bisect.insort_left(arr, 4)    # insert 4 at correct position
+bisect.insort_right(arr, 4)   # (using bisect_right for tie-breaking)</code></pre>
+
+    <!-- ===== MATH ===== -->
+    <h2>math</h2>
+    <pre><code class="language-python">import math
+
+# ── Number theory ───
+math.gcd(12, 8)          # 4
+math.lcm(4, 6)           # 12  (Python 3.9+)
+math.gcd(12, 8, 6)       # 2   (Python 3.9+ — supports multiple args)
+
+# LCM of a list
+from functools import reduce
+lcm_list = lambda lst: reduce(math.lcm, lst)
+
+# ── Powers and roots ───
+math.isqrt(17)           # 4   — exact integer square root
+math.sqrt(16)            # 4.0 — float
+math.pow(2, 10)          # 1024.0 — float version (prefer 2**10)
+math.log(1000, 10)       # 3.0
+math.log2(8)             # 3.0
+math.log10(1000)         # 3.0
+math.ceil(3.2)           # 4
+math.floor(3.9)          # 3
+
+# ── Constants ───
+math.pi                  # 3.141592653589793
+math.e                   # 2.718281828459045
+math.inf                 # float('inf')
+math.tau                 # 2*pi
+
+# ── Combinatorics ───
+math.comb(10, 3)         # 120 — C(10,3) = 10!/(3!·7!)
+math.perm(5, 2)          # 20  — P(5,2) = 5!/3!
+math.factorial(10)       # 3628800
+
+# ── Useful for grid/geometry ───
+math.hypot(3, 4)         # 5.0 — sqrt(3²+4²)
+math.dist((0,0), (3,4))  # 5.0 — Euclidean distance (Python 3.8+)</code></pre>
+
+    <!-- ===== HEAPQ ===== -->
+    <h2>heapq — quick reference</h2>
+    <pre><code class="language-python">import heapq
+
+# Build
+h = [3,1,4,1,5,9]
+heapq.heapify(h)            # O(n) in-place
+
+# Push / pop
+heapq.heappush(h, 2)        # O(log n)
+heapq.heappop(h)            # O(log n) — returns smallest
+heapq.heappushpop(h, 7)     # push then pop — more efficient than two calls
+heapq.heapreplace(h, 7)     # pop then push — more efficient, raises if empty
+
+# Peek
+h[0]                        # O(1) — smallest without removing
+
+# Utility
+heapq.nlargest(3, h)        # top 3 largest — O(n + k log n)
+heapq.nsmallest(3, h)       # top 3 smallest
+
+# Max-heap pattern
+heapq.heappush(h, -val)    # negate
+-heapq.heappop(h)           # negate back</code></pre>
+
+    <!-- ===== STRING / COLLECTIONS ===== -->
+    <h2>string constants and random</h2>
+    <pre><code class="language-python">import string
+import random
+
+string.ascii_lowercase    # 'abcdefghijklmnopqrstuvwxyz'
+string.ascii_uppercase    # 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+string.ascii_letters      # lower + upper
+string.digits             # '0123456789'
+string.punctuation        # '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+string.whitespace         # ' \t\n\r\x0b\x0c'
+
+# Generate random test data
+random.randint(0, 100)      # random int [0, 100]
+random.choice([1,2,3])      # random element
+random.shuffle(lst)         # shuffle in place
+random.sample(lst, k)       # k unique elements (no replacement)</code></pre>
+
+    <div class="nav-footer">
+      <a href="module8.html" class="nav-btn">
+        <span class="nav-dir">← Previous</span>
+        <span class="nav-title">Trees</span>
+      </a>
+      <a href="module10.html" class="nav-btn next">
+        <span class="nav-dir">Next →</span>
+        <span class="nav-title">Problem Walkthroughs</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

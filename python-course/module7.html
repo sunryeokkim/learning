@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 7 – Dynamic Programming</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h1>Python for Coding Problems</h1><p>Complete Course — 10 Modules</p></div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section">Course</div>
+      <a href="index.html"><span class="num">🏠</span> Home</a>
+      <div class="sidebar-section">Modules</div>
+      <a href="module1.html"><span class="num">1</span> Python Fundamentals</a>
+      <a href="module2.html"><span class="num">2</span> Core Data Structures</a>
+      <a href="module3.html"><span class="num">3</span> Control Flow & Functions</a>
+      <a href="module4.html"><span class="num">4</span> Searching & Sorting</a>
+      <a href="module5.html"><span class="num">5</span> Algorithm Patterns</a>
+      <a href="module6.html"><span class="num">6</span> Graph Algorithms</a>
+      <a href="module7.html" class="active"><span class="num">7</span> Dynamic Programming</a>
+      <a href="module8.html"><span class="num">8</span> Trees</a>
+      <a href="module9.html"><span class="num">9</span> Standard Library</a>
+      <a href="module10.html"><span class="num">10</span> Problem Walkthroughs</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="module-header">
+      <div class="module-number">Module 07</div>
+      <h1>Dynamic Programming</h1>
+      <p class="subtitle">The framework for recognizing DP problems, defining states and transitions, and implementing every major DP pattern from 1D to knapsack to interval DP.</p>
+    </div>
+
+    <!-- ===== FRAMEWORK ===== -->
+    <h2>The DP Framework</h2>
+    <p>Dynamic programming applies when a problem has two properties:</p>
+    <ul>
+      <li><strong>Overlapping subproblems</strong> — the same subproblem is solved multiple times (memoization helps)</li>
+      <li><strong>Optimal substructure</strong> — the optimal solution to the full problem can be built from optimal solutions to subproblems</li>
+    </ul>
+
+    <p>Every DP solution has three components:</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">1. State</div>
+        <p>What variables completely describe a subproblem? This becomes the function parameters or array dimensions.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">2. Transition</div>
+        <p>How do larger states relate to smaller states? This becomes the recurrence relation.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">3. Base Case</div>
+        <p>What is the smallest subproblem with a known answer? Initialize these before the loop.</p>
+      </div>
+    </div>
+
+    <h3>Top-Down vs Bottom-Up</h3>
+    <pre><code class="language-python"># ── Top-Down (Memoization) — add @cache to recursion ───
+from functools import cache
+
+@cache
+def dp(i, j):
+    # base cases
+    if i == 0: return base_value
+    # transition
+    return min(dp(i-1, j), dp(i, j-1)) + cost[i][j]
+
+# ── Bottom-Up (Tabulation) — fill a table iteratively ───
+dp = [[float('inf')] * (n+1) for _ in range(m+1)]
+# base cases
+for j in range(n+1): dp[0][j] = base_value
+# fill table in dependency order
+for i in range(1, m+1):
+    for j in range(1, n+1):
+        dp[i][j] = min(dp[i-1][j], dp[i][j-1]) + cost[i-1][j-1]</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <strong>Which to use?</strong>
+        <p>Start with top-down (<code>@cache</code>) — it's easier to write and you don't need to worry about fill order. Convert to bottom-up only if you hit recursion limits or need space optimization (rolling array trick).</p>
+      </div>
+    </div>
+
+    <!-- ===== 1D DP ===== -->
+    <h2>1D DP Patterns</h2>
+
+    <h3>Fibonacci-Style (depends on previous 1–2 states)</h3>
+    <pre><code class="language-python"># ── Climbing Stairs ───
+# Ways to climb n stairs taking 1 or 2 steps at a time
+# State: dp[i] = ways to reach step i
+# Transition: dp[i] = dp[i-1] + dp[i-2]   (came from i-1 or i-2)
+# Base: dp[0]=1, dp[1]=1
+
+def climb_stairs(n):
+    if n <= 2: return n
+    prev2, prev1 = 1, 2
+    for i in range(3, n+1):
+        prev2, prev1 = prev1, prev1 + prev2   # space-optimized: only need last 2
+    return prev1
+
+# ── House Robber ───
+# Maximize sum of non-adjacent elements
+# State: dp[i] = max money from first i+1 houses
+# Transition: dp[i] = max(dp[i-1], dp[i-2] + nums[i])
+# (either skip house i, or rob it and skip i-1)
+
+def rob(nums):
+    if not nums: return 0
+    if len(nums) == 1: return nums[0]
+    prev2, prev1 = nums[0], max(nums[0], nums[1])
+    for i in range(2, len(nums)):
+        prev2, prev1 = prev1, max(prev1, prev2 + nums[i])
+    return prev1</code></pre>
+
+    <h3>Longest Increasing Subsequence (LIS)</h3>
+    <pre><code class="language-python"># State: dp[i] = length of LIS ending at index i
+# Transition: dp[i] = max(dp[j]+1 for j<i if nums[j]<nums[i])
+# Time: O(n²)
+def lis_n2(nums):
+    n = len(nums)
+    dp = [1] * n
+    for i in range(n):
+        for j in range(i):
+            if nums[j] < nums[i]:
+                dp[i] = max(dp[i], dp[j] + 1)
+    return max(dp)
+
+# ── O(n log n) LIS with patience sorting ───
+# tails[i] = smallest tail element of all IS of length i+1
+import bisect
+
+def lis_nlogn(nums):
+    tails = []
+    for x in nums:
+        pos = bisect.bisect_left(tails, x)
+        if pos == len(tails):
+            tails.append(x)       # extends LIS length
+        else:
+            tails[pos] = x        # replaces with smaller tail (better for future)
+    return len(tails)   # length of LIS
+
+# Note: tails array itself is NOT the LIS, just its length is correct</code></pre>
+
+    <!-- ===== 2D DP ===== -->
+    <h2>2D DP Patterns</h2>
+
+    <h3>Longest Common Subsequence (LCS)</h3>
+    <pre><code class="language-python"># LCS of strings s and t
+# State: dp[i][j] = LCS length of s[0:i] and t[0:j]
+# Transition:
+#   if s[i-1] == t[j-1]: dp[i][j] = dp[i-1][j-1] + 1
+#   else:                 dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+# Base: dp[0][j] = dp[i][0] = 0
+
+def lcs(s, t):
+    m, n = len(s), len(t)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if s[i-1] == t[j-1]:
+                dp[i][j] = dp[i-1][j-1] + 1
+            else:
+                dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+    return dp[m][n]
+
+# ── Edit Distance ───
+# Minimum operations (insert, delete, replace) to convert s to t
+# State: dp[i][j] = edit distance between s[0:i] and t[0:j]
+# Transition:
+#   if s[i-1] == t[j-1]: dp[i][j] = dp[i-1][j-1]
+#   else: dp[i][j] = 1 + min(dp[i-1][j],   # delete from s
+#                             dp[i][j-1],   # insert into s
+#                             dp[i-1][j-1]) # replace
+
+def edit_distance(s, t):
+    m, n = len(s), len(t)
+    dp = [[0]*(n+1) for _ in range(m+1)]
+    for i in range(m+1): dp[i][0] = i   # delete all of s
+    for j in range(n+1): dp[0][j] = j   # insert all of t
+    for i in range(1, m+1):
+        for j in range(1, n+1):
+            if s[i-1] == t[j-1]:
+                dp[i][j] = dp[i-1][j-1]
+            else:
+                dp[i][j] = 1 + min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])
+    return dp[m][n]
+
+# ── Unique Paths ───
+# Count paths from top-left to bottom-right of grid (only right/down)
+def unique_paths(m, n):
+    dp = [[1]*n for _ in range(m)]   # base: first row and col are all 1
+    for i in range(1, m):
+        for j in range(1, n):
+            dp[i][j] = dp[i-1][j] + dp[i][j-1]
+    return dp[m-1][n-1]
+
+# Space-optimized: only need one row
+def unique_paths_opt(m, n):
+    dp = [1] * n
+    for _ in range(1, m):
+        for j in range(1, n):
+            dp[j] += dp[j-1]
+    return dp[n-1]</code></pre>
+
+    <!-- ===== KNAPSACK ===== -->
+    <h2>Knapsack Patterns</h2>
+    <p>Knapsack problems: you have items with weights and values, and a capacity. Choose items to maximize value without exceeding capacity.</p>
+
+    <h3>0/1 Knapsack — Each Item Used At Most Once</h3>
+    <div class="visual-box">
+      <div class="label">0/1 Knapsack — fill table row by row, right-to-left</div>
+Items: (weight=2,val=3), (weight=3,val=4), (weight=4,val=5)
+Capacity = 5
+
+       cap: 0  1  2  3  4  5
+No items:  [0, 0, 0, 0, 0, 0]
++item(2,3):[0, 0, 3, 3, 3, 3]   ← can take item1 if cap≥2
++item(3,4):[0, 0, 3, 4, 4, 7]   ← w=3: dp[5]=max(dp[5], dp[2]+4)=7
++item(4,5):[0, 0, 3, 4, 5, 7]   ← w=4: dp[5]=max(7, dp[1]+5)=7
+Answer: 7 (take items 1 and 2, weight=5)
+    </div>
+
+    <pre><code class="language-python"># 0/1 Knapsack — iterate backwards to prevent reuse
+def knapsack_01(weights, values, capacity):
+    dp = [0] * (capacity + 1)
+    for w, v in zip(weights, values):
+        # Iterate BACKWARDS so each item is used at most once
+        for cap in range(capacity, w - 1, -1):
+            dp[cap] = max(dp[cap], dp[cap - w] + v)
+    return dp[capacity]
+
+# ── Coin Change (minimum coins) ── unbounded knapsack variant
+def coin_change(coins, amount):
+    dp = [float('inf')] * (amount + 1)
+    dp[0] = 0   # base: 0 coins needed for amount 0
+    for coin in coins:
+        # Iterate FORWARDS — allows reusing each coin
+        for a in range(coin, amount + 1):
+            dp[a] = min(dp[a], dp[a - coin] + 1)
+    return dp[amount] if dp[amount] != float('inf') else -1
+
+# ── Coin Change II (count ways) ── unbounded knapsack, count variant
+def coin_change_ways(coins, amount):
+    dp = [0] * (amount + 1)
+    dp[0] = 1   # base: 1 way to make amount 0 (use no coins)
+    for coin in coins:
+        for a in range(coin, amount + 1):
+            dp[a] += dp[a - coin]
+    return dp[amount]
+
+# ── Partition Equal Subset Sum ── 0/1 knapsack, boolean
+# Can we split nums into two subsets with equal sums?
+def can_partition(nums):
+    total = sum(nums)
+    if total % 2 != 0: return False
+    target = total // 2
+
+    dp = [False] * (target + 1)
+    dp[0] = True   # base: empty subset sums to 0
+
+    for x in nums:
+        for cap in range(target, x - 1, -1):   # backwards!
+            dp[cap] = dp[cap] or dp[cap - x]
+
+    return dp[target]</code></pre>
+
+    <!-- ===== INTERVAL DP ===== -->
+    <h2>Interval DP</h2>
+    <p>Solve problems on contiguous segments by considering all possible "split points" within each interval.</p>
+    <pre><code class="language-python"># ── Matrix Chain Multiplication ───
+# Minimum cost to multiply chain of matrices
+# State: dp[i][j] = min cost to multiply matrices i..j
+# Transition: dp[i][j] = min over all split points k: dp[i][k]+dp[k+1][j]+cost(i,k,j)
+
+def matrix_chain(dims):
+    n = len(dims) - 1   # number of matrices
+    dp = [[0]*n for _ in range(n)]
+    for length in range(2, n+1):       # iterate by interval length
+        for i in range(n - length + 1):
+            j = i + length - 1
+            dp[i][j] = float('inf')
+            for k in range(i, j):     # try every split point
+                cost = dp[i][k] + dp[k+1][j] + dims[i]*dims[k+1]*dims[j+1]
+                dp[i][j] = min(dp[i][j], cost)
+    return dp[0][n-1]
+
+# ── Burst Balloons ───
+# nums[i] * nums[left] * nums[right] when balloon i is last burst in range
+def max_coins(nums):
+    nums = [1] + nums + [1]   # padding
+    n = len(nums)
+    dp = [[0]*n for _ in range(n)]
+    for length in range(2, n):
+        for left in range(0, n - length):
+            right = left + length
+            for k in range(left+1, right):   # k is the LAST balloon to burst
+                coins = nums[left]*nums[k]*nums[right]
+                dp[left][right] = max(dp[left][right],
+                                      dp[left][k] + dp[k][right] + coins)
+    return dp[0][n-1]</code></pre>
+
+    <div class="nav-footer">
+      <a href="module6.html" class="nav-btn">
+        <span class="nav-dir">← Previous</span>
+        <span class="nav-title">Graph Algorithms</span>
+      </a>
+      <a href="module8.html" class="nav-btn next">
+        <span class="nav-dir">Next →</span>
+        <span class="nav-title">Trees</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

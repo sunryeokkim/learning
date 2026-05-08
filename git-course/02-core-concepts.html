@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Core Concepts — Git Crash Course</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="page-wrapper">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>Git Crash Course</h2>
+      <p>For Technical Support Engineers</p>
+    </div>
+    <nav>
+      <div class="sidebar-section-label">Foundations</div>
+      <a href="index.html"><span class="icon">🏠</span> Overview</a>
+      <a href="01-fundamentals.html"><span class="icon">📖</span> 1. Git Fundamentals</a>
+      <a href="02-core-concepts.html" class="active"><span class="icon">🧠</span> 2. Core Concepts</a>
+      <a href="03-commands.html"><span class="icon">⌨️</span> 3. Essential Commands</a>
+      <div class="sidebar-section-label">GitHub</div>
+      <a href="04-github.html"><span class="icon">🐙</span> 4. GitHub Features</a>
+      <a href="05-branching.html"><span class="icon">🌿</span> 5. Branching Strategies</a>
+      <div class="sidebar-section-label">TSE Focus</div>
+      <a href="06-tse-workflows.html"><span class="icon">🔍</span> 6. TSE Workflows</a>
+      <a href="07-dev-perspective.html"><span class="icon">🚀</span> 7. Dev Perspective</a>
+      <a href="08-troubleshooting.html"><span class="icon">🛠️</span> 8. Troubleshooting</a>
+    </nav>
+  </div>
+
+  <main class="main-content">
+    <div class="page-title">
+      <div class="badge">Section 2</div>
+      <h1>Core Concepts</h1>
+      <p>Commits, branches, HEAD, merging, rebasing, and tags — the vocabulary you need to read any Git output.</p>
+    </div>
+
+    <h2>Commits</h2>
+    <p>A <strong>commit</strong> is an immutable snapshot saved to the repository. Once made, its SHA hash is fixed — you can't change a commit, only create new ones. Each commit stores:</p>
+    <ul>
+      <li>A pointer to the <strong>root tree</strong> (the project snapshot)</li>
+      <li>One or more <strong>parent commit</strong> SHA(s)</li>
+      <li><strong>Author</strong> name, email, and timestamp</li>
+      <li><strong>Committer</strong> name, email, and timestamp (may differ from author after a rebase)</li>
+      <li>A <strong>commit message</strong></li>
+    </ul>
+
+    <p>Commits form a <strong>Directed Acyclic Graph (DAG)</strong>: each commit points backward to its parents. This creates the immutable history chain.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 680 130" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrC" markerWidth="7" markerHeight="5" refX="0" refY="2.5" orient="auto">
+            <polygon points="7 0, 0 2.5, 7 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Commit chain -->
+        <circle cx="80"  cy="65" r="30" fill="#1e293b" stroke="#f97316" stroke-width="2"/>
+        <text x="80"  y="60" fill="#f97316" text-anchor="middle" font-size="10" font-weight="700">a1b2c3</text>
+        <text x="80"  y="76" fill="#94a3b8" text-anchor="middle" font-size="9">init</text>
+
+        <circle cx="220" cy="65" r="30" fill="#1e293b" stroke="#f97316" stroke-width="2"/>
+        <text x="220" y="60" fill="#f97316" text-anchor="middle" font-size="10" font-weight="700">d4e5f6</text>
+        <text x="220" y="76" fill="#94a3b8" text-anchor="middle" font-size="9">add login</text>
+
+        <circle cx="360" cy="65" r="30" fill="#1e293b" stroke="#f97316" stroke-width="2"/>
+        <text x="360" y="60" fill="#f97316" text-anchor="middle" font-size="10" font-weight="700">789abc</text>
+        <text x="360" y="76" fill="#94a3b8" text-anchor="middle" font-size="9">fix crash</text>
+
+        <circle cx="500" cy="65" r="30" fill="#1e293b" stroke="#22c55e" stroke-width="2.5"/>
+        <text x="500" y="60" fill="#22c55e" text-anchor="middle" font-size="10" font-weight="700">f1a2b3</text>
+        <text x="500" y="76" fill="#94a3b8" text-anchor="middle" font-size="9">add tests</text>
+
+        <!-- Arrows pointing LEFT (parent direction) -->
+        <line x1="188" y1="65" x2="112" y2="65" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrC)"/>
+        <line x1="328" y1="65" x2="252" y2="65" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrC)"/>
+        <line x1="468" y1="65" x2="392" y2="65" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrC)"/>
+
+        <!-- HEAD and main labels -->
+        <rect x="460" y="10" width="80" height="24" rx="4" fill="#22c55e" opacity="0.15" stroke="#22c55e" stroke-width="1"/>
+        <text x="500" y="27" fill="#22c55e" text-anchor="middle" font-size="11" font-weight="700">main</text>
+        <line x1="500" y1="34" x2="500" y2="35" stroke="#22c55e" stroke-width="1.5"/>
+
+        <rect x="600" y="40" width="70" height="24" rx="4" fill="#f97316" opacity="0.15" stroke="#f97316" stroke-width="1"/>
+        <text x="635" y="57" fill="#f97316" text-anchor="middle" font-size="11" font-weight="700">HEAD</text>
+        <line x1="600" y1="52" x2="532" y2="60" stroke="#f97316" stroke-width="1.5"/>
+
+        <!-- Time arrow -->
+        <text x="30" y="110" fill="#94a3b8" font-size="10">older</text>
+        <line x1="60" y1="108" x2="540" y2="108" stroke="#334155" stroke-width="1.2"/>
+        <polygon points="540,104 548,108 540,112" fill="#334155"/>
+        <text x="555" y="112" fill="#94a3b8" font-size="10">newer</text>
+      </svg>
+      <figcaption>Figure 6 — Commits form a chain. Each points to its parent. <code>main</code> is a label on the latest commit; <code>HEAD</code> points to what you have checked out.</figcaption>
+    </div>
+
+    <h2>Branches</h2>
+    <p>A branch is simply a <strong>lightweight movable pointer</strong> to a commit. Creating a branch doesn't copy files — it just creates a 41-byte file in <code>.git/refs/heads/</code> containing a SHA hash. That's why branch creation is instantaneous in Git.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 700 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrB" markerWidth="7" markerHeight="5" refX="0" refY="2.5" orient="auto">
+            <polygon points="7 0, 0 2.5, 7 5" fill="#94a3b8"/>
+          </marker>
+          <marker id="arrBf" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+            <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Main line -->
+        <circle cx="80"  cy="100" r="26" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="80"  y="96"  fill="#94a3b8" text-anchor="middle" font-size="9">a1b2c3</text>
+        <text x="80"  y="110" fill="#94a3b8" text-anchor="middle" font-size="9">init</text>
+
+        <circle cx="210" cy="100" r="26" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="210" y="96"  fill="#94a3b8" text-anchor="middle" font-size="9">d4e5f6</text>
+        <text x="210" y="110" fill="#94a3b8" text-anchor="middle" font-size="9">add login</text>
+
+        <!-- Branch point -->
+        <circle cx="340" cy="100" r="26" fill="#1e293b" stroke="#f97316" stroke-width="2"/>
+        <text x="340" y="96"  fill="#f97316" text-anchor="middle" font-size="9">789abc</text>
+        <text x="340" y="110" fill="#94a3b8" text-anchor="middle" font-size="9">fix crash</text>
+
+        <!-- Main continues -->
+        <circle cx="470" cy="100" r="26" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+        <text x="470" y="96"  fill="#22c55e" text-anchor="middle" font-size="9">f1a2b3</text>
+        <text x="470" y="110" fill="#94a3b8" text-anchor="middle" font-size="9">hotfix</text>
+
+        <!-- Feature branch -->
+        <circle cx="470" cy="30" r="26" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+        <text x="470" y="26"  fill="#3b82f6" text-anchor="middle" font-size="9">cc1122</text>
+        <text x="470" y="40"  fill="#94a3b8" text-anchor="middle" font-size="9">feat: search</text>
+
+        <circle cx="600" cy="30" r="26" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+        <text x="600" y="26"  fill="#3b82f6" text-anchor="middle" font-size="9">dd3344</text>
+        <text x="600" y="40"  fill="#94a3b8" text-anchor="middle" font-size="9">feat: filter</text>
+
+        <!-- Arrows -->
+        <line x1="184" y1="100" x2="108" y2="100" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrB)"/>
+        <line x1="314" y1="100" x2="238" y2="100" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrB)"/>
+        <line x1="444" y1="100" x2="368" y2="100" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrB)"/>
+        <line x1="444" y1="36"  x2="368" y2="72"  stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arrB)"/>
+        <line x1="574" y1="30"  x2="498" y2="30"  stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arrB)"/>
+
+        <!-- Branch labels -->
+        <rect x="440" y="130" width="60" height="22" rx="4" fill="rgba(34,197,94,0.12)" stroke="#22c55e" stroke-width="1"/>
+        <text x="470" y="146" fill="#22c55e" text-anchor="middle" font-size="10" font-weight="700">main</text>
+
+        <rect x="570" y="8" width="80" height="22" rx="4" fill="rgba(59,130,246,0.12)" stroke="#3b82f6" stroke-width="1"/>
+        <text x="610" y="24" fill="#3b82f6" text-anchor="middle" font-size="10" font-weight="700">feature/search</text>
+
+        <!-- HEAD label -->
+        <rect x="542" y="56" width="60" height="22" rx="4" fill="rgba(249,115,22,0.12)" stroke="#f97316" stroke-width="1"/>
+        <text x="572" y="72" fill="#f97316" text-anchor="middle" font-size="10" font-weight="700">HEAD</text>
+        <line x1="572" y1="56" x2="614" y2="42" stroke="#f97316" stroke-width="1" stroke-dasharray="3,2"/>
+      </svg>
+      <figcaption>Figure 7 — Two branches diverging from a common commit. <code>main</code> and <code>feature/search</code> are just pointers. HEAD shows the currently checked-out branch.</figcaption>
+    </div>
+
+    <h2>HEAD</h2>
+    <p><code>HEAD</code> is a special pointer that tells Git <em>"you are here."</em> Usually it points to a branch name (like <code>main</code>), and the branch points to a commit. When you make a new commit, the branch pointer moves forward and HEAD moves with it.</p>
+
+    <div class="compare">
+      <div class="compare-box">
+        <h4 style="color:var(--green)">Attached HEAD (normal)</h4>
+        <pre style="margin:0"><code>HEAD → main → f1a2b3</code></pre>
+        <p style="margin-top:10px;font-size:.9rem">You are on a branch. New commits advance the branch.</p>
+      </div>
+      <div class="compare-box">
+        <h4 style="color:var(--red)">Detached HEAD</h4>
+        <pre style="margin:0"><code>HEAD → 789abc (directly)</code></pre>
+        <p style="margin-top:10px;font-size:.9rem">You checked out a specific commit. Any commits you make have no branch — they'll be orphaned if you switch away.</p>
+      </div>
+    </div>
+
+    <div class="callout tse">
+      <div class="callout-icon">🔍</div>
+      <div class="callout-body">
+        <p><strong>TSE scenario:</strong> When you <code>git checkout &lt;commit-SHA&gt;</code> to investigate a specific version, you enter detached HEAD state. That's fine for investigation — just don't commit anything there unless you create a branch first.</p>
+      </div>
+    </div>
+
+    <h2>Merging</h2>
+    <p>Merging brings two branches back together. Git handles this in two ways:</p>
+
+    <h3>Fast-forward merge</h3>
+    <p>If the target branch hasn't diverged, Git simply moves the pointer forward. No new commit is created.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 680 150" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrFF" markerWidth="7" markerHeight="5" refX="0" refY="2.5" orient="auto">
+            <polygon points="7 0, 0 2.5, 7 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Before -->
+        <text x="10" y="20" fill="#94a3b8" font-size="11" font-weight="700">Before:</text>
+        <circle cx="80"  cy="60" r="24" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="80" y="65" fill="#94a3b8" text-anchor="middle" font-size="9">A</text>
+
+        <circle cx="180" cy="60" r="24" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="180" y="65" fill="#94a3b8" text-anchor="middle" font-size="9">B</text>
+
+        <circle cx="280" cy="60" r="24" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+        <text x="280" y="65" fill="#3b82f6" text-anchor="middle" font-size="9">C</text>
+
+        <line x1="156" y1="60" x2="106" y2="60" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrFF)"/>
+        <line x1="256" y1="60" x2="206" y2="60" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrFF)"/>
+
+        <rect x="148" y="30" width="65" height="20" rx="4" fill="rgba(34,197,94,0.12)" stroke="#22c55e" stroke-width="1"/>
+        <text x="180" y="44" fill="#22c55e" text-anchor="middle" font-size="10">main</text>
+
+        <rect x="248" y="30" width="65" height="20" rx="4" fill="rgba(59,130,246,0.12)" stroke="#3b82f6" stroke-width="1"/>
+        <text x="280" y="44" fill="#3b82f6" text-anchor="middle" font-size="10">feature</text>
+
+        <!-- Arrow showing fast forward -->
+        <text x="340" y="65" fill="#22c55e" text-anchor="middle" font-size="18">→</text>
+        <text x="340" y="80" fill="#94a3b8" text-anchor="middle" font-size="9">FF merge</text>
+
+        <!-- After -->
+        <text x="380" y="20" fill="#94a3b8" font-size="11" font-weight="700">After:</text>
+        <circle cx="430" cy="60" r="24" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="430" y="65" fill="#94a3b8" text-anchor="middle" font-size="9">A</text>
+
+        <circle cx="530" cy="60" r="24" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="530" y="65" fill="#94a3b8" text-anchor="middle" font-size="9">B</text>
+
+        <circle cx="630" cy="60" r="24" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+        <text x="630" y="65" fill="#22c55e" text-anchor="middle" font-size="9">C</text>
+
+        <line x1="506" y1="60" x2="456" y2="60" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrFF)"/>
+        <line x1="606" y1="60" x2="556" y2="60" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrFF)"/>
+
+        <rect x="598" y="30" width="65" height="20" rx="4" fill="rgba(34,197,94,0.12)" stroke="#22c55e" stroke-width="1"/>
+        <text x="630" y="44" fill="#22c55e" text-anchor="middle" font-size="10">main</text>
+        <text x="630" y="95" fill="#3b82f6" text-anchor="middle" font-size="9">(feature ptr gone)</text>
+      </svg>
+      <figcaption>Figure 8 — Fast-forward merge: main pointer jumps to the tip of feature. No merge commit created.</figcaption>
+    </div>
+
+    <h3>Three-way merge (merge commit)</h3>
+    <p>When both branches have diverged, Git finds their <strong>common ancestor</strong>, compares both tips to it, and produces a new <strong>merge commit</strong> with two parents.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 680 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrM" markerWidth="7" markerHeight="5" refX="0" refY="2.5" orient="auto">
+            <polygon points="7 0, 0 2.5, 7 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Common ancestor -->
+        <circle cx="100" cy="100" r="26" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="100" y="96"  fill="#94a3b8" text-anchor="middle" font-size="9">A</text>
+        <text x="100" y="112" fill="#94a3b8" text-anchor="middle" font-size="8">common</text>
+
+        <!-- Main branch -->
+        <circle cx="250" cy="60" r="26" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+        <text x="250" y="56"  fill="#22c55e" text-anchor="middle" font-size="9">B</text>
+        <text x="250" y="70"  fill="#94a3b8" text-anchor="middle" font-size="8">main</text>
+
+        <!-- Feature branch -->
+        <circle cx="250" cy="150" r="26" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+        <text x="250" y="146" fill="#3b82f6" text-anchor="middle" font-size="9">C</text>
+        <text x="250" y="162" fill="#94a3b8" text-anchor="middle" font-size="8">feature</text>
+
+        <!-- Merge commit -->
+        <circle cx="420" cy="100" r="28" fill="#1e293b" stroke="#f97316" stroke-width="2.5"/>
+        <text x="420" y="96"  fill="#f97316" text-anchor="middle" font-size="9" font-weight="700">M</text>
+        <text x="420" y="110" fill="#94a3b8" text-anchor="middle" font-size="8">merge</text>
+
+        <!-- Arrows -->
+        <line x1="126" y1="84"  x2="224" y2="66"  stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrM)"/>
+        <line x1="126" y1="116" x2="224" y2="144" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrM)"/>
+        <line x1="394" y1="86"  x2="278" y2="68"  stroke="#f97316" stroke-width="1.5" marker-end="url(#arrM)"/>
+        <line x1="394" y1="115" x2="278" y2="146" stroke="#f97316" stroke-width="1.5" marker-end="url(#arrM)"/>
+
+        <!-- main moves to M -->
+        <rect x="460" y="78" width="55" height="22" rx="4" fill="rgba(34,197,94,0.12)" stroke="#22c55e" stroke-width="1"/>
+        <text x="487" y="94" fill="#22c55e" text-anchor="middle" font-size="10">main</text>
+        <line x1="460" y1="89" x2="450" y2="100" stroke="#22c55e" stroke-width="1.2"/>
+
+        <text x="550" y="70" fill="#94a3b8" font-size="10">Two parents:</text>
+        <text x="550" y="88" fill="#22c55e" font-size="10">• commit B</text>
+        <text x="550" y="104" fill="#3b82f6" font-size="10">• commit C</text>
+      </svg>
+      <figcaption>Figure 9 — Three-way merge creates a merge commit M with two parents. Both lines of history are preserved.</figcaption>
+    </div>
+
+    <h2>Rebasing</h2>
+    <p>Rebase is an alternative to merging that <strong>rewrites history</strong> to make it look linear. It replays your commits on top of another branch, creating new commit SHAs.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 680 220" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrR" markerWidth="7" markerHeight="5" refX="0" refY="2.5" orient="auto">
+            <polygon points="7 0, 0 2.5, 7 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Before label -->
+        <text x="10" y="18" fill="#94a3b8" font-size="11" font-weight="700">Before rebase:</text>
+
+        <!-- Common -->
+        <circle cx="80" cy="60" r="22" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="80" y="65" fill="#94a3b8" text-anchor="middle" font-size="9">A</text>
+
+        <!-- main -->
+        <circle cx="180" cy="40" r="22" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+        <text x="180" y="45" fill="#22c55e" text-anchor="middle" font-size="9">B</text>
+        <text x="180" y="20" fill="#22c55e" text-anchor="middle" font-size="10">main</text>
+
+        <!-- feature -->
+        <circle cx="180" cy="100" r="22" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+        <text x="180" y="105" fill="#3b82f6" text-anchor="middle" font-size="9">C</text>
+
+        <circle cx="280" cy="100" r="22" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+        <text x="280" y="105" fill="#3b82f6" text-anchor="middle" font-size="9">D</text>
+        <text x="280" y="140" fill="#3b82f6" text-anchor="middle" font-size="10">feature</text>
+
+        <line x1="102" y1="52" x2="156" y2="44" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrR)"/>
+        <line x1="102" y1="72" x2="156" y2="96" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrR)"/>
+        <line x1="258" y1="100" x2="204" y2="100" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrR)"/>
+
+        <!-- Arrow -->
+        <text x="350" y="80" fill="#f97316" text-anchor="middle" font-size="20">→</text>
+        <text x="350" y="98" fill="#94a3b8" text-anchor="middle" font-size="9">git rebase main</text>
+        <text x="350" y="110" fill="#94a3b8" text-anchor="middle" font-size="9">(on feature branch)</text>
+
+        <!-- After label -->
+        <text x="390" y="18" fill="#94a3b8" font-size="11" font-weight="700">After rebase:</text>
+
+        <!-- Common -->
+        <circle cx="430" cy="80" r="22" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="430" y="85" fill="#94a3b8" text-anchor="middle" font-size="9">A</text>
+
+        <!-- main / B -->
+        <circle cx="510" cy="80" r="22" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+        <text x="510" y="85" fill="#22c55e" text-anchor="middle" font-size="9">B</text>
+        <text x="510" y="58" fill="#22c55e" text-anchor="middle" font-size="10">main</text>
+
+        <!-- Rebased C' D' -->
+        <circle cx="590" cy="80" r="22" fill="#1e293b" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4,2"/>
+        <text x="590" y="85" fill="#3b82f6" text-anchor="middle" font-size="9">C'</text>
+
+        <circle cx="660" cy="80" r="22" fill="#1e293b" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4,2"/>
+        <text x="660" y="85" fill="#3b82f6" text-anchor="middle" font-size="9">D'</text>
+        <text x="660" y="58" fill="#3b82f6" text-anchor="middle" font-size="10">feature</text>
+
+        <line x1="452" y1="80" x2="486" y2="80" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrR)"/>
+        <line x1="534" y1="80" x2="566" y2="80" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arrR)"/>
+        <line x1="614" y1="80" x2="636" y2="80" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arrR)"/>
+
+        <!-- Note -->
+        <text x="590" y="115" fill="#eab308" text-anchor="middle" font-size="9">new SHAs!</text>
+        <text x="660" y="115" fill="#eab308" text-anchor="middle" font-size="9">new SHAs!</text>
+
+        <!-- Warning -->
+        <rect x="390" y="155" width="280" height="44" rx="6" fill="rgba(234,179,8,0.08)" stroke="#eab308" stroke-width="1"/>
+        <text x="530" y="174" fill="#eab308" text-anchor="middle" font-size="10" font-weight="700">⚠ Rebase rewrites history (new SHAs)</text>
+        <text x="530" y="190" fill="#94a3b8" text-anchor="middle" font-size="10">Never rebase commits already pushed to shared branches</text>
+      </svg>
+      <figcaption>Figure 10 — Rebase replays your commits on top of main, producing a linear history. The original commits are discarded (C→C', D→D' with new SHAs).</figcaption>
+    </div>
+
+    <div class="compare">
+      <div class="compare-box">
+        <h4 style="color:var(--green)">Merge</h4>
+        <ul style="font-size:.9rem">
+          <li>Preserves full history including branch topology</li>
+          <li>Creates a merge commit (extra node)</li>
+          <li>Safe on public/shared branches</li>
+          <li><code>git merge feature</code></li>
+        </ul>
+      </div>
+      <div class="compare-box">
+        <h4 style="color:var(--blue)">Rebase</h4>
+        <ul style="font-size:.9rem">
+          <li>Creates a linear, cleaner-looking history</li>
+          <li>No merge commit</li>
+          <li><strong>Rewrites SHAs</strong> — avoid on shared branches</li>
+          <li><code>git rebase main</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>Tags</h2>
+    <p>Tags are named references to specific commits, typically used to mark <strong>release versions</strong>. Unlike branches, tags don't move when new commits are added.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Command</th><th>What it stores</th><th>Use case</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Lightweight tag</strong></td>
+            <td><code>git tag v1.0</code></td>
+            <td>Just a pointer (like a branch)</td>
+            <td>Quick local markers</td>
+          </tr>
+          <tr>
+            <td><strong>Annotated tag</strong></td>
+            <td><code>git tag -a v1.0 -m "Release 1.0"</code></td>
+            <td>Full object: tagger, date, message, GPG signature</td>
+            <td>Official releases — <strong>always use this</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <pre><code><span class="comment"># List all tags</span>
+<span class="cmd">git</span> <span class="arg">tag</span>
+
+<span class="comment"># See commit behind a tag</span>
+<span class="cmd">git</span> <span class="arg">show</span> v1.0
+
+<span class="comment"># Check out the state of code at a release tag</span>
+<span class="cmd">git</span> <span class="arg">checkout</span> v1.0
+
+<span class="comment"># Push tags to GitHub (not pushed automatically with git push)</span>
+<span class="cmd">git</span> <span class="arg">push</span> origin <span class="flag">--tags</span>
+</code></pre>
+
+    <div class="callout tse">
+      <div class="callout-icon">🔍</div>
+      <div class="callout-body">
+        <p><strong>TSE Tip:</strong> When a customer reports "it worked in v2.3.1 but broke in v2.4.0," use <code>git checkout v2.3.1</code> to reproduce the working state and <code>git log v2.3.1..v2.4.0 --oneline</code> to see every commit between the two releases.</p>
+      </div>
+    </div>
+
+    <h2>Remote tracking branches</h2>
+    <p>When you clone a repo, Git creates <strong>remote-tracking references</strong> like <code>origin/main</code>. These are read-only snapshots of what the remote looked like last time you communicated with it.</p>
+
+    <pre><code><span class="comment"># See all local + remote branches</span>
+<span class="cmd">git</span> <span class="arg">branch</span> <span class="flag">-a</span>
+<span class="output">  main
+  feature/login
+* remotes/origin/main
+  remotes/origin/feature/login
+  remotes/origin/bugfix/crash</span>
+
+<span class="comment"># Update remote-tracking refs without merging</span>
+<span class="cmd">git</span> <span class="arg">fetch</span> origin
+
+<span class="comment"># Fetch + merge in one step</span>
+<span class="cmd">git</span> <span class="arg">pull</span> origin main
+</code></pre>
+
+    <div class="page-nav">
+      <a href="01-fundamentals.html">
+        <span class="nav-label">← Previous</span>
+        <span class="nav-title">1. Git Fundamentals</span>
+      </a>
+      <a href="03-commands.html" class="nav-next">
+        <span class="nav-label">Next →</span>
+        <span class="nav-title">3. Essential Commands</span>
+      </a>
+    </div>
+  </main>
+</div>
+</body>
+</html>

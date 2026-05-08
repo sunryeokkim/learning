@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TSE Workflows — Git Crash Course</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="page-wrapper">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>Git Crash Course</h2>
+      <p>For Technical Support Engineers</p>
+    </div>
+    <nav>
+      <div class="sidebar-section-label">Foundations</div>
+      <a href="index.html"><span class="icon">🏠</span> Overview</a>
+      <a href="01-fundamentals.html"><span class="icon">📖</span> 1. Git Fundamentals</a>
+      <a href="02-core-concepts.html"><span class="icon">🧠</span> 2. Core Concepts</a>
+      <a href="03-commands.html"><span class="icon">⌨️</span> 3. Essential Commands</a>
+      <div class="sidebar-section-label">GitHub</div>
+      <a href="04-github.html"><span class="icon">🐙</span> 4. GitHub Features</a>
+      <a href="05-branching.html"><span class="icon">🌿</span> 5. Branching Strategies</a>
+      <div class="sidebar-section-label">TSE Focus</div>
+      <a href="06-tse-workflows.html" class="active"><span class="icon">🔍</span> 6. TSE Workflows</a>
+      <a href="07-dev-perspective.html"><span class="icon">🚀</span> 7. Dev Perspective</a>
+      <a href="08-troubleshooting.html"><span class="icon">🛠️</span> 8. Troubleshooting</a>
+    </nav>
+  </div>
+
+  <main class="main-content">
+    <div class="page-title">
+      <div class="badge">Section 6</div>
+      <h1>TSE Workflows</h1>
+      <p>Hands-on playbooks for the most common Git tasks you'll face investigating support tickets.</p>
+    </div>
+
+    <!-- ===== WORKFLOW 1 ===== -->
+    <h2>Workflow 1: Reproducing a bug at a specific version</h2>
+    <p>Customer says: <em>"It was working on v2.3.1 but broke in v2.4.0."</em></p>
+
+    <ol class="step-list">
+      <li>
+        <span class="step-num">1</span>
+        <div>
+          <strong>Clone the repo (shallow to save time)</strong>
+          <pre><code><span class="cmd">git</span> <span class="arg">clone</span> <span class="flag">--filter=blob:none</span> https://github.com/org/repo.git
+<span class="cmd">cd</span> repo</code></pre>
+        </div>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <div>
+          <strong>List available release tags to confirm versions exist</strong>
+          <pre><code><span class="cmd">git</span> <span class="arg">tag</span> <span class="flag">--sort=-version:refname</span> <span class="flag">| head -20</span>
+<span class="output">v2.4.1
+v2.4.0
+v2.3.2
+v2.3.1   ← working version
+v2.3.0</span></code></pre>
+        </div>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <div>
+          <strong>Check out the broken version</strong>
+          <pre><code><span class="cmd">git</span> <span class="arg">checkout</span> v2.4.0
+<span class="comment"># You are in 'detached HEAD' state — that's fine for investigation</span></code></pre>
+        </div>
+      </li>
+      <li>
+        <span class="step-num">4</span>
+        <div>
+          <strong>Reproduce the bug, then switch to the working version</strong>
+          <pre><code><span class="cmd">git</span> <span class="arg">checkout</span> v2.3.1
+<span class="comment"># Verify the bug is absent here</span></code></pre>
+        </div>
+      </li>
+      <li>
+        <span class="step-num">5</span>
+        <div>
+          <strong>See what changed between versions</strong>
+          <pre><code><span class="comment"># All commit messages between v2.3.1 and v2.4.0</span>
+<span class="cmd">git</span> <span class="arg">log</span> v2.3.1..v2.4.0 <span class="flag">--oneline</span>
+
+<span class="comment"># Only commits that touched the suspected file</span>
+<span class="cmd">git</span> <span class="arg">log</span> v2.3.1..v2.4.0 <span class="flag">--oneline</span> -- src/auth/token.py
+
+<span class="comment"># Full diff between the two releases</span>
+<span class="cmd">git</span> <span class="arg">diff</span> v2.3.1 v2.4.0 -- src/auth/token.py</code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <!-- ===== WORKFLOW 2 ===== -->
+    <h2>Workflow 2: Finding the commit that introduced a bug (git bisect)</h2>
+    <p><code>git bisect</code> uses binary search to find the exact commit that introduced a regression. You only need to know a "good" commit and a "bad" one — Git does the rest.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 680 110" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="bisArr" markerWidth="7" markerHeight="5" refX="0" refY="2.5" orient="auto">
+            <polygon points="7 0, 0 2.5, 7 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Commit timeline -->
+        <line x1="40" y1="55" x2="660" y2="55" stroke="#334155" stroke-width="1.5"/>
+
+        <circle cx="80"  cy="55" r="10" fill="#22c55e"/>
+        <circle cx="170" cy="55" r="10" fill="#22c55e"/>
+        <circle cx="260" cy="55" r="10" fill="#22c55e"/>
+        <circle cx="350" cy="55" r="10" fill="#eab308"/>
+        <circle cx="440" cy="55" r="10" fill="#ef4444"/>
+        <circle cx="530" cy="55" r="10" fill="#ef4444"/>
+        <circle cx="620" cy="55" r="10" fill="#ef4444"/>
+
+        <text x="80"  y="80" fill="#22c55e" text-anchor="middle" font-size="9">good</text>
+        <text x="170" y="80" fill="#22c55e" text-anchor="middle" font-size="9">good</text>
+        <text x="260" y="80" fill="#22c55e" text-anchor="middle" font-size="9">good</text>
+        <text x="350" y="80" fill="#f97316" text-anchor="middle" font-size="9" font-weight="700">← BUG INTRODUCED</text>
+        <text x="440" y="80" fill="#ef4444" text-anchor="middle" font-size="9">bad</text>
+        <text x="530" y="80" fill="#ef4444" text-anchor="middle" font-size="9">bad</text>
+        <text x="620" y="80" fill="#ef4444" text-anchor="middle" font-size="9">bad (HEAD)</text>
+
+        <!-- Bisect steps -->
+        <line x1="350" y1="30" x2="350" y2="43" stroke="#f97316" stroke-width="1.5" marker-end="url(#bisArr)"/>
+        <text x="350" y="22" fill="#f97316" text-anchor="middle" font-size="10">git bisect identifies this in ~3 steps (log₂ 7 ≈ 3)</text>
+      </svg>
+      <figcaption>Figure 17 — git bisect binary-searches a range of commits. With 100 commits, it finds the culprit in ≤7 steps.</figcaption>
+    </div>
+
+    <pre><code><span class="comment"># Start bisect session</span>
+<span class="cmd">git</span> <span class="arg">bisect</span> start
+
+<span class="comment"># Mark current HEAD as bad (the bug exists here)</span>
+<span class="cmd">git</span> <span class="arg">bisect</span> bad
+
+<span class="comment"># Mark a known-good commit or tag</span>
+<span class="cmd">git</span> <span class="arg">bisect</span> good v2.3.1
+
+<span class="output">Bisecting: 23 revisions left to test (roughly 5 steps)
+[abc1234] feat: add caching layer</span>
+
+<span class="comment"># Git checks out a midpoint. Run your test / reproduce the bug.</span>
+<span class="comment"># If bug is present:</span>
+<span class="cmd">git</span> <span class="arg">bisect</span> bad
+
+<span class="comment"># If bug is absent:</span>
+<span class="cmd">git</span> <span class="arg">bisect</span> good
+
+<span class="comment"># Repeat until Git announces the culprit:</span>
+<span class="output">f1e2d3 is the first bad commit
+Author: Bob &lt;bob@example.com&gt;
+Date: Mon Mar 4 14:22:31 2024
+    feat: refactor token validation</span>
+
+<span class="comment"># End the session (returns to HEAD)</span>
+<span class="cmd">git</span> <span class="arg">bisect</span> reset
+
+<span class="comment"># Automate with a test script (exits 0 = good, non-zero = bad)</span>
+<span class="cmd">git</span> <span class="arg">bisect</span> run pytest tests/test_auth.py
+</code></pre>
+
+    <!-- ===== WORKFLOW 3 ===== -->
+    <h2>Workflow 3: Tracing a code change (git blame + log)</h2>
+    <p>Customer asks: <em>"Who changed the timeout value and why?"</em></p>
+
+    <pre><code><span class="comment"># Find which commit last touched a specific line</span>
+<span class="cmd">git</span> <span class="arg">blame</span> src/config.py
+<span class="output">^a1b2c3 (Alice 2024-01-10 09:00) TIMEOUT = 30
+ f7e8d9 (Bob   2024-03-15 14:30) MAX_RETRIES = 5   ← changed by Bob on Mar 15</span>
+
+<span class="comment"># Inspect that specific commit</span>
+<span class="cmd">git</span> <span class="arg">show</span> f7e8d9
+<span class="output">commit f7e8d9...
+Author: Bob &lt;bob@example.com&gt;
+Date:   Fri Mar 15 14:30:00 2024
+
+    fix: reduce retries to avoid cascade failures
+
+    Prior to this change MAX_RETRIES=10 caused thundering-herd
+    under high load. Reducing to 5 per discussion with SRE team.
+
+diff --git a/src/config.py b/src/config.py
+-MAX_RETRIES = 10
++MAX_RETRIES = 5</span>
+
+<span class="comment"># Find the PR that merged this commit (GitHub: search by SHA)</span>
+<span class="comment"># Or use git log to find nearby merge commits</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--merges</span> <span class="flag">--ancestry-path</span> f7e8d9..HEAD <span class="flag">--oneline | head -3</span>
+</code></pre>
+
+    <!-- ===== WORKFLOW 4 ===== -->
+    <h2>Workflow 4: Investigating a recent deployment</h2>
+    <p>An alert fires 10 minutes after a deploy. Find what changed.</p>
+
+    <pre><code><span class="comment"># Find commits in the last 24 hours on main</span>
+<span class="cmd">git</span> <span class="arg">log</span> origin/main <span class="flag">--since="24 hours ago"</span> <span class="flag">--oneline</span>
+
+<span class="comment"># Find commits between two deploy timestamps</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--after="2024-03-15 14:00"</span> <span class="flag">--before="2024-03-15 15:30"</span> <span class="flag">--oneline</span>
+
+<span class="comment"># Find which files changed in the last deploy</span>
+<span class="cmd">git</span> <span class="arg">diff</span> <span class="flag">--name-only</span> HEAD~5..HEAD
+
+<span class="comment"># Quick summary of what changed (number of changes per file)</span>
+<span class="cmd">git</span> <span class="arg">diff</span> <span class="flag">--stat</span> HEAD~5..HEAD
+<span class="output"> src/api/handler.go    | 42 ++++++++++--
+ src/config/timeout.go |  8 ++--
+ go.sum                |  2 +-
+ 3 files changed, 47 insertions(+), 5 deletions(-)</span>
+</code></pre>
+
+    <!-- ===== WORKFLOW 5 ===== -->
+    <h2>Workflow 5: Checking if a fix is included in a release</h2>
+    <p>Customer asks: <em>"Is fix #4521 in version 2.6.0?"</em></p>
+
+    <pre><code><span class="comment"># Method 1: check if the commit SHA is an ancestor of the tag</span>
+<span class="cmd">git</span> <span class="arg">merge-base</span> <span class="flag">--is-ancestor</span> abc1234 v2.6.0 && echo "YES, included" || echo "NOT included"
+
+<span class="comment"># Method 2: search log between tags</span>
+<span class="cmd">git</span> <span class="arg">log</span> v2.5.0..v2.6.0 <span class="flag">--oneline --grep</span>=<span class="arg">"fix #4521"</span>
+
+<span class="comment"># Method 3: check which tags contain the commit</span>
+<span class="cmd">git</span> <span class="arg">tag</span> <span class="flag">--contains</span> abc1234
+<span class="output">v2.6.0
+v2.6.1
+v2.7.0</span>
+
+<span class="comment"># Method 4: find the earliest tag containing the commit</span>
+<span class="cmd">git</span> <span class="arg">tag</span> <span class="flag">--contains</span> abc1234 <span class="flag">--sort=version:refname | head -1</span>
+<span class="output">v2.6.0    ← first release that includes this fix</span>
+</code></pre>
+
+    <!-- ===== WORKFLOW 6 ===== -->
+    <h2>Workflow 6: Understanding the repo structure quickly</h2>
+    <p>You just cloned an unfamiliar repo. Orient yourself fast.</p>
+
+    <pre><code><span class="comment"># See recent activity — who's been working on what</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--oneline --all --since="30 days ago"</span>
+
+<span class="comment"># List all branches (local + remote)</span>
+<span class="cmd">git</span> <span class="arg">branch</span> <span class="flag">-a</span>
+
+<span class="comment"># Visualize branch topology</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--oneline --graph --all --decorate</span>
+
+<span class="comment"># List all tags (releases)</span>
+<span class="cmd">git</span> <span class="arg">tag</span> <span class="flag">--sort=-version:refname | head -10</span>
+
+<span class="comment"># See the most frequently changed files (active hotspots)</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--name-only --format=""</span> | sort | uniq -c | sort -rn | head -20
+
+<span class="comment"># List contributors</span>
+<span class="cmd">git</span> <span class="arg">shortlog</span> <span class="flag">-sn --all</span>
+<span class="output">   452  Alice Smith
+   289  Bob Jones
+    98  Carol Williams</span>
+</code></pre>
+
+    <!-- ===== WORKFLOW 7 ===== -->
+    <h2>Workflow 7: Working with a customer's fork or private repo</h2>
+    <p>When a customer shares a private GitHub repo or their own fork:</p>
+
+    <pre><code><span class="comment"># Clone their repo directly</span>
+<span class="cmd">git</span> <span class="arg">clone</span> https://github.com/customer/their-fork.git
+
+<span class="comment"># Add their remote alongside the original upstream</span>
+<span class="cmd">git</span> <span class="arg">remote</span> add customer https://github.com/customer/their-fork.git
+<span class="cmd">git</span> <span class="arg">fetch</span> customer
+
+<span class="comment"># See differences between upstream and customer's version</span>
+<span class="cmd">git</span> <span class="arg">log</span> origin/main..customer/main <span class="flag">--oneline</span>
+<span class="comment"># ^ commits in customer's fork NOT in upstream</span>
+
+<span class="comment"># Compare a specific file</span>
+<span class="cmd">git</span> <span class="arg">diff</span> origin/main customer/main -- path/to/config.yaml
+</code></pre>
+
+    <!-- ===== WORKFLOW 8 ===== -->
+    <h2>Workflow 8: Cherry-picking a fix to test</h2>
+    <p>A fix was merged to main but the customer is on an older release. You want to test if the fix works for them.</p>
+
+    <pre><code><span class="comment"># Check out the customer's version</span>
+<span class="cmd">git</span> <span class="arg">checkout</span> <span class="flag">-b</span> test/backport-fix v2.3.1
+
+<span class="comment"># Apply just the fix commit on top</span>
+<span class="cmd">git</span> <span class="arg">cherry-pick</span> f1a2b3
+
+<span class="comment"># If conflicts arise, resolve them and continue</span>
+<span class="cmd">git</span> <span class="arg">cherry-pick</span> <span class="flag">--continue</span>
+
+<span class="comment"># Verify the fix works, then clean up</span>
+<span class="cmd">git</span> <span class="arg">checkout</span> main
+<span class="cmd">git</span> <span class="arg">branch</span> <span class="flag">-D</span> test/backport-fix
+</code></pre>
+
+    <div class="callout tse">
+      <div class="callout-icon">🔍</div>
+      <div class="callout-body">
+        <p><strong>Communication tip:</strong> When you find a fix commit via <code>git bisect</code> or <code>git blame</code>, always check the linked GitHub PR. The PR description usually explains the full context, links to the bug, and shows the discussion — all of which helps write a much better ticket response.</p>
+      </div>
+    </div>
+
+    <h2>Quick investigation cheat sheet</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Question</th><th>Command</th></tr></thead>
+        <tbody>
+          <tr><td>What changed between v2.3 and v2.4?</td><td><code>git log v2.3..v2.4 --oneline</code></td></tr>
+          <tr><td>Which files changed between versions?</td><td><code>git diff --name-only v2.3 v2.4</code></td></tr>
+          <tr><td>Who wrote this line of code?</td><td><code>git blame -L 42,42 file.py</code></td></tr>
+          <tr><td>What did commit abc1234 change?</td><td><code>git show abc1234</code></td></tr>
+          <tr><td>Which version first included a commit?</td><td><code>git tag --contains abc1234 | head -1</code></td></tr>
+          <tr><td>Which commit introduced a bug?</td><td><code>git bisect start / good / bad</code></td></tr>
+          <tr><td>What was deployed in the last hour?</td><td><code>git log --since="1 hour ago" --oneline</code></td></tr>
+          <tr><td>What's the diff between my code and upstream?</td><td><code>git diff upstream/main...HEAD</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="page-nav">
+      <a href="05-branching.html">
+        <span class="nav-label">← Previous</span>
+        <span class="nav-title">5. Branching Strategies</span>
+      </a>
+      <a href="07-dev-perspective.html" class="nav-next">
+        <span class="nav-label">Next →</span>
+        <span class="nav-title">7. Dev Perspective</span>
+      </a>
+    </div>
+  </main>
+</div>
+</body>
+</html>

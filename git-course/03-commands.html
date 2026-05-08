@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Essential Commands — Git Crash Course</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="page-wrapper">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>Git Crash Course</h2>
+      <p>For Technical Support Engineers</p>
+    </div>
+    <nav>
+      <div class="sidebar-section-label">Foundations</div>
+      <a href="index.html"><span class="icon">🏠</span> Overview</a>
+      <a href="01-fundamentals.html"><span class="icon">📖</span> 1. Git Fundamentals</a>
+      <a href="02-core-concepts.html"><span class="icon">🧠</span> 2. Core Concepts</a>
+      <a href="03-commands.html" class="active"><span class="icon">⌨️</span> 3. Essential Commands</a>
+      <div class="sidebar-section-label">GitHub</div>
+      <a href="04-github.html"><span class="icon">🐙</span> 4. GitHub Features</a>
+      <a href="05-branching.html"><span class="icon">🌿</span> 5. Branching Strategies</a>
+      <div class="sidebar-section-label">TSE Focus</div>
+      <a href="06-tse-workflows.html"><span class="icon">🔍</span> 6. TSE Workflows</a>
+      <a href="07-dev-perspective.html"><span class="icon">🚀</span> 7. Dev Perspective</a>
+      <a href="08-troubleshooting.html"><span class="icon">🛠️</span> 8. Troubleshooting</a>
+    </nav>
+  </div>
+
+  <main class="main-content">
+    <div class="page-title">
+      <div class="badge">Section 3</div>
+      <h1>Essential Commands</h1>
+      <p>The 20 commands you will use 90% of the time. Each includes real-world context and common flags.</p>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <p>Run <code>git &lt;command&gt; --help</code> at any time to open the full manual page for any command. For a quick summary: <code>git &lt;command&gt; -h</code>.</p>
+      </div>
+    </div>
+
+    <!-- ===== SETUP & INIT ===== -->
+    <h2>Setup &amp; Initialization</h2>
+
+    <h3>git init</h3>
+    <p>Creates a new repository in the current directory (adds a <code>.git/</code> folder).</p>
+    <pre><code><span class="cmd">git</span> <span class="arg">init</span>
+<span class="cmd">git</span> <span class="arg">init</span> my-project    <span class="comment"># creates a subdirectory</span>
+</code></pre>
+
+    <h3>git clone</h3>
+    <p>Downloads a full copy of a remote repository, including all history.</p>
+    <pre><code><span class="comment"># Clone from GitHub (HTTPS)</span>
+<span class="cmd">git</span> <span class="arg">clone</span> https://github.com/org/repo.git
+
+<span class="comment"># Clone to a specific folder name</span>
+<span class="cmd">git</span> <span class="arg">clone</span> https://github.com/org/repo.git my-local-name
+
+<span class="comment"># Shallow clone — only the last N commits (faster for large repos)</span>
+<span class="cmd">git</span> <span class="arg">clone</span> <span class="flag">--depth</span> 1 https://github.com/org/repo.git
+
+<span class="comment"># Clone a specific branch</span>
+<span class="cmd">git</span> <span class="arg">clone</span> <span class="flag">-b</span> release/2.4 https://github.com/org/repo.git
+</code></pre>
+
+    <div class="callout tse">
+      <div class="callout-icon">🔍</div>
+      <div class="callout-body">
+        <p><strong>TSE use:</strong> You will clone repos constantly — to reproduce bugs, inspect configs, or run tests at a specific version. Prefer shallow clones (<code>--depth 1</code>) on large repos when you only need the current state.</p>
+      </div>
+    </div>
+
+    <!-- ===== STATUS ===== -->
+    <h2>Inspecting State</h2>
+
+    <h3>git status</h3>
+    <p>Shows the state of your working directory and staging area. Your first command after any change.</p>
+    <pre><code><span class="cmd">git</span> <span class="arg">status</span>
+<span class="output">On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes to be committed:
+  (use "git restore --staged &lt;file&gt;..." to unstage)
+        modified:   app.py
+
+Changes not staged for commit:
+  (use "git add &lt;file&gt;..." to update what will be committed)
+        modified:   utils.py
+
+Untracked files:
+  (use "git add &lt;file&gt;..." to include in what will be committed)
+        new_feature.py</span>
+
+<span class="cmd">git</span> <span class="arg">status</span> <span class="flag">-s</span>   <span class="comment"># short format</span>
+<span class="output">M  app.py
+ M utils.py
+?? new_feature.py</span>
+</code></pre>
+
+    <h3>git log</h3>
+    <p>Shows commit history. This is one of the most powerful investigation tools.</p>
+    <pre><code><span class="comment"># Standard log</span>
+<span class="cmd">git</span> <span class="arg">log</span>
+
+<span class="comment"># Compact one-line per commit</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--oneline</span>
+<span class="output">f1a2b3 (HEAD -> main) fix: null pointer in login flow
+789abc feat: add search endpoint
+d4e5f6 feat: user auth</span>
+
+<span class="comment"># Graph view — shows branches and merges visually</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--oneline --graph --all</span>
+<span class="output">* f1a2b3 (main) hotfix
+| * cc1122 (feature/search) feat: search UI
+| * dd3344 feat: search API
+|/
+* 789abc fix crash</span>
+
+<span class="comment"># Filter: commits by a specific author</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--author</span>=<span class="arg">"Alice"</span>
+
+<span class="comment"># Filter: commits touching a specific file</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--follow</span> -- path/to/file.py
+
+<span class="comment"># Filter: commits between two tags</span>
+<span class="cmd">git</span> <span class="arg">log</span> v2.3.0..v2.4.0 <span class="flag">--oneline</span>
+
+<span class="comment"># Show what changed in each commit (patch format)</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">-p</span>
+
+<span class="comment"># Show stats (lines changed per file)</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--stat</span>
+</code></pre>
+
+    <h3>git diff</h3>
+    <p>Shows the actual changes between states.</p>
+    <pre><code><span class="comment"># Working directory vs staging area (unstaged changes)</span>
+<span class="cmd">git</span> <span class="arg">diff</span>
+
+<span class="comment"># Staging area vs last commit (what's about to be committed)</span>
+<span class="cmd">git</span> <span class="arg">diff</span> <span class="flag">--staged</span>
+
+<span class="comment"># Between two commits</span>
+<span class="cmd">git</span> <span class="arg">diff</span> abc1234 def5678
+
+<span class="comment"># Between two branches</span>
+<span class="cmd">git</span> <span class="arg">diff</span> main..feature/search
+
+<span class="comment"># Only show changed file names (not the actual diff)</span>
+<span class="cmd">git</span> <span class="arg">diff</span> <span class="flag">--name-only</span> v2.3.0..v2.4.0
+</code></pre>
+
+    <h3>git show</h3>
+    <p>Shows details of a specific commit — author, date, message, and diff.</p>
+    <pre><code><span class="cmd">git</span> <span class="arg">show</span> f1a2b3
+<span class="cmd">git</span> <span class="arg">show</span> HEAD            <span class="comment"># current commit</span>
+<span class="cmd">git</span> <span class="arg">show</span> HEAD~2           <span class="comment"># 2 commits back</span>
+<span class="cmd">git</span> <span class="arg">show</span> v2.4.0          <span class="comment"># a tag</span>
+<span class="cmd">git</span> <span class="arg">show</span> HEAD:path/to/file.py  <span class="comment"># view a file at HEAD</span>
+</code></pre>
+
+    <h3>git blame</h3>
+    <p>Shows who last changed each line of a file and in which commit.</p>
+    <pre><code><span class="cmd">git</span> <span class="arg">blame</span> app.py
+<span class="output">^a1b2c3 (Alice 2024-01-10) def authenticate(user):</span>
+<span class="output"> d4e5f6 (Bob   2024-02-15)     token = generate_token(user)</span>
+<span class="output"> 789abc (Carol 2024-03-01)     if token is None:</span>
+
+<span class="comment"># Show only lines 20-40</span>
+<span class="cmd">git</span> <span class="arg">blame</span> <span class="flag">-L</span> 20,40 app.py
+
+<span class="comment"># Ignore whitespace changes</span>
+<span class="cmd">git</span> <span class="arg">blame</span> <span class="flag">-w</span> app.py
+</code></pre>
+
+    <!-- ===== STAGING ===== -->
+    <h2>Staging &amp; Committing</h2>
+
+    <h3>git add</h3>
+    <pre><code><span class="comment"># Stage a specific file</span>
+<span class="cmd">git</span> <span class="arg">add</span> app.py
+
+<span class="comment"># Stage all changes in current directory</span>
+<span class="cmd">git</span> <span class="arg">add</span> .
+
+<span class="comment"># Stage parts of a file interactively (hunk-by-hunk)</span>
+<span class="cmd">git</span> <span class="arg">add</span> <span class="flag">-p</span> app.py
+</code></pre>
+
+    <h3>git commit</h3>
+    <pre><code><span class="comment"># Opens your configured editor for the message</span>
+<span class="cmd">git</span> <span class="arg">commit</span>
+
+<span class="comment"># Inline message</span>
+<span class="cmd">git</span> <span class="arg">commit</span> <span class="flag">-m</span> <span class="arg">"fix: handle null token in auth flow"</span>
+
+<span class="comment"># Stage all tracked files AND commit in one step</span>
+<span class="cmd">git</span> <span class="arg">commit</span> <span class="flag">-am</span> <span class="arg">"fix: handle null token"</span>
+
+<span class="comment"># Amend the last commit (message or content) — only before pushing!</span>
+<span class="cmd">git</span> <span class="arg">commit</span> <span class="flag">--amend</span>
+</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <p><strong>Conventional Commits:</strong> Many teams use <code>type: description</code> format — e.g. <code>fix: null pointer</code>, <code>feat: add login</code>, <code>docs: update README</code>, <code>chore: bump deps</code>. This powers automated changelogs and semantic versioning.</p>
+      </div>
+    </div>
+
+    <!-- ===== BRANCHING ===== -->
+    <h2>Branching</h2>
+
+    <h3>git branch / git checkout / git switch</h3>
+    <pre><code><span class="comment"># List local branches (* = current)</span>
+<span class="cmd">git</span> <span class="arg">branch</span>
+
+<span class="comment"># Create a new branch</span>
+<span class="cmd">git</span> <span class="arg">branch</span> feature/my-feature
+
+<span class="comment"># Switch to a branch</span>
+<span class="cmd">git</span> <span class="arg">switch</span> feature/my-feature   <span class="comment"># modern syntax</span>
+<span class="cmd">git</span> <span class="arg">checkout</span> feature/my-feature  <span class="comment"># classic syntax</span>
+
+<span class="comment"># Create AND switch in one step</span>
+<span class="cmd">git</span> <span class="arg">switch</span> <span class="flag">-c</span> feature/new-branch
+<span class="cmd">git</span> <span class="arg">checkout</span> <span class="flag">-b</span> feature/new-branch  <span class="comment"># classic</span>
+
+<span class="comment"># Delete a merged branch</span>
+<span class="cmd">git</span> <span class="arg">branch</span> <span class="flag">-d</span> feature/done
+
+<span class="comment"># Force-delete an unmerged branch</span>
+<span class="cmd">git</span> <span class="arg">branch</span> <span class="flag">-D</span> feature/abandoned
+</code></pre>
+
+    <!-- ===== REMOTE ===== -->
+    <h2>Working with Remotes</h2>
+
+    <h3>git remote</h3>
+    <pre><code><span class="comment"># List remotes</span>
+<span class="cmd">git</span> <span class="arg">remote</span> <span class="flag">-v</span>
+<span class="output">origin  https://github.com/org/repo.git (fetch)
+origin  https://github.com/org/repo.git (push)</span>
+
+<span class="comment"># Add a remote (useful when working with forks)</span>
+<span class="cmd">git</span> <span class="arg">remote</span> add upstream https://github.com/original-org/repo.git
+</code></pre>
+
+    <h3>git fetch / git pull / git push</h3>
+    <pre><code><span class="comment"># Fetch: download remote changes without merging</span>
+<span class="cmd">git</span> <span class="arg">fetch</span> origin
+
+<span class="comment"># Pull: fetch + merge (or rebase with --rebase)</span>
+<span class="cmd">git</span> <span class="arg">pull</span> origin main
+<span class="cmd">git</span> <span class="arg">pull</span> <span class="flag">--rebase</span> origin main
+
+<span class="comment"># Push your local branch to the remote</span>
+<span class="cmd">git</span> <span class="arg">push</span> origin feature/my-feature
+
+<span class="comment"># Set upstream and push in one step (first push only)</span>
+<span class="cmd">git</span> <span class="arg">push</span> <span class="flag">-u</span> origin feature/my-feature
+
+<span class="comment"># Delete a remote branch</span>
+<span class="cmd">git</span> <span class="arg">push</span> origin <span class="flag">--delete</span> feature/old-branch
+</code></pre>
+
+    <!-- ===== UNDO ===== -->
+    <h2>Undoing Things</h2>
+    <div class="callout warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <p>Some undo operations are <strong>destructive</strong>. When in doubt, create a backup branch first: <code>git branch backup-$(date +%s)</code></p>
+      </div>
+    </div>
+
+    <h3>git restore</h3>
+    <pre><code><span class="comment"># Discard changes in working directory (irreversible!)</span>
+<span class="cmd">git</span> <span class="arg">restore</span> app.py
+
+<span class="comment"># Unstage a file (keep working-dir changes)</span>
+<span class="cmd">git</span> <span class="arg">restore</span> <span class="flag">--staged</span> app.py
+
+<span class="comment"># Restore a file to its state at a specific commit</span>
+<span class="cmd">git</span> <span class="arg">restore</span> <span class="flag">--source</span> abc1234 app.py
+</code></pre>
+
+    <h3>git revert</h3>
+    <p>Creates a <em>new commit</em> that undoes a previous commit. Safe to use on shared branches.</p>
+    <pre><code><span class="comment"># Revert a specific commit by adding an inverse commit</span>
+<span class="cmd">git</span> <span class="arg">revert</span> abc1234
+
+<span class="comment"># Revert without immediately committing (let you edit the message)</span>
+<span class="cmd">git</span> <span class="arg">revert</span> <span class="flag">--no-commit</span> abc1234
+</code></pre>
+
+    <h3>git reset</h3>
+    <p>Moves the branch pointer backward. Modes control what happens to your changes:</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Mode</th><th>Staging area</th><th>Working dir</th><th>Use case</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>--soft</code></td>
+            <td>Keeps changes staged</td>
+            <td>Unchanged</td>
+            <td>Undo commit, re-edit message</td>
+          </tr>
+          <tr>
+            <td><code>--mixed</code> (default)</td>
+            <td>Unstages changes</td>
+            <td>Unchanged</td>
+            <td>Undo commit, re-stage selectively</td>
+          </tr>
+          <tr>
+            <td><code>--hard</code></td>
+            <td>Discards changes</td>
+            <td><strong>Discards changes</strong></td>
+            <td>Completely abandon commits (destructive)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <pre><code><span class="comment"># Undo last commit, keep changes staged</span>
+<span class="cmd">git</span> <span class="arg">reset</span> <span class="flag">--soft</span> HEAD~1
+
+<span class="comment"># Undo last commit, keep changes unstaged</span>
+<span class="cmd">git</span> <span class="arg">reset</span> HEAD~1
+
+<span class="comment"># ⚠ Destroy last 2 commits completely</span>
+<span class="cmd">git</span> <span class="arg">reset</span> <span class="flag">--hard</span> HEAD~2
+</code></pre>
+
+    <!-- ===== STASH ===== -->
+    <h2>git stash</h2>
+    <p>Temporarily saves dirty working-directory changes without committing — useful when you need to switch context quickly.</p>
+    <pre><code><span class="comment"># Save current changes</span>
+<span class="cmd">git</span> <span class="arg">stash</span>
+<span class="cmd">git</span> <span class="arg">stash</span> push <span class="flag">-m</span> <span class="arg">"WIP: partial search feature"</span>
+
+<span class="comment"># List stashes</span>
+<span class="cmd">git</span> <span class="arg">stash</span> list
+<span class="output">stash@{0}: WIP: partial search feature
+stash@{1}: On main: experiment</span>
+
+<span class="comment"># Apply the most recent stash (keeps it in list)</span>
+<span class="cmd">git</span> <span class="arg">stash</span> apply
+
+<span class="comment"># Apply and remove from list</span>
+<span class="cmd">git</span> <span class="arg">stash</span> pop
+
+<span class="comment"># Apply a specific stash</span>
+<span class="cmd">git</span> <span class="arg">stash</span> apply stash@{1}
+</code></pre>
+
+    <h2>Quick reference cheat sheet</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it does</th><th>TSE use frequency</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>git clone</code></td><td>Download a repo</td><td><span class="pill pill-red">Daily</span></td></tr>
+          <tr><td><code>git log --oneline --graph</code></td><td>View history visually</td><td><span class="pill pill-red">Daily</span></td></tr>
+          <tr><td><code>git status</code></td><td>See what changed</td><td><span class="pill pill-red">Daily</span></td></tr>
+          <tr><td><code>git diff</code></td><td>See exact changes</td><td><span class="pill pill-red">Daily</span></td></tr>
+          <tr><td><code>git blame</code></td><td>Who changed a line</td><td><span class="pill pill-orange">Weekly</span></td></tr>
+          <tr><td><code>git show &lt;sha&gt;</code></td><td>Inspect a commit</td><td><span class="pill pill-orange">Weekly</span></td></tr>
+          <tr><td><code>git checkout &lt;tag/sha&gt;</code></td><td>Check out a version</td><td><span class="pill pill-orange">Weekly</span></td></tr>
+          <tr><td><code>git fetch</code></td><td>Sync remote refs</td><td><span class="pill pill-orange">Weekly</span></td></tr>
+          <tr><td><code>git stash</code></td><td>Save work in progress</td><td><span class="pill pill-yellow">Occasional</span></td></tr>
+          <tr><td><code>git revert</code></td><td>Safe undo via new commit</td><td><span class="pill pill-yellow">Occasional</span></td></tr>
+          <tr><td><code>git bisect</code></td><td>Binary search for a bug</td><td><span class="pill pill-yellow">Occasional</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="page-nav">
+      <a href="02-core-concepts.html">
+        <span class="nav-label">← Previous</span>
+        <span class="nav-title">2. Core Concepts</span>
+      </a>
+      <a href="04-github.html" class="nav-next">
+        <span class="nav-label">Next →</span>
+        <span class="nav-title">4. GitHub Features</span>
+      </a>
+    </div>
+  </main>
+</div>
+</body>
+</html>

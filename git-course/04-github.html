@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Features — Git Crash Course</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="page-wrapper">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>Git Crash Course</h2>
+      <p>For Technical Support Engineers</p>
+    </div>
+    <nav>
+      <div class="sidebar-section-label">Foundations</div>
+      <a href="index.html"><span class="icon">🏠</span> Overview</a>
+      <a href="01-fundamentals.html"><span class="icon">📖</span> 1. Git Fundamentals</a>
+      <a href="02-core-concepts.html"><span class="icon">🧠</span> 2. Core Concepts</a>
+      <a href="03-commands.html"><span class="icon">⌨️</span> 3. Essential Commands</a>
+      <div class="sidebar-section-label">GitHub</div>
+      <a href="04-github.html" class="active"><span class="icon">🐙</span> 4. GitHub Features</a>
+      <a href="05-branching.html"><span class="icon">🌿</span> 5. Branching Strategies</a>
+      <div class="sidebar-section-label">TSE Focus</div>
+      <a href="06-tse-workflows.html"><span class="icon">🔍</span> 6. TSE Workflows</a>
+      <a href="07-dev-perspective.html"><span class="icon">🚀</span> 7. Dev Perspective</a>
+      <a href="08-troubleshooting.html"><span class="icon">🛠️</span> 8. Troubleshooting</a>
+    </nav>
+  </div>
+
+  <main class="main-content">
+    <div class="page-title">
+      <div class="badge">Section 4</div>
+      <h1>GitHub Features</h1>
+      <p>The collaboration layer on top of Git — Pull Requests, Issues, Actions, Releases, and more.</p>
+    </div>
+
+    <h2>Repositories</h2>
+    <p>A GitHub repository is a hosted Git repo with extra metadata and collaboration features. Key anatomy:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>GitHub element</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Code tab</strong></td><td>The file tree and commit history. You can browse files at any branch or tag.</td></tr>
+          <tr><td><strong>Issues</strong></td><td>Bug reports, feature requests, tasks. Can be linked to PRs.</td></tr>
+          <tr><td><strong>Pull Requests</strong></td><td>Proposed code changes. The main collaboration mechanism.</td></tr>
+          <tr><td><strong>Actions</strong></td><td>CI/CD workflows triggered by events (push, PR, schedule).</td></tr>
+          <tr><td><strong>Releases</strong></td><td>Tagged version snapshots with changelogs and attached artifacts.</td></tr>
+          <tr><td><strong>Insights → Network</strong></td><td>Visual graph of all branches and forks.</td></tr>
+          <tr><td><strong>Settings → Branches</strong></td><td>Branch protection rules (required reviews, CI status checks).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Forks</h2>
+    <p>A <strong>fork</strong> is a server-side copy of a repository under your own account. It's GitHub's way of enabling contributions to repos you don't have write access to.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 680 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrF" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+            <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
+          </marker>
+          <marker id="arrFr" markerWidth="7" markerHeight="5" refX="0" refY="2.5" orient="auto">
+            <polygon points="7 0, 0 2.5, 7 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Upstream -->
+        <rect x="240" y="20" width="200" height="60" rx="8" fill="#1e293b" stroke="#f97316" stroke-width="2"/>
+        <text x="340" y="45" fill="#f97316" text-anchor="middle" font-size="13" font-weight="700">upstream repo</text>
+        <text x="340" y="63" fill="#94a3b8" text-anchor="middle" font-size="10">org/repo (you can't push)</text>
+
+        <!-- Fork -->
+        <rect x="240" y="120" width="200" height="60" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+        <text x="340" y="145" fill="#3b82f6" text-anchor="middle" font-size="13" font-weight="700">your fork</text>
+        <text x="340" y="163" fill="#94a3b8" text-anchor="middle" font-size="10">you/repo (you can push)</text>
+
+        <!-- Local clone -->
+        <rect x="20" y="120" width="160" height="60" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+        <text x="100" y="145" fill="#22c55e" text-anchor="middle" font-size="12" font-weight="700">Local Clone</text>
+        <text x="100" y="163" fill="#94a3b8" text-anchor="middle" font-size="10">your laptop</text>
+
+        <!-- Arrows -->
+        <!-- Fork button -->
+        <line x1="340" y1="82" x2="340" y2="118" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrF)"/>
+        <text x="355" y="106" fill="#94a3b8" font-size="10">Fork</text>
+
+        <!-- Clone -->
+        <line x1="238" y1="150" x2="182" y2="150" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrFr)"/>
+        <text x="210" y="144" fill="#94a3b8" font-size="10">clone</text>
+
+        <!-- Push to fork -->
+        <line x1="182" y1="162" x2="238" y2="162" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrF)"/>
+        <text x="210" y="178" fill="#22c55e" font-size="10">push</text>
+
+        <!-- PR to upstream -->
+        <path d="M 440 130 Q 520 80 442 50" fill="none" stroke="#f97316" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrF)"/>
+        <text x="510" y="95" fill="#f97316" font-size="10">Pull Request</text>
+
+        <!-- Fetch upstream -->
+        <path d="M 440 50 Q 560 20 560 100 Q 560 170 440 168" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrF)"/>
+        <text x="570" y="100" fill="#94a3b8" font-size="9">fetch upstream</text>
+        <text x="570" y="113" fill="#94a3b8" font-size="9">(keep fork in sync)</text>
+      </svg>
+      <figcaption>Figure 11 — Fork-based contribution model. You fork to get a writable copy, clone it locally, push your changes to your fork, then open a Pull Request to the upstream.</figcaption>
+    </div>
+
+    <h2>Pull Requests (PRs)</h2>
+    <p>A Pull Request is a request to merge one branch into another. It's the central unit of code collaboration on GitHub — where code review, discussion, and CI all converge.</p>
+
+    <h3>PR Lifecycle</h3>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 700 100" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrPR" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+            <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <rect x="10"  y="28" width="100" height="40" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="60"  y="51" fill="#3b82f6" text-anchor="middle" font-size="11" font-weight="700">Open PR</text>
+
+        <rect x="150" y="28" width="100" height="40" rx="6" fill="#1e293b" stroke="#eab308" stroke-width="1.5"/>
+        <text x="200" y="46" fill="#eab308" text-anchor="middle" font-size="11" font-weight="700">CI Checks</text>
+        <text x="200" y="60" fill="#94a3b8" text-anchor="middle" font-size="9">tests / lint</text>
+
+        <rect x="290" y="28" width="100" height="40" rx="6" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+        <text x="340" y="46" fill="#a855f7" text-anchor="middle" font-size="11" font-weight="700">Code Review</text>
+        <text x="340" y="60" fill="#94a3b8" text-anchor="middle" font-size="9">approve / request changes</text>
+
+        <rect x="430" y="28" width="100" height="40" rx="6" fill="#1e293b" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="480" y="46" fill="#22c55e" text-anchor="middle" font-size="11" font-weight="700">Approved</text>
+        <text x="480" y="60" fill="#94a3b8" text-anchor="middle" font-size="9">all checks pass</text>
+
+        <rect x="570" y="28" width="110" height="40" rx="6" fill="#1e293b" stroke="#f97316" stroke-width="1.5"/>
+        <text x="625" y="46" fill="#f97316" text-anchor="middle" font-size="11" font-weight="700">Merged</text>
+        <text x="625" y="60" fill="#94a3b8" text-anchor="middle" font-size="9">squash / merge / rebase</text>
+
+        <line x1="112" y1="48" x2="148" y2="48" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrPR)"/>
+        <line x1="252" y1="48" x2="288" y2="48" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrPR)"/>
+        <line x1="392" y1="48" x2="428" y2="48" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrPR)"/>
+        <line x1="532" y1="48" x2="568" y2="48" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrPR)"/>
+      </svg>
+      <figcaption>Figure 12 — Pull Request lifecycle from opening to merge.</figcaption>
+    </div>
+
+    <h3>Reading a PR as a TSE</h3>
+    <p>When investigating a customer issue, a PR tells you:</p>
+    <ul>
+      <li><strong>What changed</strong>: the "Files changed" tab shows the exact diff</li>
+      <li><strong>Why it changed</strong>: the PR description and linked Issue</li>
+      <li><strong>When it shipped</strong>: the merge date correlates with the release</li>
+      <li><strong>Risks flagged</strong>: review comments and CI failures during the process</li>
+      <li><strong>Rollback options</strong>: the "Revert" button creates an inverse PR</li>
+    </ul>
+
+    <h3>PR merge strategies</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Strategy</th><th>What happens</th><th>History style</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Merge commit</strong></td>
+            <td>Creates a merge commit with two parents</td>
+            <td>Preserves branch history; shows topology</td>
+          </tr>
+          <tr>
+            <td><strong>Squash and merge</strong></td>
+            <td>All PR commits combined into one commit on main</td>
+            <td>Very clean linear history; loses individual commits</td>
+          </tr>
+          <tr>
+            <td><strong>Rebase and merge</strong></td>
+            <td>Each PR commit replayed individually on main (new SHAs)</td>
+            <td>Linear history; individual commits visible</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout tse">
+      <div class="callout-icon">🔍</div>
+      <div class="callout-body">
+        <p><strong>TSE tip:</strong> If a team uses squash-merge, each PR becomes a single commit on main. The PR number is in the commit message (e.g. <code>fix: token expiry (#4521)</code>). Search GitHub for that issue number to find all context: discussion, diff, linked issue.</p>
+      </div>
+    </div>
+
+    <h2>GitHub Actions (CI/CD)</h2>
+    <p>GitHub Actions is an event-driven automation system. Workflows are YAML files in <code>.github/workflows/</code> that run on GitHub-hosted runners (virtual machines).</p>
+
+    <h3>Anatomy of a workflow</h3>
+    <pre><code><span class="comment"># .github/workflows/test.yml</span>
+name: Run Tests
+
+on:                          <span class="comment"># Trigger events</span>
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest   <span class="comment"># Runner OS</span>
+
+    steps:
+      - uses: actions/checkout@v4        <span class="comment"># Check out code</span>
+      - uses: actions/setup-python@v5    <span class="comment"># Set up Python</span>
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: pytest                      <span class="comment"># Run tests</span>
+</code></pre>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 680 160" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrA" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+            <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Event -->
+        <rect x="10" y="50" width="110" height="60" rx="8" fill="#1e293b" stroke="#eab308" stroke-width="1.5"/>
+        <text x="65" y="76" fill="#eab308" text-anchor="middle" font-size="12" font-weight="700">Event</text>
+        <text x="65" y="94" fill="#94a3b8" text-anchor="middle" font-size="10">push / PR</text>
+        <text x="65" y="106" fill="#94a3b8" text-anchor="middle" font-size="10">schedule / manual</text>
+
+        <!-- Workflow -->
+        <rect x="170" y="40" width="120" height="80" rx="8" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+        <text x="230" y="68" fill="#a855f7" text-anchor="middle" font-size="12" font-weight="700">Workflow</text>
+        <text x="230" y="86" fill="#94a3b8" text-anchor="middle" font-size="10">.github/workflows/</text>
+        <text x="230" y="100" fill="#94a3b8" text-anchor="middle" font-size="10">*.yml</text>
+
+        <!-- Jobs -->
+        <rect x="340" y="30" width="110" height="44" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="395" y="50" fill="#3b82f6" text-anchor="middle" font-size="11" font-weight="700">Job: test</text>
+        <text x="395" y="65" fill="#94a3b8" text-anchor="middle" font-size="10">ubuntu-latest</text>
+
+        <rect x="340" y="86" width="110" height="44" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="395" y="106" fill="#3b82f6" text-anchor="middle" font-size="11" font-weight="700">Job: lint</text>
+        <text x="395" y="121" fill="#94a3b8" text-anchor="middle" font-size="10">ubuntu-latest</text>
+
+        <!-- Steps -->
+        <rect x="500" y="30" width="170" height="100" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="585" y="50" fill="#22c55e" text-anchor="middle" font-size="11" font-weight="700">Steps</text>
+        <text x="585" y="68" fill="#94a3b8" text-anchor="middle" font-size="10">1. checkout</text>
+        <text x="585" y="84" fill="#94a3b8" text-anchor="middle" font-size="10">2. setup-python</text>
+        <text x="585" y="100" fill="#94a3b8" text-anchor="middle" font-size="10">3. pip install</text>
+        <text x="585" y="116" fill="#94a3b8" text-anchor="middle" font-size="10">4. pytest</text>
+
+        <!-- Arrows -->
+        <line x1="122" y1="80" x2="168" y2="80" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrA)"/>
+        <line x1="292" y1="65" x2="338" y2="52" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrA)"/>
+        <line x1="292" y1="95" x2="338" y2="108" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrA)"/>
+        <line x1="452" y1="52" x2="498" y2="70" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrA)"/>
+      </svg>
+      <figcaption>Figure 13 — GitHub Actions: an event triggers a workflow, which runs parallel jobs, each composed of sequential steps.</figcaption>
+    </div>
+
+    <h3>Common Actions concepts for TSEs</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Runner</strong></td><td>The VM that executes the job (GitHub-hosted or self-hosted)</td></tr>
+          <tr><td><strong>Step</strong></td><td>A single task: either a shell command (<code>run:</code>) or a pre-built action (<code>uses:</code>)</td></tr>
+          <tr><td><strong>Action</strong></td><td>A reusable unit of automation, published on GitHub Marketplace</td></tr>
+          <tr><td><strong>Artifact</strong></td><td>Files produced by a job (test results, binaries) that can be downloaded</td></tr>
+          <tr><td><strong>Secret</strong></td><td>Encrypted env vars (API keys, tokens) stored in repo/org settings</td></tr>
+          <tr><td><strong>Environment</strong></td><td>Named deployment target (staging, production) with its own protection rules</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Issues</h2>
+    <p>GitHub Issues are the task/bug-tracking system. Key features:</p>
+    <ul>
+      <li><strong>Labels</strong>: categorize by type (<code>bug</code>, <code>enhancement</code>), priority (<code>P1</code>), component</li>
+      <li><strong>Milestones</strong>: group issues into releases or sprints</li>
+      <li><strong>Assignees</strong>: who is responsible</li>
+      <li><strong>Linked PRs</strong>: typing <code>Fixes #123</code> in a PR description auto-closes the issue when the PR merges</li>
+    </ul>
+
+    <h2>Releases</h2>
+    <p>A GitHub Release is a snapshot tied to a Git tag, with:</p>
+    <ul>
+      <li>A changelog (auto-generated from PR titles or hand-written)</li>
+      <li>Attached binary assets (compiled executables, Docker images, etc.)</li>
+      <li>A "pre-release" flag for beta/RC versions</li>
+    </ul>
+
+    <pre><code><span class="comment"># Create a release tag locally and push it</span>
+<span class="cmd">git</span> <span class="arg">tag</span> <span class="flag">-a</span> v2.5.0 <span class="flag">-m</span> <span class="arg">"Release v2.5.0 — OAuth support"</span>
+<span class="cmd">git</span> <span class="arg">push</span> origin v2.5.0
+<span class="comment"># Then go to GitHub → Releases → "Draft new release from tag"</span>
+</code></pre>
+
+    <div class="callout tse">
+      <div class="callout-icon">🔍</div>
+      <div class="callout-body">
+        <p><strong>TSE tip:</strong> The GitHub Releases page is often the fastest way to answer "what changed between versions." The auto-generated changelog groups PRs by type if the team uses conventional commits or GitHub's release notes feature.</p>
+      </div>
+    </div>
+
+    <h2>Branch Protection Rules</h2>
+    <p>Configured under <strong>Settings → Branches</strong>, these rules prevent mistakes on important branches:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Rule</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td>Require pull request reviews</td><td>You can't merge without N approved reviews</td></tr>
+          <tr><td>Require status checks to pass</td><td>CI must be green before merging</td></tr>
+          <tr><td>Require branches to be up to date</td><td>Branch must have latest main before merging</td></tr>
+          <tr><td>Restrict who can push</td><td>Only specified roles/teams can push directly</td></tr>
+          <tr><td>Require signed commits</td><td>All commits must have a GPG/SSH signature</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>GitHub Search</h2>
+    <p>GitHub's search is powerful — TSEs should know the key qualifiers:</p>
+    <pre><code><span class="comment"># Search in a specific repo</span>
+repo:datadog/datadog-agent "connection refused"
+
+<span class="comment"># Find PRs that touched a specific file</span>
+repo:org/repo path:src/auth.py is:pr is:merged
+
+<span class="comment"># Issues labeled bug, closed in last 30 days</span>
+repo:org/repo is:issue is:closed label:bug closed:>2024-01-01
+
+<span class="comment"># Find commits containing a keyword</span>
+repo:org/repo "fix memory leak" is:commit
+</code></pre>
+
+    <div class="page-nav">
+      <a href="03-commands.html">
+        <span class="nav-label">← Previous</span>
+        <span class="nav-title">3. Essential Commands</span>
+      </a>
+      <a href="05-branching.html" class="nav-next">
+        <span class="nav-label">Next →</span>
+        <span class="nav-title">5. Branching Strategies</span>
+      </a>
+    </div>
+  </main>
+</div>
+</body>
+</html>

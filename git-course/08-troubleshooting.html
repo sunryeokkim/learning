@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Troubleshooting — Git Crash Course</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="page-wrapper">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>Git Crash Course</h2>
+      <p>For Technical Support Engineers</p>
+    </div>
+    <nav>
+      <div class="sidebar-section-label">Foundations</div>
+      <a href="index.html"><span class="icon">🏠</span> Overview</a>
+      <a href="01-fundamentals.html"><span class="icon">📖</span> 1. Git Fundamentals</a>
+      <a href="02-core-concepts.html"><span class="icon">🧠</span> 2. Core Concepts</a>
+      <a href="03-commands.html"><span class="icon">⌨️</span> 3. Essential Commands</a>
+      <div class="sidebar-section-label">GitHub</div>
+      <a href="04-github.html"><span class="icon">🐙</span> 4. GitHub Features</a>
+      <a href="05-branching.html"><span class="icon">🌿</span> 5. Branching Strategies</a>
+      <div class="sidebar-section-label">TSE Focus</div>
+      <a href="06-tse-workflows.html"><span class="icon">🔍</span> 6. TSE Workflows</a>
+      <a href="07-dev-perspective.html"><span class="icon">🚀</span> 7. Dev Perspective</a>
+      <a href="08-troubleshooting.html" class="active"><span class="icon">🛠️</span> 8. Troubleshooting</a>
+    </nav>
+  </div>
+
+  <main class="main-content">
+    <div class="page-title">
+      <div class="badge">Section 8</div>
+      <h1>Troubleshooting Common Issues</h1>
+      <p>Fixing detached HEAD, merge conflicts, wrong commits, and other situations that cause panic.</p>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <p><strong>Golden rule before anything scary:</strong> Create a backup branch first. <code>git branch backup-$(date +%s)</code> costs nothing and saves you if you make a mistake.</p>
+      </div>
+    </div>
+
+    <!-- ===== DETACHED HEAD ===== -->
+    <h2>Problem: Detached HEAD state</h2>
+
+    <p><strong>Symptom:</strong></p>
+    <pre><code><span class="output">HEAD detached at f1a2b3
+nothing to commit, working tree clean</span>
+</code></pre>
+
+    <p><strong>Cause:</strong> You checked out a commit, tag, or remote branch directly (not a local branch). Any commits you make here have no branch and can be lost.</p>
+
+    <p><strong>Fix:</strong></p>
+    <pre><code><span class="comment"># Option 1: Just go back to your branch (discard any commits you made)</span>
+<span class="cmd">git</span> <span class="arg">switch</span> main
+
+<span class="comment"># Option 2: Save your detached commits by creating a branch</span>
+<span class="cmd">git</span> <span class="arg">switch</span> <span class="flag">-c</span> my-experiment-branch
+<span class="comment"># Now your commits are safe on this new branch</span>
+</code></pre>
+
+    <!-- ===== MERGE CONFLICTS ===== -->
+    <h2>Problem: Merge conflicts</h2>
+
+    <p><strong>Symptom:</strong></p>
+    <pre><code><span class="output">CONFLICT (content): Merge conflict in src/auth.py
+Automatic merge failed; fix conflicts and then commit the result.</span>
+</code></pre>
+
+    <p>Git couldn't automatically combine both versions of a file. You must manually resolve the conflict.</p>
+
+    <p><strong>The conflict markers:</strong></p>
+    <pre><code><span class="output"><<<<<<< HEAD
+    timeout = 30  # our version
+=======
+    timeout = 60  # incoming version
+>>>>>>> feature/increase-timeout</span>
+</code></pre>
+
+    <p><strong>Fix:</strong></p>
+    <ol class="step-list">
+      <li>
+        <span class="step-num">1</span>
+        <div>Edit the file — delete the conflict markers and keep the correct code</div>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <div>
+          Stage the resolved file and complete the merge
+          <pre><code><span class="cmd">git</span> <span class="arg">add</span> src/auth.py
+<span class="cmd">git</span> <span class="arg">merge</span> <span class="flag">--continue</span>
+<span class="comment"># Or: git commit (if --continue isn't available)</span></code></pre>
+        </div>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <div>
+          To abort and go back to before the merge:
+          <pre><code><span class="cmd">git</span> <span class="arg">merge</span> <span class="flag">--abort</span></code></pre>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <p>Use a visual merge tool: <code>git mergetool</code> opens your configured editor (VS Code's merge editor is excellent). Set it with <code>git config --global merge.tool vscode</code>.</p>
+      </div>
+    </div>
+
+    <!-- ===== ACCIDENTALLY COMMITTED TO WRONG BRANCH ===== -->
+    <h2>Problem: Committed to the wrong branch</h2>
+    <p>You made a commit on <code>main</code> but it should have been on your feature branch.</p>
+
+    <pre><code><span class="comment"># Step 1: Note the SHA of the commit you need to move</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--oneline -3</span>
+<span class="output">abc1234 feat: my new feature   ← this needs to move
+def5678 previous commit
+...</span>
+
+<span class="comment"># Step 2: Create/switch to the correct branch (it includes the commit)</span>
+<span class="cmd">git</span> <span class="arg">switch</span> <span class="flag">-c</span> feature/my-feature
+
+<span class="comment"># Step 3: Go back to main and remove the commit</span>
+<span class="cmd">git</span> <span class="arg">switch</span> main
+<span class="cmd">git</span> <span class="arg">reset</span> <span class="flag">--hard</span> HEAD~1
+<span class="comment"># main now points to def5678; feature/my-feature still has abc1234</span>
+</code></pre>
+
+    <div class="callout warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <p>Only do <code>git reset --hard</code> if you haven't pushed the commit to a shared remote yet. If you already pushed, use <code>git revert</code> instead to create an undo commit.</p>
+      </div>
+    </div>
+
+    <!-- ===== UNDO PUSHED COMMIT ===== -->
+    <h2>Problem: Need to undo a commit already pushed</h2>
+    <p>Never <code>git reset --hard</code> + force push on a shared branch — you rewrite history other people have. Use <code>git revert</code> instead.</p>
+
+    <pre><code><span class="comment"># Find the commit to undo</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--oneline</span>
+<span class="output">f1a2b3 feat: bad change we need to undo
+d4e5f6 previous good commit</span>
+
+<span class="comment"># Create an inverse commit (safe for shared branches)</span>
+<span class="cmd">git</span> <span class="arg">revert</span> f1a2b3
+<span class="comment"># Git opens editor for the revert commit message</span>
+<span class="comment"># A new commit "Revert 'feat: bad change...'" is created</span>
+
+<span class="cmd">git</span> <span class="arg">push</span>
+</code></pre>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 680 100" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="rvArr" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+            <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <circle cx="80"  cy="50" r="20" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="80"  y="54" fill="#94a3b8" text-anchor="middle" font-size="9">A</text>
+
+        <circle cx="200" cy="50" r="20" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="200" y="54" fill="#94a3b8" text-anchor="middle" font-size="9">B</text>
+
+        <circle cx="320" cy="50" r="20" fill="#1e293b" stroke="#ef4444" stroke-width="2"/>
+        <text x="320" y="48" fill="#ef4444" text-anchor="middle" font-size="9" font-weight="700">BAD</text>
+        <text x="320" y="63" fill="#ef4444" text-anchor="middle" font-size="9">f1a2b3</text>
+
+        <circle cx="470" cy="50" r="22" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+        <text x="470" y="46" fill="#22c55e" text-anchor="middle" font-size="9" font-weight="700">Revert</text>
+        <text x="470" y="60" fill="#94a3b8" text-anchor="middle" font-size="9">undoes BAD</text>
+
+        <circle cx="610" cy="50" r="20" fill="#1e293b" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="610" y="46" fill="#22c55e" text-anchor="middle" font-size="9" font-weight="700">HEAD</text>
+        <text x="610" y="62" fill="#94a3b8" text-anchor="middle" font-size="9">(like A+B)</text>
+
+        <line x1="102" y1="50" x2="178" y2="50" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#rvArr)"/>
+        <line x1="222" y1="50" x2="298" y2="50" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#rvArr)"/>
+        <line x1="342" y1="50" x2="446" y2="50" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#rvArr)"/>
+        <line x1="494" y1="50" x2="588" y2="50" stroke="#22c55e" stroke-width="1.5" marker-end="url(#rvArr)"/>
+
+        <text x="395" y="84" fill="#22c55e" text-anchor="middle" font-size="10">History is preserved — safe for shared branches</text>
+      </svg>
+      <figcaption>Figure 20 — git revert adds a new commit that undoes the bad commit's changes. History is preserved and safe to push.</figcaption>
+    </div>
+
+    <!-- ===== LOST COMMITS ===== -->
+    <h2>Problem: I think I lost commits (reflog rescue)</h2>
+    <p>You ran <code>git reset --hard</code> or deleted a branch and now commits seem gone. <strong>Don't panic</strong> — Git keeps a log of everywhere HEAD has pointed for 90 days.</p>
+
+    <pre><code><span class="comment"># See everywhere HEAD has been</span>
+<span class="cmd">git</span> <span class="arg">reflog</span>
+<span class="output">f1a2b3 HEAD@{0}: reset: moving to HEAD~3
+abc1234 HEAD@{1}: commit: feat: my work
+def5678 HEAD@{2}: commit: more work
+789abc HEAD@{3}: checkout: moving from main to feature/xyz</span>
+
+<span class="comment"># Recover by checking out the lost commit SHA</span>
+<span class="cmd">git</span> <span class="arg">checkout</span> abc1234
+
+<span class="comment"># Save it on a new branch</span>
+<span class="cmd">git</span> <span class="arg">switch</span> <span class="flag">-c</span> rescued-work
+</code></pre>
+
+    <!-- ===== DIVERGED BRANCH ===== -->
+    <h2>Problem: "Your branch has diverged"</h2>
+
+    <pre><code><span class="output">Your branch and 'origin/main' have diverged,
+and have 2 and 3 different commits each, respectively.</span>
+</code></pre>
+
+    <p>This happens when both you and the remote have new commits since the last sync. You need to reconcile them.</p>
+
+    <pre><code><span class="comment"># Option 1: Merge remote changes into yours (creates merge commit)</span>
+<span class="cmd">git</span> <span class="arg">pull</span> origin main
+
+<span class="comment"># Option 2: Rebase your commits on top of remote (linear history)</span>
+<span class="cmd">git</span> <span class="arg">pull</span> <span class="flag">--rebase</span> origin main
+
+<span class="comment"># If you caused this by force-pushing, fetch and reset to remote</span>
+<span class="cmd">git</span> <span class="arg">fetch</span> origin
+<span class="cmd">git</span> <span class="arg">reset</span> <span class="flag">--hard</span> origin/main
+<span class="comment"># ⚠ This discards your local commits!</span>
+</code></pre>
+
+    <!-- ===== WRONG COMMIT MESSAGE ===== -->
+    <h2>Problem: Wrong commit message</h2>
+    <pre><code><span class="comment"># Fix the most recent commit message (before pushing)</span>
+<span class="cmd">git</span> <span class="arg">commit</span> <span class="flag">--amend -m</span> <span class="arg">"fix: correct description"</span>
+
+<span class="comment"># Fix an older commit (interactive rebase)</span>
+<span class="cmd">git</span> <span class="arg">rebase</span> <span class="flag">-i</span> HEAD~3
+<span class="comment"># Change "pick" to "reword" on the commit you want to fix</span>
+</code></pre>
+
+    <!-- ===== ACCIDENTALLY ADDED FILE ===== -->
+    <h2>Problem: Accidentally staged or committed a secrets file</h2>
+    <div class="callout danger">
+      <div class="callout-icon">🚨</div>
+      <div class="callout-body">
+        <p>If you pushed a secret (API key, password) to a <strong>public</strong> repo, assume it is compromised. Rotate the credential immediately — even after you delete it from history, it may have been scraped by bots within minutes.</p>
+      </div>
+    </div>
+
+    <pre><code><span class="comment"># Remove from staging only (keep the file)</span>
+<span class="cmd">git</span> <span class="arg">restore</span> <span class="flag">--staged</span> secrets.env
+
+<span class="comment"># Remove from last commit (before push)</span>
+<span class="cmd">git</span> <span class="arg">rm</span> <span class="flag">--cached</span> secrets.env
+<span class="cmd">git</span> <span class="arg">commit</span> <span class="flag">--amend</span>
+
+<span class="comment"># Add to .gitignore so it never happens again</span>
+<span class="output">echo "secrets.env" >> .gitignore</span>
+<span class="cmd">git</span> <span class="arg">add</span> .gitignore
+<span class="cmd">git</span> <span class="arg">commit</span> <span class="flag">-m</span> <span class="arg">"chore: ignore secrets file"</span>
+
+<span class="comment"># If already pushed, use git-filter-repo to purge history</span>
+<span class="comment"># (requires pip install git-filter-repo)</span>
+<span class="cmd">git</span> filter-repo <span class="flag">--invert-paths --path</span> secrets.env
+</code></pre>
+
+    <!-- ===== AUTH ERRORS ===== -->
+    <h2>Common GitHub authentication errors</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Error</th><th>Cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>Permission denied (publickey)</code></td>
+            <td>SSH key not added to GitHub or SSH agent</td>
+            <td>Add key: <code>ssh-add ~/.ssh/id_ed25519</code> and add public key in GitHub Settings → SSH keys</td>
+          </tr>
+          <tr>
+            <td><code>remote: Support for password authentication was removed</code></td>
+            <td>GitHub removed password auth in Aug 2021</td>
+            <td>Use a Personal Access Token (PAT) as the password, or switch to SSH</td>
+          </tr>
+          <tr>
+            <td><code>repository not found</code></td>
+            <td>Wrong URL, private repo, or no access</td>
+            <td>Verify the URL, check repo visibility, confirm you have at least Read access</td>
+          </tr>
+          <tr>
+            <td><code>Updates were rejected because the remote contains work...</code></td>
+            <td>Remote has commits your local branch doesn't have</td>
+            <td>Pull first: <code>git pull --rebase origin main</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===== MENTAL MODELS ===== -->
+    <h2>Useful mental models for unsticking yourself</h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">🔍</div>
+        <h4>When confused: <code>git status</code> first</h4>
+        <p>Always shows what Git thinks is happening and often suggests the exact command to fix it.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🕐</div>
+        <h4>Commits are permanent</h4>
+        <p>Even after "deleting," commits live in <code>reflog</code> for 90 days. You can almost always recover.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌿</div>
+        <h4>Branches are cheap</h4>
+        <p>When in doubt, branch. Creating a backup branch before any risky operation costs nothing.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔄</div>
+        <h4>revert > reset for shared work</h4>
+        <p>If the commit was pushed, revert creates a new undo commit. Never rewrite shared history.</p>
+      </div>
+    </div>
+
+    <h2>Full quick-fix reference</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Problem</th><th>Safe fix</th></tr></thead>
+        <tbody>
+          <tr><td>Undo unstaged changes in a file</td><td><code>git restore &lt;file&gt;</code></td></tr>
+          <tr><td>Undo staging</td><td><code>git restore --staged &lt;file&gt;</code></td></tr>
+          <tr><td>Undo last commit (keep changes)</td><td><code>git reset --soft HEAD~1</code></td></tr>
+          <tr><td>Undo last commit (discard changes) — NOT pushed</td><td><code>git reset --hard HEAD~1</code></td></tr>
+          <tr><td>Undo a pushed commit</td><td><code>git revert &lt;sha&gt;</code></td></tr>
+          <tr><td>Recover a deleted branch / lost commit</td><td><code>git reflog</code> → <code>git checkout &lt;sha&gt;</code></td></tr>
+          <tr><td>Fix last commit message</td><td><code>git commit --amend -m "new msg"</code></td></tr>
+          <tr><td>Exit detached HEAD state</td><td><code>git switch main</code></td></tr>
+          <tr><td>Abort a merge in progress</td><td><code>git merge --abort</code></td></tr>
+          <tr><td>Abort a rebase in progress</td><td><code>git rebase --abort</code></td></tr>
+          <tr><td>Save work-in-progress and switch tasks</td><td><code>git stash</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="page-nav">
+      <a href="07-dev-perspective.html">
+        <span class="nav-label">← Previous</span>
+        <span class="nav-title">7. Dev Perspective</span>
+      </a>
+      <a href="index.html" class="nav-next">
+        <span class="nav-label">↩ Back to</span>
+        <span class="nav-title">Course Overview</span>
+      </a>
+    </div>
+  </main>
+</div>
+</body>
+</html>

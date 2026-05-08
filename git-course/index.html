@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Git Crash Course — TSE Edition</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="page-wrapper">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>Git Crash Course</h2>
+      <p>For Technical Support Engineers</p>
+    </div>
+    <nav>
+      <div class="sidebar-section-label">Foundations</div>
+      <a href="index.html" class="active"><span class="icon">🏠</span> Overview</a>
+      <a href="01-fundamentals.html"><span class="icon">📖</span> 1. Git Fundamentals</a>
+      <a href="02-core-concepts.html"><span class="icon">🧠</span> 2. Core Concepts</a>
+      <a href="03-commands.html"><span class="icon">⌨️</span> 3. Essential Commands</a>
+      <div class="sidebar-section-label">GitHub</div>
+      <a href="04-github.html"><span class="icon">🐙</span> 4. GitHub Features</a>
+      <a href="05-branching.html"><span class="icon">🌿</span> 5. Branching Strategies</a>
+      <div class="sidebar-section-label">TSE Focus</div>
+      <a href="06-tse-workflows.html"><span class="icon">🔍</span> 6. TSE Workflows</a>
+      <a href="07-dev-perspective.html"><span class="icon">🚀</span> 7. Dev Perspective</a>
+      <a href="08-troubleshooting.html"><span class="icon">🛠️</span> 8. Troubleshooting</a>
+    </nav>
+  </div>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <div class="page-title">
+      <div class="badge">TSE Edition</div>
+      <h1>Git &amp; GitHub Crash Course</h1>
+      <p>From "what is a commit" to reading pull requests like a developer — everything a TSE needs to investigate, reproduce, and explain version-control issues.</p>
+    </div>
+
+    <h2>Why TSEs need Git</h2>
+    <p>As a Technical Support Engineer you'll routinely need to:</p>
+    <ul>
+      <li>Clone a customer's or internal repo to <strong>reproduce a bug</strong></li>
+      <li>Identify <em>which commit introduced a regression</em> using <code>git log</code> or <code>git bisect</code></li>
+      <li>Read a <strong>Pull Request</strong> to understand what changed and why</li>
+      <li>Understand branching models so you can map a customer's release pipeline</li>
+      <li>Communicate credibly with developers when escalating issues</li>
+    </ul>
+
+    <p>This course moves fast. It skips the history lesson and goes straight to the mental models and commands you will use on the job every week.</p>
+
+    <h2>Course Map</h2>
+
+    <div class="card-grid">
+      <a href="01-fundamentals.html" style="text-decoration:none">
+        <div class="card">
+          <div class="card-icon">📖</div>
+          <h4>1. Git Fundamentals</h4>
+          <p>What Git actually is, the three-area model, and how snapshots work.</p>
+        </div>
+      </a>
+      <a href="02-core-concepts.html" style="text-decoration:none">
+        <div class="card">
+          <div class="card-icon">🧠</div>
+          <h4>2. Core Concepts</h4>
+          <p>Commits, branches, HEAD, tags, and the DAG — the building blocks of every repo.</p>
+        </div>
+      </a>
+      <a href="03-commands.html" style="text-decoration:none">
+        <div class="card">
+          <div class="card-icon">⌨️</div>
+          <h4>3. Essential Commands</h4>
+          <p>The 20 commands you will use 90% of the time, with real examples.</p>
+        </div>
+      </a>
+      <a href="04-github.html" style="text-decoration:none">
+        <div class="card">
+          <div class="card-icon">🐙</div>
+          <h4>4. GitHub Features</h4>
+          <p>Forks, Pull Requests, Reviews, Actions, Issues, and Releases explained.</p>
+        </div>
+      </a>
+      <a href="05-branching.html" style="text-decoration:none">
+        <div class="card">
+          <div class="card-icon">🌿</div>
+          <h4>5. Branching Strategies</h4>
+          <p>GitFlow, GitHub Flow, trunk-based — know which model a customer is using.</p>
+        </div>
+      </a>
+      <a href="06-tse-workflows.html" style="text-decoration:none">
+        <div class="card">
+          <div class="card-icon">🔍</div>
+          <h4>6. TSE Workflows</h4>
+          <p>Cloning repos, bisecting bugs, reading blame, comparing versions.</p>
+        </div>
+      </a>
+      <a href="07-dev-perspective.html" style="text-decoration:none">
+        <div class="card">
+          <div class="card-icon">🚀</div>
+          <h4>7. Dev Perspective</h4>
+          <p>How developers actually use Git day-to-day: rebase, squash, code review rituals.</p>
+        </div>
+      </a>
+      <a href="08-troubleshooting.html" style="text-decoration:none">
+        <div class="card">
+          <div class="card-icon">🛠️</div>
+          <h4>8. Troubleshooting</h4>
+          <p>Common errors, detached HEAD, merge conflicts, and how to un-break things.</p>
+        </div>
+      </a>
+    </div>
+
+    <h2>How Git fits in a dev workflow</h2>
+    <p>Before diving into commands, here is the big picture of how code travels from a developer's laptop to production:</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 820 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Boxes -->
+        <rect x="10"  y="70" width="130" height="60" rx="8" fill="#1e293b" stroke="#f97316" stroke-width="1.5"/>
+        <rect x="190" y="70" width="130" height="60" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <rect x="370" y="70" width="130" height="60" rx="8" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+        <rect x="550" y="70" width="130" height="60" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="1.5"/>
+        <rect x="680" y="70" width="130" height="60" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="1.5"/>
+
+        <!-- Labels -->
+        <text x="75"  y="96"  fill="#f97316" text-anchor="middle" font-size="12" font-weight="700">Local Repo</text>
+        <text x="75"  y="114" fill="#94a3b8" text-anchor="middle" font-size="10">git commit</text>
+
+        <text x="255" y="96"  fill="#3b82f6" text-anchor="middle" font-size="12" font-weight="700">GitHub</text>
+        <text x="255" y="114" fill="#94a3b8" text-anchor="middle" font-size="10">git push / PR</text>
+
+        <text x="435" y="96"  fill="#a855f7" text-anchor="middle" font-size="12" font-weight="700">CI Pipeline</text>
+        <text x="435" y="114" fill="#94a3b8" text-anchor="middle" font-size="10">GitHub Actions</text>
+
+        <text x="615" y="96"  fill="#22c55e" text-anchor="middle" font-size="12" font-weight="700">Staging</text>
+        <text x="615" y="114" fill="#94a3b8" text-anchor="middle" font-size="10">auto-deploy</text>
+
+        <text x="745" y="96"  fill="#ef4444" text-anchor="middle" font-size="12" font-weight="700">Production</text>
+        <text x="745" y="114" fill="#94a3b8" text-anchor="middle" font-size="10">release / tag</text>
+
+        <!-- Arrows -->
+        <line x1="142" y1="100" x2="188" y2="100" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="322" y1="100" x2="368" y2="100" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="502" y1="100" x2="548" y2="100" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="682" y1="100" x2="678" y2="100" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- TSE badge -->
+        <rect x="190" y="148" width="310" height="28" rx="6" fill="rgba(249,115,22,0.12)" stroke="#f97316" stroke-width="1"/>
+        <text x="345" y="167" fill="#f97316" text-anchor="middle" font-size="11">TSEs primarily investigate in this zone</text>
+      </svg>
+      <figcaption>Figure 1 — The journey of code from a commit to production. TSEs usually work between GitHub and Staging.</figcaption>
+    </div>
+
+    <h2>Prerequisites</h2>
+    <div class="callout info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-body">
+        <p><strong>All you need</strong> is a terminal (macOS/Linux) or Git Bash (Windows), Git installed (<code>git --version</code> to verify), and a GitHub account. No prior Git knowledge assumed.</p>
+      </div>
+    </div>
+
+    <div class="page-nav">
+      <span></span>
+      <a href="01-fundamentals.html" class="nav-next">
+        <span class="nav-label">Next →</span>
+        <span class="nav-title">1. Git Fundamentals</span>
+      </a>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dev Perspective — Git Crash Course</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="page-wrapper">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>Git Crash Course</h2>
+      <p>For Technical Support Engineers</p>
+    </div>
+    <nav>
+      <div class="sidebar-section-label">Foundations</div>
+      <a href="index.html"><span class="icon">🏠</span> Overview</a>
+      <a href="01-fundamentals.html"><span class="icon">📖</span> 1. Git Fundamentals</a>
+      <a href="02-core-concepts.html"><span class="icon">🧠</span> 2. Core Concepts</a>
+      <a href="03-commands.html"><span class="icon">⌨️</span> 3. Essential Commands</a>
+      <div class="sidebar-section-label">GitHub</div>
+      <a href="04-github.html"><span class="icon">🐙</span> 4. GitHub Features</a>
+      <a href="05-branching.html"><span class="icon">🌿</span> 5. Branching Strategies</a>
+      <div class="sidebar-section-label">TSE Focus</div>
+      <a href="06-tse-workflows.html"><span class="icon">🔍</span> 6. TSE Workflows</a>
+      <a href="07-dev-perspective.html" class="active"><span class="icon">🚀</span> 7. Dev Perspective</a>
+      <a href="08-troubleshooting.html"><span class="icon">🛠️</span> 8. Troubleshooting</a>
+    </nav>
+  </div>
+
+  <main class="main-content">
+    <div class="page-title">
+      <div class="badge">Section 7</div>
+      <h1>Dev Perspective</h1>
+      <p>How developers actually use Git day-to-day — so you can speak their language and understand why history looks the way it does.</p>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-body">
+        <p>This section bridges the gap between "I know the commands" and "I understand how a developer's mental model works." Knowing this helps you ask better questions when escalating and interpret commit history correctly.</p>
+      </div>
+    </div>
+
+    <!-- ===== A DAY IN THE LIFE ===== -->
+    <h2>A developer's daily Git routine</h2>
+    <p>Here's what a typical developer does every morning:</p>
+
+    <pre><code><span class="comment"># 1. Sync with the remote before starting work</span>
+<span class="cmd">git</span> <span class="arg">switch</span> main
+<span class="cmd">git</span> <span class="arg">pull</span> <span class="flag">--rebase</span> origin main
+
+<span class="comment"># 2. Create a feature branch</span>
+<span class="cmd">git</span> <span class="arg">switch</span> <span class="flag">-c</span> feature/JIRA-1234-add-rate-limiting
+
+<span class="comment"># 3. Work... commit frequently in small chunks</span>
+<span class="cmd">git</span> <span class="arg">add</span> <span class="flag">-p</span>        <span class="comment"># stage specific hunks, not whole files</span>
+<span class="cmd">git</span> <span class="arg">commit</span> <span class="flag">-m</span> <span class="arg">"feat: add rate limit middleware"</span>
+
+<span class="comment"># 4. Push branch and open PR</span>
+<span class="cmd">git</span> <span class="arg">push</span> <span class="flag">-u</span> origin feature/JIRA-1234-add-rate-limiting
+
+<span class="comment"># 5. Update the PR after code review feedback</span>
+<span class="cmd">git</span> <span class="arg">add</span> -p
+<span class="cmd">git</span> <span class="arg">commit</span> <span class="flag">-m</span> <span class="arg">"review: rename middleware per feedback"</span>
+<span class="cmd">git</span> <span class="arg">push</span>
+</code></pre>
+
+    <!-- ===== INTERACTIVE REBASE ===== -->
+    <h2>Interactive Rebase — history cleanup</h2>
+    <p>Before merging a PR, developers often clean up their commits to tell a coherent story. <code>git rebase -i</code> (interactive rebase) lets you reorder, squash, rename, or drop commits.</p>
+
+    <pre><code><span class="comment"># Rebase the last 4 commits interactively</span>
+<span class="cmd">git</span> <span class="arg">rebase</span> <span class="flag">-i</span> HEAD~4
+
+<span class="comment"># Git opens your editor with a list of commits:</span>
+<span class="output">pick a1b2c3 feat: add rate limit middleware
+pick d4e5f6 wip
+pick 789abc fix typo in comment
+pick f1e2d3 review: rename middleware per feedback</span>
+
+<span class="comment"># You can change "pick" to:</span>
+<span class="comment">#   squash (s) — combine with previous commit</span>
+<span class="comment">#   fixup  (f) — combine, discard this commit's message</span>
+<span class="comment">#   reword (r) — keep commit, edit message</span>
+<span class="comment">#   drop   (d) — delete this commit</span>
+<span class="comment">#   edit   (e) — pause and amend the commit</span>
+
+<span class="comment"># After editing:</span>
+<span class="output">pick a1b2c3 feat: add rate limit middleware
+fixup d4e5f6 wip
+fixup 789abc fix typo in comment
+fixup f1e2d3 review: rename middleware per feedback</span>
+<span class="comment"># Result: 4 commits become 1 clean commit</span>
+</code></pre>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 680 140" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="squArr" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+            <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Before squash -->
+        <text x="20" y="20" fill="#94a3b8" font-size="11" font-weight="700">Before (messy history):</text>
+        <circle cx="60"  cy="60" r="18" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="60"  y="64" fill="#94a3b8" text-anchor="middle" font-size="9">base</text>
+
+        <circle cx="130" cy="60" r="18" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="130" y="58" fill="#3b82f6" text-anchor="middle" font-size="8">feat:</text>
+        <text x="130" y="70" fill="#3b82f6" text-anchor="middle" font-size="8">add RL</text>
+
+        <circle cx="200" cy="60" r="18" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="200" y="64" fill="#94a3b8" text-anchor="middle" font-size="9">wip</text>
+
+        <circle cx="270" cy="60" r="18" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="270" y="58" fill="#94a3b8" text-anchor="middle" font-size="8">fix</text>
+        <text x="270" y="70" fill="#94a3b8" text-anchor="middle" font-size="8">typo</text>
+
+        <circle cx="340" cy="60" r="18" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="340" y="58" fill="#94a3b8" text-anchor="middle" font-size="8">review</text>
+        <text x="340" y="70" fill="#94a3b8" text-anchor="middle" font-size="8">rename</text>
+
+        <line x1="80"  y1="60" x2="110" y2="60" stroke="#94a3b8" stroke-width="1.2"/>
+        <line x1="150" y1="60" x2="180" y2="60" stroke="#94a3b8" stroke-width="1.2"/>
+        <line x1="220" y1="60" x2="250" y2="60" stroke="#94a3b8" stroke-width="1.2"/>
+        <line x1="290" y1="60" x2="318" y2="60" stroke="#94a3b8" stroke-width="1.2"/>
+
+        <!-- Arrow -->
+        <text x="400" y="65" fill="#f97316" text-anchor="middle" font-size="16">→</text>
+        <text x="400" y="82" fill="#94a3b8" text-anchor="middle" font-size="9">rebase -i</text>
+
+        <!-- After squash -->
+        <text x="440" y="20" fill="#94a3b8" font-size="11" font-weight="700">After (clean history):</text>
+        <circle cx="480" cy="60" r="18" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="480" y="64" fill="#94a3b8" text-anchor="middle" font-size="9">base</text>
+
+        <circle cx="590" cy="60" r="22" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+        <text x="590" y="58" fill="#22c55e" text-anchor="middle" font-size="9" font-weight="700">feat: add</text>
+        <text x="590" y="72" fill="#22c55e" text-anchor="middle" font-size="9">rate limit</text>
+
+        <line x1="500" y1="60" x2="566" y2="60" stroke="#94a3b8" stroke-width="1.2"/>
+        <text x="590" y="100" fill="#94a3b8" text-anchor="middle" font-size="9">4 commits → 1</text>
+      </svg>
+      <figcaption>Figure 18 — Interactive rebase squashes messy WIP commits into a single clean commit before merging the PR.</figcaption>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <p>Interactive rebase rewrites history (creates new SHAs). If you've already pushed the branch, you'll need to <code>git push --force-with-lease</code> to update the remote. Never rebase <code>main</code> or other shared branches.</p>
+      </div>
+    </div>
+
+    <!-- ===== CODE REVIEW ===== -->
+    <h2>Code Review rituals</h2>
+    <p>When a developer opens a PR, the review process follows a predictable pattern:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Review Action</th><th>GitHub UI</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Comment</strong></td>
+            <td>💬 on a line</td>
+            <td>Question or suggestion — no blocking intent</td>
+          </tr>
+          <tr>
+            <td><strong>Request changes</strong></td>
+            <td>🔴 "Changes requested"</td>
+            <td>The PR should not merge until specific issues are addressed</td>
+          </tr>
+          <tr>
+            <td><strong>Approve</strong></td>
+            <td>✅ "Approved"</td>
+            <td>Reviewer is satisfied; PR can merge (if branch protection requires N approvals)</td>
+          </tr>
+          <tr>
+            <td><strong>Dismiss review</strong></td>
+            <td>admin action</td>
+            <td>Clear a stale review — usually when a reviewer is unavailable</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>What developers check in code review</h3>
+    <ul>
+      <li><strong>Correctness</strong>: Does this solve the problem? Edge cases covered?</li>
+      <li><strong>Tests</strong>: Are there adequate tests? Do they actually fail before the fix?</li>
+      <li><strong>Performance</strong>: Any N+1 queries, unbounded loops, memory leaks?</li>
+      <li><strong>Security</strong>: Input validation, auth checks, secret exposure?</li>
+      <li><strong>Readability</strong>: Variable names, code structure, necessary comments?</li>
+      <li><strong>API contract</strong>: Any breaking changes to public interfaces?</li>
+    </ul>
+
+    <!-- ===== CI/CD PIPELINE ===== -->
+    <h2>CI/CD Pipeline from dev perspective</h2>
+    <p>Every PR triggers a pipeline. Here's what typically runs and why it matters for debugging production issues:</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 700 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ciArr" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+            <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Pipeline stages (horizontal) -->
+        <!-- 1 Lint -->
+        <rect x="10"  y="70" width="90" height="60" rx="8" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="55" y="96" fill="#94a3b8" text-anchor="middle" font-size="11" font-weight="700">Lint</text>
+        <text x="55" y="112" fill="#94a3b8" text-anchor="middle" font-size="9">style, types</text>
+        <text x="55" y="124" fill="#94a3b8" text-anchor="middle" font-size="9">~30s</text>
+
+        <!-- 2 Unit tests -->
+        <rect x="115" y="70" width="90" height="60" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="160" y="96" fill="#3b82f6" text-anchor="middle" font-size="11" font-weight="700">Unit tests</text>
+        <text x="160" y="112" fill="#94a3b8" text-anchor="middle" font-size="9">fast, isolated</text>
+        <text x="160" y="124" fill="#94a3b8" text-anchor="middle" font-size="9">~2m</text>
+
+        <!-- 3 Integration -->
+        <rect x="220" y="70" width="90" height="60" rx="8" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+        <text x="265" y="90" fill="#a855f7" text-anchor="middle" font-size="11" font-weight="700">Integration</text>
+        <text x="265" y="104" fill="#a855f7" text-anchor="middle" font-size="10">tests</text>
+        <text x="265" y="118" fill="#94a3b8" text-anchor="middle" font-size="9">DB, APIs</text>
+        <text x="265" y="130" fill="#94a3b8" text-anchor="middle" font-size="9">~5m</text>
+
+        <!-- 4 Build -->
+        <rect x="325" y="70" width="90" height="60" rx="8" fill="#1e293b" stroke="#eab308" stroke-width="1.5"/>
+        <text x="370" y="96" fill="#eab308" text-anchor="middle" font-size="11" font-weight="700">Build</text>
+        <text x="370" y="112" fill="#94a3b8" text-anchor="middle" font-size="9">Docker image</text>
+        <text x="370" y="124" fill="#94a3b8" text-anchor="middle" font-size="9">~3m</text>
+
+        <!-- 5 Deploy Staging -->
+        <rect x="430" y="70" width="90" height="60" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="475" y="90" fill="#22c55e" text-anchor="middle" font-size="11" font-weight="700">Deploy</text>
+        <text x="475" y="104" fill="#22c55e" text-anchor="middle" font-size="10">Staging</text>
+        <text x="475" y="118" fill="#94a3b8" text-anchor="middle" font-size="9">smoke tests</text>
+        <text x="475" y="130" fill="#94a3b8" text-anchor="middle" font-size="9">~2m</text>
+
+        <!-- 6 Deploy Prod -->
+        <rect x="535" y="70" width="100" height="60" rx="8" fill="#1e293b" stroke="#f97316" stroke-width="2"/>
+        <text x="585" y="90" fill="#f97316" text-anchor="middle" font-size="11" font-weight="700">Deploy</text>
+        <text x="585" y="104" fill="#f97316" text-anchor="middle" font-size="10">Production</text>
+        <text x="585" y="118" fill="#94a3b8" text-anchor="middle" font-size="9">canary / full</text>
+        <text x="585" y="130" fill="#94a3b8" text-anchor="middle" font-size="9">manual gate</text>
+
+        <!-- Arrows -->
+        <line x1="102" y1="100" x2="113" y2="100" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ciArr)"/>
+        <line x1="207" y1="100" x2="218" y2="100" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ciArr)"/>
+        <line x1="312" y1="100" x2="323" y2="100" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ciArr)"/>
+        <line x1="417" y1="100" x2="428" y2="100" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ciArr)"/>
+        <line x1="522" y1="100" x2="533" y2="100" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ciArr)"/>
+
+        <!-- PR gate -->
+        <rect x="10" y="148" width="395" height="22" rx="4" fill="rgba(59,130,246,0.08)" stroke="#3b82f6" stroke-width="1"/>
+        <text x="207" y="163" fill="#3b82f6" text-anchor="middle" font-size="10">PR must pass these checks before merge is allowed</text>
+
+        <!-- Trigger label -->
+        <text x="55"  y="165" fill="#94a3b8" text-anchor="middle" font-size="0"/>
+      </svg>
+      <figcaption>Figure 19 — Typical CI/CD pipeline. Steps 1-4 run on every PR. Steps 5-6 run on main after merge. A failed step blocks everything downstream.</figcaption>
+    </div>
+
+    <!-- ===== SEMANTIC VERSIONING ===== -->
+    <h2>Semantic Versioning (SemVer)</h2>
+    <p>Most software uses <strong>MAJOR.MINOR.PATCH</strong> versioning (e.g. <code>v2.4.1</code>):</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Part</th><th>Increment when…</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>MAJOR</strong></td>
+            <td>Incompatible API/behavior changes (breaking change)</td>
+            <td><code>v2.0.0</code> → <code>v3.0.0</code></td>
+          </tr>
+          <tr>
+            <td><strong>MINOR</strong></td>
+            <td>New feature, backward-compatible</td>
+            <td><code>v2.4.0</code> → <code>v2.5.0</code></td>
+          </tr>
+          <tr>
+            <td><strong>PATCH</strong></td>
+            <td>Bug fixes, no new features</td>
+            <td><code>v2.4.0</code> → <code>v2.4.1</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout tse">
+      <div class="callout-icon">🔍</div>
+      <div class="callout-body">
+        <p><strong>TSE tip:</strong> If a customer upgraded from <code>v2.3.x</code> to <code>v3.0.0</code> and something broke, it's likely a <strong>breaking change</strong> in the major version bump. Check the release notes / CHANGELOG and migration guide for that version.</p>
+      </div>
+    </div>
+
+    <!-- ===== COMMIT CONVENTIONS ===== -->
+    <h2>Conventional Commits</h2>
+    <p>Many teams enforce a structured commit message format. This powers automated changelogs, semantic-release tools, and makes <code>git log</code> much easier to read.</p>
+
+    <pre><code><span class="comment"># Format: type(scope): description</span>
+<span class="comment"># Body and footer are optional</span>
+
+feat(auth): add OAuth2 PKCE flow
+
+Previously only supported implicit flow. PKCE is required
+for mobile apps and SPAs per RFC 7636.
+
+Closes #4521
+BREAKING CHANGE: removed deprecated /oauth/implicit endpoint
+</code></pre>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Type</th><th>When to use</th><th>SemVer impact</th></tr></thead>
+        <tbody>
+          <tr><td><code>feat</code></td><td>New feature</td><td>MINOR bump</td></tr>
+          <tr><td><code>fix</code></td><td>Bug fix</td><td>PATCH bump</td></tr>
+          <tr><td><code>docs</code></td><td>Documentation only</td><td>None</td></tr>
+          <tr><td><code>style</code></td><td>Formatting, whitespace</td><td>None</td></tr>
+          <tr><td><code>refactor</code></td><td>Code restructure, no behavior change</td><td>None</td></tr>
+          <tr><td><code>perf</code></td><td>Performance improvement</td><td>PATCH bump</td></tr>
+          <tr><td><code>test</code></td><td>Adding/fixing tests</td><td>None</td></tr>
+          <tr><td><code>chore</code></td><td>Build tools, deps, CI config</td><td>None</td></tr>
+          <tr><td><code>BREAKING CHANGE</code></td><td>Footer tag for breaking changes</td><td>MAJOR bump</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===== GITHUB PROJECTS ===== -->
+    <h2>Development team signals TSEs should know</h2>
+
+    <h3>Reading a PR to understand risk</h3>
+    <p>When a customer reports a regression, check the PR that introduced it for these risk signals:</p>
+    <ul>
+      <li><strong>Large diff</strong> (+500 lines): higher chance of unintended side effects</li>
+      <li><strong>No tests added</strong>: the change wasn't validated automatically</li>
+      <li><strong>Many reviewers requested changes</strong>: there was controversy</li>
+      <li><strong>"Do not merge" label or "WIP" in title</strong>: was merged prematurely</li>
+      <li><strong>CI was red at merge time</strong>: branch protection might have been bypassed</li>
+      <li><strong>Short time between open and merge</strong>: rushed review</li>
+    </ul>
+
+    <h3>CHANGELOG / Release Notes</h3>
+    <p>Most projects maintain a <code>CHANGELOG.md</code> at the repo root. It's the fastest place to find what changed in each version — faster than reading every commit.</p>
+
+    <pre><code><span class="cmd">cat</span> CHANGELOG.md
+<span class="output">## [2.4.0] - 2024-03-15
+
+### Added
+- OAuth2 PKCE flow for mobile clients (#4521)
+- Rate limiting middleware with Redis backend (#4489)
+
+### Fixed
+- Token expiry not propagated to downstream services (#4501)
+
+### Breaking Changes
+- Removed deprecated /oauth/implicit endpoint</span>
+</code></pre>
+
+    <h3>git shortlog — who works on what</h3>
+    <p>When escalating to engineering, knowing the right team or person can speed things up:</p>
+    <pre><code><span class="comment"># Top contributors to the auth subsystem in the last 6 months</span>
+<span class="cmd">git</span> <span class="arg">log</span> <span class="flag">--since="6 months ago"</span> -- src/auth/ | <span class="cmd">git</span> <span class="arg">shortlog</span> <span class="flag">-sn</span>
+<span class="output">   45  Alice Smith
+   23  Bob Jones
+    8  Carol Williams</span>
+</code></pre>
+
+    <div class="page-nav">
+      <a href="06-tse-workflows.html">
+        <span class="nav-label">← Previous</span>
+        <span class="nav-title">6. TSE Workflows</span>
+      </a>
+      <a href="08-troubleshooting.html" class="nav-next">
+        <span class="nav-label">Next →</span>
+        <span class="nav-title">8. Troubleshooting</span>
+      </a>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Git Fundamentals — Git Crash Course</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="page-wrapper">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>Git Crash Course</h2>
+      <p>For Technical Support Engineers</p>
+    </div>
+    <nav>
+      <div class="sidebar-section-label">Foundations</div>
+      <a href="index.html"><span class="icon">🏠</span> Overview</a>
+      <a href="01-fundamentals.html" class="active"><span class="icon">📖</span> 1. Git Fundamentals</a>
+      <a href="02-core-concepts.html"><span class="icon">🧠</span> 2. Core Concepts</a>
+      <a href="03-commands.html"><span class="icon">⌨️</span> 3. Essential Commands</a>
+      <div class="sidebar-section-label">GitHub</div>
+      <a href="04-github.html"><span class="icon">🐙</span> 4. GitHub Features</a>
+      <a href="05-branching.html"><span class="icon">🌿</span> 5. Branching Strategies</a>
+      <div class="sidebar-section-label">TSE Focus</div>
+      <a href="06-tse-workflows.html"><span class="icon">🔍</span> 6. TSE Workflows</a>
+      <a href="07-dev-perspective.html"><span class="icon">🚀</span> 7. Dev Perspective</a>
+      <a href="08-troubleshooting.html"><span class="icon">🛠️</span> 8. Troubleshooting</a>
+    </nav>
+  </div>
+
+  <main class="main-content">
+    <div class="page-title">
+      <div class="badge">Section 1</div>
+      <h1>Git Fundamentals</h1>
+      <p>What Git is, why it works the way it does, and the three-area model every developer has internalized.</p>
+    </div>
+
+    <h2>What is Git?</h2>
+    <p>Git is a <strong>distributed version control system</strong>. Every developer has a complete copy of the entire project history — not just the latest files, but every snapshot that was ever saved. That's why you can work offline, create branches instantly, and roll back to any point in time.</p>
+
+    <p>Git was created by Linus Torvalds in 2005 to manage the Linux kernel. Its design priorities were <em>speed</em>, <em>data integrity</em>, and <em>support for non-linear development</em> (thousands of parallel branches).</p>
+
+    <div class="callout info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-body">
+        <p><strong>Git ≠ GitHub.</strong> Git is the command-line tool that runs locally. GitHub is a cloud hosting service for Git repositories that adds collaboration features (PRs, Issues, Actions). Others exist: GitLab, Bitbucket, Azure DevOps.</p>
+      </div>
+    </div>
+
+    <h2>Snapshots, not diffs</h2>
+    <p>Most older VCS tools (SVN, CVS) store changes as <em>deltas</em> — "file X had line 5 changed from A to B." Git works differently: each commit is a <strong>snapshot</strong> of the entire project at a point in time. Unchanged files are referenced, not copied.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 700 220" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Title rows -->
+        <text x="175" y="22" fill="#94a3b8" text-anchor="middle" font-size="12" font-weight="700">Delta-based (SVN style)</text>
+        <text x="525" y="22" fill="#94a3b8" text-anchor="middle" font-size="12" font-weight="700">Snapshot-based (Git)</text>
+
+        <!-- Divider -->
+        <line x1="350" y1="10" x2="350" y2="210" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+
+        <!-- Delta side: version boxes -->
+        <rect x="20"  y="40" width="60" height="36" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="50" y="64" fill="#3b82f6" text-anchor="middle" font-size="11">v1</text>
+
+        <rect x="120" y="40" width="60" height="36" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="150" y="64" fill="#3b82f6" text-anchor="middle" font-size="11">+Δ1</text>
+
+        <rect x="220" y="40" width="60" height="36" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="250" y="64" fill="#3b82f6" text-anchor="middle" font-size="11">+Δ2</text>
+
+        <line x1="82"  y1="58" x2="118" y2="58" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <line x1="182" y1="58" x2="218" y2="58" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+        <text x="175" y="105" fill="#94a3b8" text-anchor="middle" font-size="10">Reconstructing v3 requires replaying v1+Δ1+Δ2</text>
+
+        <!-- File list delta -->
+        <text x="20"  y="135" fill="#94a3b8" font-size="10">file_a.py  ━━ stored</text>
+        <text x="20"  y="153" fill="#94a3b8" font-size="10">file_b.py  ━━ Δ only</text>
+        <text x="20"  y="171" fill="#94a3b8" font-size="10">file_c.py  ━━ Δ only</text>
+
+        <!-- Snapshot side: commit boxes -->
+        <rect x="370" y="40" width="80" height="36" rx="6" fill="#1e293b" stroke="#f97316" stroke-width="1.5"/>
+        <text x="410" y="60" fill="#f97316" text-anchor="middle" font-size="11" font-weight="700">commit C1</text>
+        <text x="410" y="72" fill="#94a3b8" text-anchor="middle" font-size="9">full snapshot</text>
+
+        <rect x="490" y="40" width="80" height="36" rx="6" fill="#1e293b" stroke="#f97316" stroke-width="1.5"/>
+        <text x="530" y="60" fill="#f97316" text-anchor="middle" font-size="11" font-weight="700">commit C2</text>
+        <text x="530" y="72" fill="#94a3b8" text-anchor="middle" font-size="9">full snapshot</text>
+
+        <rect x="610" y="40" width="80" height="36" rx="6" fill="#1e293b" stroke="#f97316" stroke-width="1.5"/>
+        <text x="650" y="60" fill="#f97316" text-anchor="middle" font-size="11" font-weight="700">commit C3</text>
+        <text x="650" y="72" fill="#94a3b8" text-anchor="middle" font-size="9">full snapshot</text>
+
+        <line x1="452" y1="58" x2="488" y2="58" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <line x1="572" y1="58" x2="608" y2="58" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+        <text x="530" y="105" fill="#94a3b8" text-anchor="middle" font-size="10">Any commit is instantly accessible — no replay needed</text>
+
+        <!-- File list snapshot -->
+        <text x="370" y="135" fill="#22c55e" font-size="10">file_a.py  ━━ pointer (unchanged)</text>
+        <text x="370" y="153" fill="#22c55e" font-size="10">file_b.py  ━━ new blob stored</text>
+        <text x="370" y="171" fill="#22c55e" font-size="10">file_c.py  ━━ pointer (unchanged)</text>
+      </svg>
+      <figcaption>Figure 2 — Delta-based vs snapshot-based storage. Git stores a snapshot per commit; unchanged files are referenced via pointers to save space.</figcaption>
+    </div>
+
+    <h2>The Three-Area Model</h2>
+    <p>This is the most important mental model in Git. Every file you work with lives in one of three places:</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 720 260" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
+          </marker>
+          <marker id="arr3r" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto">
+            <polygon points="8 0, 0 3, 8 6" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Area boxes -->
+        <rect x="20"  y="40" width="190" height="180" rx="10" fill="#1e293b" stroke="#f97316" stroke-width="2"/>
+        <rect x="265" y="40" width="190" height="180" rx="10" fill="#1e293b" stroke="#eab308" stroke-width="2"/>
+        <rect x="510" y="40" width="190" height="180" rx="10" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+
+        <!-- Area titles -->
+        <text x="115" y="70" fill="#f97316" text-anchor="middle" font-size="14" font-weight="700">Working Directory</text>
+        <text x="360" y="70" fill="#eab308" text-anchor="middle" font-size="14" font-weight="700">Staging Area</text>
+        <text x="360" y="87" fill="#94a3b8" text-anchor="middle" font-size="10">(Index)</text>
+        <text x="605" y="70" fill="#22c55e" text-anchor="middle" font-size="14" font-weight="700">Repository</text>
+        <text x="605" y="87" fill="#94a3b8" text-anchor="middle" font-size="10">(.git directory)</text>
+
+        <!-- File icons -->
+        <text x="115" y="125" fill="#94a3b8" text-anchor="middle" font-size="12">📝 app.py  (edited)</text>
+        <text x="115" y="148" fill="#94a3b8" text-anchor="middle" font-size="12">📝 utils.py</text>
+        <text x="115" y="171" fill="#ef4444" text-anchor="middle" font-size="11">untracked: new.py</text>
+
+        <text x="360" y="130" fill="#eab308" text-anchor="middle" font-size="12">📋 app.py  (staged)</text>
+        <text x="360" y="155" fill="#94a3b8" text-anchor="middle" font-size="10">Ready to be committed</text>
+
+        <text x="605" y="120" fill="#22c55e" text-anchor="middle" font-size="12">● a1b2c3  fix: crash</text>
+        <text x="605" y="142" fill="#22c55e" text-anchor="middle" font-size="12">● d4e5f6  add: login</text>
+        <text x="605" y="164" fill="#22c55e" text-anchor="middle" font-size="12">● 789abc  init</text>
+
+        <!-- Arrows between areas -->
+        <!-- git add -->
+        <line x1="213" y1="120" x2="261" y2="120" stroke="#eab308" stroke-width="1.5" marker-end="url(#arr3)"/>
+        <text x="237" y="112" fill="#eab308" text-anchor="middle" font-size="10">git add</text>
+
+        <!-- git commit -->
+        <line x1="458" y1="120" x2="506" y2="120" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arr3)"/>
+        <text x="482" y="112" fill="#22c55e" text-anchor="middle" font-size="10">git commit</text>
+
+        <!-- git checkout (reverse) -->
+        <line x1="506" y1="150" x2="458" y2="150" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr3)"/>
+        <line x1="261" y1="150" x2="213" y2="150" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr3)"/>
+        <text x="482" y="168" fill="#94a3b8" text-anchor="middle" font-size="10">git restore</text>
+        <text x="237" y="168" fill="#94a3b8" text-anchor="middle" font-size="10">git restore --staged</text>
+      </svg>
+      <figcaption>Figure 3 — Git's three-area model. Changes flow: Working Directory → Staging Area → Repository. You can also move backward to undo.</figcaption>
+    </div>
+
+    <h3>Understanding each area</h3>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">📝</div>
+        <h4>Working Directory</h4>
+        <p>The actual files on your filesystem. When you edit a file in VS Code or vim, you're editing the working directory. Git knows the file changed but hasn't done anything with that change yet.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📋</div>
+        <h4>Staging Area (Index)</h4>
+        <p>A preparation zone. You explicitly choose <em>which</em> changes go into the next commit with <code>git add</code>. This lets you craft focused, logical commits even if your working directory is messy.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🗄️</div>
+        <h4>Repository (.git)</h4>
+        <p>The permanent history. Once a commit is here, it stays (unless you explicitly rewrite history). Contains all commits, branches, tags, and Git's object database — all stored in the hidden <code>.git/</code> folder.</p>
+      </div>
+    </div>
+
+    <h2>How Git stores data: Object types</h2>
+    <p>Under the hood, Git uses a content-addressable key-value store. Everything is identified by a <strong>SHA-1 hash</strong> of its content. Four object types exist:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Object</th><th>What it is</th><th>Example SHA</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>blob</code></td>
+            <td>Contents of a single file (no filename, no metadata)</td>
+            <td><code>d670460...</code></td>
+          </tr>
+          <tr>
+            <td><code>tree</code></td>
+            <td>A directory listing — maps filenames to blob or tree hashes</td>
+            <td><code>83baae6...</code></td>
+          </tr>
+          <tr>
+            <td><code>commit</code></td>
+            <td>Points to a tree (root snapshot) + parent commit(s) + author + message</td>
+            <td><code>1a2b3c4...</code></td>
+          </tr>
+          <tr>
+            <td><code>tag</code></td>
+            <td>A named pointer to a commit, usually a release (e.g. <code>v2.1.0</code>)</td>
+            <td><code>abc1234...</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 680 260" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr4" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+            <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Commit box -->
+        <rect x="20" y="80" width="140" height="100" rx="8" fill="#1e293b" stroke="#f97316" stroke-width="1.5"/>
+        <text x="90" y="100" fill="#f97316" text-anchor="middle" font-size="11" font-weight="700">commit 1a2b3c</text>
+        <text x="90" y="118" fill="#94a3b8" text-anchor="middle" font-size="10">tree:  83baae6</text>
+        <text x="90" y="133" fill="#94a3b8" text-anchor="middle" font-size="10">parent: (none)</text>
+        <text x="90" y="148" fill="#94a3b8" text-anchor="middle" font-size="10">author: Alice</text>
+        <text x="90" y="163" fill="#94a3b8" text-anchor="middle" font-size="10">msg: init</text>
+
+        <!-- Tree box -->
+        <rect x="220" y="60" width="150" height="110" rx="8" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+        <text x="295" y="80" fill="#a855f7" text-anchor="middle" font-size="11" font-weight="700">tree 83baae6</text>
+        <text x="295" y="100" fill="#94a3b8" text-anchor="middle" font-size="10">blob d67046  app.py</text>
+        <text x="295" y="118" fill="#94a3b8" text-anchor="middle" font-size="10">blob 9daeaf  README</text>
+        <text x="295" y="136" fill="#a855f7" text-anchor="middle" font-size="10">tree a1c2d3  src/</text>
+        <text x="295" y="154" fill="#94a3b8" text-anchor="middle" font-size="10">(nested directory)</text>
+
+        <!-- Blob boxes -->
+        <rect x="440" y="30"  width="130" height="50" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="505" y="50"  fill="#3b82f6" text-anchor="middle" font-size="11" font-weight="700">blob d67046</text>
+        <text x="505" y="68"  fill="#94a3b8" text-anchor="middle" font-size="10">contents of app.py</text>
+
+        <rect x="440" y="110" width="130" height="50" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="505" y="130" fill="#3b82f6" text-anchor="middle" font-size="11" font-weight="700">blob 9daeaf</text>
+        <text x="505" y="148" fill="#94a3b8" text-anchor="middle" font-size="10">contents of README</text>
+
+        <rect x="440" y="190" width="130" height="50" rx="8" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+        <text x="505" y="210" fill="#a855f7" text-anchor="middle" font-size="11" font-weight="700">tree a1c2d3</text>
+        <text x="505" y="228" fill="#94a3b8" text-anchor="middle" font-size="10">src/ directory tree</text>
+
+        <!-- Arrows -->
+        <line x1="162" y1="110" x2="218" y2="100" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arr4)"/>
+        <line x1="372" y1="90"  x2="438" y2="58"  stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arr4)"/>
+        <line x1="372" y1="110" x2="438" y2="135" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arr4)"/>
+        <line x1="372" y1="130" x2="438" y2="208" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arr4)"/>
+      </svg>
+      <figcaption>Figure 4 — Git's object model. A commit points to a tree (directory snapshot), which points to blobs (file contents) and sub-trees.</figcaption>
+    </div>
+
+    <div class="callout tse">
+      <div class="callout-icon">🔍</div>
+      <div class="callout-body">
+        <p><strong>TSE Tip:</strong> When a customer says "my code was working at commit <code>abc1234</code>," that SHA is pointing directly at a tree snapshot. You can checkout exactly that state with <code>git checkout abc1234</code> — no hunting through diffs.</p>
+      </div>
+    </div>
+
+    <h2>Git is distributed</h2>
+    <p>Unlike centralized systems (SVN), every developer has a <strong>full clone</strong> of the repository, including the entire history. This means:</p>
+    <ul>
+      <li>You can commit, branch, and view history <strong>offline</strong></li>
+      <li>The server (GitHub) is just another clone — there's nothing magic about it</li>
+      <li><code>git push</code> sends your commits <em>to</em> a remote; <code>git pull</code> brings remote commits <em>to</em> you</li>
+      <li>If GitHub goes down, every developer still has the full repo locally</li>
+    </ul>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 700 220" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr5" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+            <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- Central GitHub -->
+        <rect x="270" y="80" width="160" height="60" rx="10" fill="#1e293b" stroke="#f97316" stroke-width="2"/>
+        <text x="350" y="106" fill="#f97316" text-anchor="middle" font-size="13" font-weight="700">GitHub Remote</text>
+        <text x="350" y="124" fill="#94a3b8" text-anchor="middle" font-size="10">origin/main</text>
+
+        <!-- Dev clones -->
+        <rect x="20"  y="30"  width="120" height="50" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="80"  y="52"  fill="#3b82f6" text-anchor="middle" font-size="11" font-weight="700">Alice</text>
+        <text x="80"  y="68"  fill="#94a3b8" text-anchor="middle" font-size="10">full clone</text>
+
+        <rect x="20"  y="140" width="120" height="50" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="80"  y="162" fill="#3b82f6" text-anchor="middle" font-size="11" font-weight="700">Bob</text>
+        <text x="80"  y="178" fill="#94a3b8" text-anchor="middle" font-size="10">full clone</text>
+
+        <rect x="560" y="30"  width="120" height="50" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="620" y="52"  fill="#22c55e" text-anchor="middle" font-size="11" font-weight="700">Carol</text>
+        <text x="620" y="68"  fill="#94a3b8" text-anchor="middle" font-size="10">full clone</text>
+
+        <rect x="560" y="140" width="120" height="50" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="620" y="162" fill="#22c55e" text-anchor="middle" font-size="11" font-weight="700">You (TSE)</text>
+        <text x="620" y="178" fill="#94a3b8" text-anchor="middle" font-size="10">full clone</text>
+
+        <!-- Arrows: push/pull bidirectional -->
+        <line x1="142" y1="60"  x2="268" y2="98"  stroke="#3b82f6" stroke-width="1.2" marker-end="url(#arr5)"/>
+        <line x1="268" y1="106" x2="142" y2="68"  stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr5)"/>
+
+        <line x1="142" y1="162" x2="268" y2="122" stroke="#3b82f6" stroke-width="1.2" marker-end="url(#arr5)"/>
+        <line x1="268" y1="130" x2="142" y2="170" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr5)"/>
+
+        <line x1="558" y1="60"  x2="432" y2="98"  stroke="#22c55e" stroke-width="1.2" marker-end="url(#arr5)"/>
+        <line x1="432" y1="106" x2="558" y2="68"  stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr5)"/>
+
+        <line x1="558" y1="162" x2="432" y2="122" stroke="#22c55e" stroke-width="1.2" marker-end="url(#arr5)"/>
+        <line x1="432" y1="130" x2="558" y2="170" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr5)"/>
+
+        <!-- Legend -->
+        <line x1="270" y1="195" x2="300" y2="195" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="305" y="199" fill="#94a3b8" font-size="10">push</text>
+        <line x1="340" y1="195" x2="370" y2="195" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <text x="375" y="199" fill="#94a3b8" font-size="10">pull / fetch</text>
+      </svg>
+      <figcaption>Figure 5 — Every developer holds a full clone. GitHub is just the agreed-upon shared remote.</figcaption>
+    </div>
+
+    <h2>First-time Git setup</h2>
+    <p>Before committing anything, tell Git who you are:</p>
+    <pre><code><span class="comment"># Set your identity globally (stored in ~/.gitconfig)</span>
+<span class="cmd">git</span> <span class="arg">config</span> <span class="flag">--global</span> user.name <span class="arg">"Your Name"</span>
+<span class="cmd">git</span> <span class="arg">config</span> <span class="flag">--global</span> user.email <span class="arg">"you@company.com"</span>
+
+<span class="comment"># Set default branch name to "main" (modern default)</span>
+<span class="cmd">git</span> <span class="arg">config</span> <span class="flag">--global</span> init.defaultBranch <span class="arg">main</span>
+
+<span class="comment"># Choose your editor (e.g. VS Code)</span>
+<span class="cmd">git</span> <span class="arg">config</span> <span class="flag">--global</span> core.editor <span class="arg">"code --wait"</span>
+
+<span class="comment"># Verify your config</span>
+<span class="cmd">git</span> <span class="arg">config</span> <span class="flag">--list</span>
+</code></pre>
+
+    <div class="callout warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <p>Your name and email are baked into every commit you make. They show up in <code>git log</code>, on GitHub, and in blame output. Use your real work email so commits are linked to your GitHub account.</p>
+      </div>
+    </div>
+
+    <div class="page-nav">
+      <a href="index.html">
+        <span class="nav-label">← Previous</span>
+        <span class="nav-title">Overview</span>
+      </a>
+      <a href="02-core-concepts.html" class="nav-next">
+        <span class="nav-label">Next →</span>
+        <span class="nav-title">2. Core Concepts</span>
+      </a>
+    </div>
+  </main>
+</div>
+</body>
+</html>

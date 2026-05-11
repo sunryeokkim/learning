@@ -6,7 +6,9 @@ Three small toys that turn live system metrics into sound.
 |---|---|---|
 | `sonify.py` | Streams continuous ambient tones driven by **live** CPU/mem/net. | Plays in real time until Ctrl+C |
 | `compose.py` | Captures 30s of metric snapshots, then renders a **30s mono song**. | `song.wav` |
-| `compose_v2.py` | Same idea, but with detuned-saw lead, chord pad, swing, reverb, and stereo. | `song_v2.wav` |
+| `compose_v2.py` | Same idea, with detuned-saw lead, chord pad, swing, reverb, stereo. | `song_v2.wav` |
+| `compose_v3.py` | Section-based song (intro → verse → build → chorus → break → outro) with motifs, drum fills, counter-melody, echo. | `song_v3.wav` |
+| `workload.py` | Generates a 30s scripted CPU/net/disk workload arc to feed any of the above so the captured song has real dynamics. | – |
 
 ## Setup
 
@@ -75,11 +77,51 @@ What v2 adds on top of v1:
   through scale passing tones with a deliberate lead-in step into each new
   chord (rather than restarting an arpeggio every bar).
 
+### Render a section-based song (`compose_v3.py`)
+
+Same capture, but the song is structured as six labeled sections with
+distinct textures rather than one continuous loop:
+
+```bash
+.venv/bin/python compose_v3.py
+.venv/bin/python compose_v3.py --no-play --out song_v3.wav
+```
+
+What v3 adds on top of v2:
+
+- **Arrangement**: 15 bars split into intro (2 bars) → verse (4) → build (3)
+  → chorus (4) → break (1) → outro (1). Each section has its own drum
+  pattern, bassline, melodic motif, and pad gain.
+- **Real melodic motifs** instead of per-snapshot arpeggios: hand-designed
+  call-and-response phrases (motif A, motif B alternating).
+- **Drum fill** before the chorus (tom roll + snare flam on bar 8).
+- **Counter-melody**: octave-doubled lead during chorus.
+- **Crash cymbals** on chorus downbeats and the outro.
+- **Beat-synced echo** on the lead (slightly different L vs R for movement).
+- **Section gain riding**: chorus actually sounds louder than intro.
+- **Cadence**: bar 14 resolves with G7 → Cmaj7 and a final crash.
+
+### Generate workload to make the song exciting (`workload.py`)
+
+By default, a captured song from an idle laptop is flat. `workload.py`
+generates a deliberate 30s arc of varying CPU / network / disk activity
+that compose.py picks up as variation:
+
+```bash
+.venv/bin/python workload.py --render               # workload + compose_v3.py
+.venv/bin/python workload.py --render compose_v2.py # workload + compose_v2.py
+.venv/bin/python workload.py                        # workload only (start compose manually)
+```
+
+CPU is driven by one busy-loop subprocess per core, network by UDP packets
+to localhost, and disk by writes to `/tmp` (cleaned up on exit).
+
 ## Playback after the fact
 
 ```bash
 afplay song.wav         # macOS
 afplay song_v2.wav
+afplay song_v3.wav
 ```
 
 ## Tips for varying the song
@@ -99,7 +141,10 @@ curl -s -o /dev/null https://speed.cloudflare.com/__down?bytes=100000000   # net
 sonify.py          live ambient toy
 compose.py         v1: 30s mono song
 compose_v2.py      v2: 30s stereo song with reverb + melody
+compose_v3.py      v3: 30s section-based song with arrangement
+workload.py        scripted CPU/net/disk arc to drive captures
 requirements.txt   sounddevice, numpy, psutil
 song.wav           last v1 render
 song_v2.wav        last v2 render
+song_v3.wav        last v3 render
 ```
